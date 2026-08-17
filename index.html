@@ -200,7 +200,7 @@
       <div class="row"><label>Font size</label><input type="range" id="fontSize" min="28" max="80" step="1"><span class="val" id="fontSizeV"></span></div>
       <div class="row"><label>Letter spacing</label><input type="range" id="letterSpacing" min="0" max="30" step="0.5"><span class="val" id="letterSpacingV"></span></div>
       <div class="row"><label>Uppercase</label><input type="checkbox" id="uppercase"></div>
-      <div class="row"><label>Separator</label><select id="sepStyle" style="flex:1.4"><option value="delta">Starfleet delta</option><option value="bolt">BF bolt</option><option value="none">None</option></select></div>
+      <div class="row"><label>Separator</label><select id="sepStyle" style="flex:1.4"></select></div>
       <div class="row"><label>Sep. size</label><input type="range" id="deltaSize" min="0.5" max="1.8" step="0.05"><span class="val" id="deltaSizeV"></span></div>
       <div class="row"><label>Sep. count</label><input type="range" id="sepCount" min="1" max="7" step="1"><span class="val" id="sepCountV"></span></div>
       <div class="row"><label>Sep. spacing</label><input type="range" id="sepSpacing" min="4" max="30" step="0.5"><span class="val" id="sepSpacingV"></span></div>
@@ -386,8 +386,10 @@ function starfieldSVG(centerR){
 /* separator glyphs pointing up; delta is drawn centered on origin, the bolt
    (from bf-bolt-white.svg) carries its own viewBox center in cx/cy */
 const SEPARATORS = {
-  delta: { d: "M 0,-30 C 7,-16 14,2 21,24 C 13,11 6,8 0,8 C -6,8 -13,11 -21,24 C -14,2 -7,-16 0,-30 Z", scale: 1, cx: 0, cy: 0 },
-  bolt:  { d: "M 1.82,239.05 L 20.8,122.5 L 0,122.17 L 64.55,0 L 45.4,115.23 L 66.7,115.23 Z", scale: 0.29, cx: 33.35, cy: 119.52 },
+  delta:   { d: "M 0,-30 C 7,-16 14,2 21,24 C 13,11 6,8 0,8 C -6,8 -13,11 -21,24 C -14,2 -7,-16 0,-30 Z", scale: 1, cx: 0, cy: 0 },
+  bolt:    { d: "M 1.82,239.05 L 20.8,122.5 L 0,122.17 L 64.55,0 L 45.4,115.23 L 66.7,115.23 Z", scale: 0.29, cx: 33.35, cy: 119.52 },
+  sparkle: { d: "M 0,-30 Q 1.9,-5.4 30,0 Q 1.9,5.4 0,30 Q -1.9,5.4 -30,0 Q -1.9,-5.4 0,-30 Z", scale: 1, cx: 0, cy: 0 },
+  circle:  { d: "M 0,-21 A 21 21 0 1 1 0,21 A 21 21 0 1 1 0,-21 Z", scale: 1, cx: 0, cy: 0 },
 };
 
 function buildSVG(opts){
@@ -425,13 +427,24 @@ function buildSVG(opts){
      A glyph at track angle φ is rotated by φ so the group leans with the curve;
      sepRot is applied in that local frame (0°=up, ±90°=outward, both sides). */
   let deltas = "";
-  if(S.sepStyle !== "none" && SEPARATORS[S.sepStyle]){
-    const g = SEPARATORS[S.sepStyle];
-    const k = S.deltaSize * g.scale;
+  const sepVec = SEPARATORS[S.sepStyle];
+  const sepTF = S.sepStyle.startsWith("tf:") ? CHARGES[S.sepStyle.slice(3)] : null;
+  if(S.sepStyle !== "none" && (sepVec || sepTF)){
+    /* TF-emblem separators are PNGs: sized to match the delta's ~54-unit
+       height and tinted to the separator color via #sepTintF */
+    let mkGlyph;
+    if(sepVec){
+      const k = S.deltaSize * sepVec.scale;
+      mkGlyph = () => `<path d="${sepVec.d}" transform="scale(${k}) translate(${-sepVec.cx} ${-sepVec.cy})"/>`;
+    } else {
+      const base = 54 * S.deltaSize / Math.max(sepTF.w, sepTF.h);
+      const w = sepTF.w * base, h = sepTF.h * base;
+      mkGlyph = () => `<image href="${sepTF.b64}" x="${(-w/2).toFixed(1)}" y="${(-h/2).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" filter="url(#sepTintF)"/>`;
+    }
     const mk = (phi, rot) => {
       const a = phi * Math.PI/180;
       const x = CX + bandMid*Math.cos(a), y = CY + bandMid*Math.sin(a);
-      return `<path d="${g.d}" transform="translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${rot.toFixed(2)}) scale(${k}) translate(${-g.cx} ${-g.cy})"/>`;
+      return `<g transform="translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${rot.toFixed(2)})">${mkGlyph()}</g>`;
     };
     const rotL = S.sepMirror ? S.sepRot : S.sepRotL;
     let out = "";
@@ -464,6 +477,7 @@ function buildSVG(opts){
 ${embedFont ? `<style>${FONT_CSS}</style>` : ""}
 <clipPath id="centerClip"><circle cx="${CX}" cy="${CY}" r="${centerR}"/></clipPath>
 <filter id="chargeTintF"><feFlood flood-color="${S.c_charge}"/><feComposite in2="SourceAlpha" operator="in"/></filter>
+<filter id="sepTintF"><feFlood flood-color="${S.c_delta}"/><feComposite in2="SourceAlpha" operator="in"/></filter>
 <path id="arcTop" d="M ${CX-topR} ${CY} A ${topR} ${topR} 0 0 1 ${CX+topR} ${CY}"/>
 <path id="arcBot" d="M ${CX-botR} ${CY} A ${botR} ${botR} 0 0 0 ${CX+botR} ${CY}"/>
 </defs>
@@ -523,11 +537,17 @@ $("sepMirror").addEventListener("change", e => {
   syncUI(); render();
 });
 
-/* charge dropdown options */
+/* charge + separator dropdown options */
 {
   const sel = $("charge");
   const opts = [["none","None"],["bolt","BF Bolt"]].concat(Object.keys(CHARGES).map(k => [k, CHARGES[k].name]));
   opts.forEach(([v,l]) => { const o = document.createElement("option"); o.value=v; o.textContent=l; sel.appendChild(o); });
+
+  const ssel = $("sepStyle");
+  const sopts = [["delta","Starfleet delta"],["bolt","BF bolt"],["sparkle","Sparkle"],["circle","Circle"]]
+    .concat(Object.keys(CHARGES).map(k => ["tf:"+k, CHARGES[k].name]))
+    .concat([["none","None"]]);
+  sopts.forEach(([v,l]) => { const o = document.createElement("option"); o.value=v; o.textContent=l; ssel.appendChild(o); });
 }
 /* width locks: dragging one slider of a locked pair drags its partner,
    clamped to the partner's own range */
