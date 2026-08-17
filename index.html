@@ -361,20 +361,20 @@ let S = Object.assign({}, DEFAULTS);
 let IMG = null; // {dataUrl, w, h}
 
 const PRESETS = [
-  { name:"Hokuleʻa", colors:{c_band:"#175a6c",c_text:"#d8dee4",c_edge:"#0c3b48",c_delta:"#d8dee4",c_ring1:"#c9d1d9",c_gap:"#dce1e7",c_ring2:"#175a6c",c_center:"#0e2a33",c_star:"#d8dee4"} },
+  { name:"Hokuleʻa", colors:{c_band:"#175a6c",c_text:"#d8dee4",c_edge:"#0c3b48",c_delta:"#d8dee4",c_ring1:"#c9d1d9",c_gap:"#0c3b48",c_ring2:"#c9d1d9",c_center:"#0e2a33",c_star:"#d8dee4"} },
   { name:"Federation", colors:{c_band:"#9e2b25",c_text:"#ede6da",c_edge:"#141f4b",c_delta:"#ede6da",c_ring1:"#ede6da",c_gap:"#141f4b",c_ring2:"#ede6da",c_center:"#2a3e8c",c_star:"#ffffff"} },
-  { name:"Olympia", colors:{c_band:"#14245c",c_text:"#f4f6f8",c_edge:"#c9a227",c_delta:"#f4f6f8",c_ring1:"#c9a227",c_gap:"#14245c",c_ring2:"#c9a227",c_center:"#14245c",c_star:"#e9c46a"} },
-  { name:"Panacea", colors:{c_band:"#2e6b7e",c_text:"#e8ecef",c_edge:"#dfe5e9",c_delta:"#2e6b7e",c_ring1:"#dfe5e9",c_gap:"#eef1f4",c_ring2:"#2e6b7e",c_center:"#4a5a6e",c_star:"#e8ecef"} },
-  { name:"Command Gold", colors:{c_band:"#20242c",c_text:"#e3b341",c_edge:"#e3b341",c_delta:"#e3b341",c_ring1:"#e3b341",c_gap:"#f2f3f5",c_ring2:"#20242c",c_center:"#14161c",c_star:"#e3b341"} },
+  { name:"Olympia", colors:{c_band:"#14245c",c_text:"#f4f6f8",c_edge:"#c9a227",c_delta:"#f4f6f8",c_ring1:"#c9a227",c_gap:"#c9a227",c_ring2:"#c9a227",c_center:"#14245c",c_star:"#e9c46a"} },
+  { name:"Panacea", colors:{c_band:"#2e6b7e",c_text:"#e8ecef",c_edge:"#dfe5e9",c_delta:"#2e6b7e",c_ring1:"#dfe5e9",c_gap:"#dfe5e9",c_ring2:"#dfe5e9",c_center:"#4a5a6e",c_star:"#e8ecef"} },
+  { name:"Command Gold", colors:{c_band:"#20242c",c_text:"#e3b341",c_edge:"#e3b341",c_delta:"#e3b341",c_ring1:"#e3b341",c_gap:"#e3b341",c_ring2:"#e3b341",c_center:"#14161c",c_star:"#e3b341"} },
   /* Official Bravo Fleet colors — bravofleet.com/graphics */
-  { name:"Bravo Blue", colors:{c_band:"#2864a8",c_text:"#ffffff",c_edge:"#1b4574",c_delta:"#d3a92c",c_ring1:"#d3a92c",c_gap:"#ffffff",c_ring2:"#d3a92c",c_center:"#143356",c_star:"#d3a92c",c_charge:"#ffffff"} },
-  { name:"Bolt Gold", colors:{c_band:"#d3a92c",c_text:"#14161c",c_edge:"#96781e",c_delta:"#14161c",c_ring1:"#14161c",c_gap:"#f2f3f5",c_ring2:"#14161c",c_center:"#14161c",c_star:"#d3a92c",c_charge:"#d3a92c"} },
-  { name:"TF17 Gray", colors:{c_band:"#434e5f",c_text:"#ffffff",c_edge:"#2a323e",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#e8ecef",c_ring2:"#ffffff",c_center:"#1e242d",c_star:"#e8ecef",c_charge:"#434e5f"} },
-  { name:"TF21 Purple", colors:{c_band:"#651060",c_text:"#ffffff",c_edge:"#40093d",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#f0e6ef",c_ring2:"#ffffff",c_center:"#2e062b",c_star:"#f0e6ef",c_charge:"#651060"} },
-  { name:"TF47 Orange", colors:{c_band:"#c64f1c",c_text:"#ffffff",c_edge:"#8a3512",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#f5ece6",c_ring2:"#ffffff",c_center:"#5e240c",c_star:"#f5ece6",c_charge:"#c64f1c"} },
-  { name:"TF72 Navy", colors:{c_band:"#20347f",c_text:"#ffffff",c_edge:"#142153",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#e9ecf5",c_ring2:"#ffffff",c_center:"#0e1839",c_star:"#e9ecf5",c_charge:"#20347f"} },
-  { name:"TF86 Red", colors:{c_band:"#7c0309",c_text:"#ffffff",c_edge:"#4e0206",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#f3e7e7",c_ring2:"#ffffff",c_center:"#370204",c_star:"#f3e7e7",c_charge:"#7c0309"} },
-  { name:"TF93 Green", colors:{c_band:"#1a4a3c",c_text:"#ffffff",c_edge:"#103028",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#e7f0ed",c_ring2:"#ffffff",c_center:"#0b221c",c_star:"#e7f0ed",c_charge:"#1a4a3c"} },
+  { name:"Bravo Blue", colors:{c_band:"#2864a8",c_text:"#ffffff",c_edge:"#1b4574",c_delta:"#d3a92c",c_ring1:"#d3a92c",c_gap:"#1b4574",c_ring2:"#d3a92c",c_center:"#143356",c_star:"#d3a92c",c_charge:"#ffffff"} },
+  { name:"Bolt Gold", colors:{c_band:"#d3a92c",c_text:"#14161c",c_edge:"#96781e",c_delta:"#14161c",c_ring1:"#14161c",c_gap:"#96781e",c_ring2:"#14161c",c_center:"#14161c",c_star:"#d3a92c",c_charge:"#d3a92c"} },
+  { name:"TF17 Gray", colors:{c_band:"#434e5f",c_text:"#ffffff",c_edge:"#2a323e",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#2a323e",c_ring2:"#ffffff",c_center:"#1e242d",c_star:"#e8ecef",c_charge:"#434e5f"} },
+  { name:"TF21 Purple", colors:{c_band:"#651060",c_text:"#ffffff",c_edge:"#40093d",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#40093d",c_ring2:"#ffffff",c_center:"#2e062b",c_star:"#f0e6ef",c_charge:"#651060"} },
+  { name:"TF47 Orange", colors:{c_band:"#c64f1c",c_text:"#ffffff",c_edge:"#8a3512",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#8a3512",c_ring2:"#ffffff",c_center:"#5e240c",c_star:"#f5ece6",c_charge:"#c64f1c"} },
+  { name:"TF72 Navy", colors:{c_band:"#20347f",c_text:"#ffffff",c_edge:"#142153",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#142153",c_ring2:"#ffffff",c_center:"#0e1839",c_star:"#e9ecf5",c_charge:"#20347f"} },
+  { name:"TF86 Red", colors:{c_band:"#7c0309",c_text:"#ffffff",c_edge:"#4e0206",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#4e0206",c_ring2:"#ffffff",c_center:"#370204",c_star:"#f3e7e7",c_charge:"#7c0309"} },
+  { name:"TF93 Green", colors:{c_band:"#1a4a3c",c_text:"#ffffff",c_edge:"#103028",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#103028",c_ring2:"#ffffff",c_center:"#0b221c",c_star:"#e7f0ed",c_charge:"#1a4a3c"} },
 ];
 
 /* Fourth Fleet task force operating lines — quick-fill for the bottom ring
@@ -691,7 +691,11 @@ PRESETS.forEach(p => {
   b.className = "preset";
   const sw = ["c_edge","c_band","c_text","c_center"].map(k=>`<i style="background:${p.colors[k]}"></i>`).join("");
   b.innerHTML = `<span class="sw">${sw}</span>${p.name}`;
-  b.addEventListener("click", ()=>{ Object.assign(S, p.colors); S.lastPreset = p.name; syncUI(); render(); });
+  b.addEventListener("click", ()=>{
+    Object.assign(S, p.colors);
+    S.edgeW = 20; S.gapW = 20; // presets frame the band with matching outer/inner ring widths
+    S.lastPreset = p.name; syncUI(); render();
+  });
   presetBox.appendChild(b);
 });
 
