@@ -145,6 +145,27 @@
     color:var(--ink-dim);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
     pointer-events:none;
   }
+
+  /* ---------- swatch popover ---------- */
+  #swatchpop{
+    position:fixed;z-index:50;display:none;width:246px;
+    background:var(--panel2);border:1px solid var(--line-bright);border-radius:3px;
+    padding:10px;box-shadow:0 14px 34px rgba(0,0,0,.55);
+  }
+  #swatchpop h3{
+    font-family:"Microstyle",ui-monospace,monospace;font-weight:normal;
+    font-size:10px;letter-spacing:.22em;color:var(--ink-dim);text-transform:uppercase;
+    margin:10px 0 6px;
+  }
+  #swatchpop h3:first-child{margin-top:0}
+  .swgrid{display:grid;grid-template-columns:repeat(8,1fr);gap:4px}
+  .swgrid button{
+    aspect-ratio:1;border:1px solid var(--line-bright);border-radius:2px;
+    cursor:pointer;padding:0;
+  }
+  .swgrid button:hover{border-color:var(--gold)}
+  .swgrid button.cur{outline:2px solid var(--gold);outline-offset:1px}
+  #swatchpop .custom{margin-top:10px;width:100%}
 </style>
 </head>
 <body>
@@ -212,7 +233,9 @@
       <div class="row"><label>Accent ring B</label><input type="range" id="ring2W" min="0" max="20" step="0.5"><span class="val" id="ring2WV"></span></div>
       <div class="row"><label>Accent inset</label><input type="range" id="inset" min="0" max="40" step="1"><span class="val" id="insetV"></span></div>
       <div class="row"><label>Inner ring</label><input type="range" id="gapW" min="0" max="90" step="1"><span class="val" id="gapWV"></span></div>
-      <div class="hint">Accent rings float inside the band, inset from the thick outer and inner rings so they never touch them or the text.</div>
+      <div class="row"><label>Lock outer+inner</label><input type="checkbox" id="lockRings"></div>
+      <div class="row"><label>Lock accents</label><input type="checkbox" id="lockAccents"></div>
+      <div class="hint">Accent rings float inside the band, inset from the thick outer and inner rings so they never touch them or the text. Locks keep each pair's widths in step: drag either slider and its partner follows.</div>
     </section>
 
     <section>
@@ -241,6 +264,7 @@
     <section>
       <h2>Starfield</h2>
       <div class="row"><label>Show starfield</label><input type="checkbox" id="starOn"></div>
+      <div class="row"><label>Big sparkles</label><input type="checkbox" id="starSparkles"></div>
       <div class="row"><label>Star color</label><input type="color" id="c_star"></div>
       <div class="row"><label>Density</label><input type="range" id="starDensity" min="20" max="220" step="5"><span class="val" id="starDensityV"></span></div>
       <div class="btnrow"><button class="btn" id="starReroll">Reroll pattern</button></div>
@@ -283,9 +307,11 @@ const DEFAULTS = {
   c_band: "#175a6c", c_text: "#d8dee4", c_edge: "#0c3b48", c_delta: "#d8dee4",
   c_ring1: "#c9d1d9", c_gap: "#dce1e7", c_ring2: "#c9d1d9", c_center: "#0e2a33",
   edgeW: 12, bandW: 116, ring1W: 5, ring2W: 5, inset: 12, gapW: 34,
+  lockRings: true, lockAccents: true,
   imgZoom: 1, imgRot: 0, imgX: 0, imgY: 0,
   charge: "none", chargeSize: 0.8, chargeY: 0, chargeTint: false, c_charge: "#ffffff",
-  starOn: false, c_star: "#e9c46a", starDensity: 90, starSeed: 7,
+  starOn: false, c_star: "#e9c46a", starDensity: 90, starSeed: 7, starSparkles: true,
+  lastPreset: "",
 };
 let S = Object.assign({}, DEFAULTS);
 
@@ -320,24 +346,37 @@ function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a
 function starfieldSVG(centerR){
   if(!S.starOn) return "";
   const rnd = mulberry32(S.starSeed);
+  /* four-point sparkles are placed first (kept apart from each other) so the
+     small-star scatter can dodge them; attempt caps keep the loops bounded */
+  const sparkles = [];
+  if(S.starSparkles){
+    const nspark = 3 + Math.floor(rnd()*3);
+    for(let i=0;i<nspark;i++){
+      for(let t=0;t<60;t++){
+        const a = rnd()*Math.PI*2, rr = Math.sqrt(rnd())*centerR*0.6;
+        const x = Math.cos(a)*rr, y = Math.sin(a)*rr;
+        const s = centerR*(0.12+rnd()*0.22);
+        if(sparkles.every(o => Math.hypot(o.x-x, o.y-y) > (o.s+s)*0.85)){ sparkles.push({x,y,s}); break; }
+      }
+    }
+  }
   let out = `<g fill="${S.c_star}">`;
   const n = S.starDensity;
   for(let i=0;i<n;i++){
-    // rejection-sample inside circle, biased into a loose diagonal band
-    const a = rnd()*Math.PI*2, rr = Math.sqrt(rnd())*centerR*0.92;
-    let x = Math.cos(a)*rr, y = Math.sin(a)*rr;
-    const band = (x+y)*0.5;
-    if(Math.abs(band) > centerR*0.55 && rnd()<0.6){ i--; continue; }
-    const sz = 2 + rnd()*rnd()*9;
-    out += `<circle cx="${(CX+x).toFixed(1)}" cy="${(CY+y).toFixed(1)}" r="${sz.toFixed(1)}"/>`;
+    for(let t=0;t<40;t++){
+      // rejection-sample inside circle, biased into a loose diagonal band
+      const a = rnd()*Math.PI*2, rr = Math.sqrt(rnd())*centerR*0.92;
+      const x = Math.cos(a)*rr, y = Math.sin(a)*rr;
+      const band = (x+y)*0.5;
+      if(Math.abs(band) > centerR*0.55 && rnd()<0.6) continue;
+      const sz = 2 + rnd()*rnd()*9;
+      if(sparkles.some(o => Math.hypot(o.x-x, o.y-y) < o.s + sz + 3)) continue;
+      out += `<circle cx="${(CX+x).toFixed(1)}" cy="${(CY+y).toFixed(1)}" r="${sz.toFixed(1)}"/>`;
+      break;
+    }
   }
-  // four-point sparkles
-  const nspark = 3 + Math.floor(rnd()*3);
-  for(let i=0;i<nspark;i++){
-    const a = rnd()*Math.PI*2, rr = Math.sqrt(rnd())*centerR*0.6;
-    const x = CX+Math.cos(a)*rr, y = CY+Math.sin(a)*rr;
-    const s = centerR*(0.12+rnd()*0.22);
-    const w = s*0.18;
+  for(const o of sparkles){
+    const x = CX+o.x, y = CY+o.y, s = o.s, w = s*0.18;
     out += `<path d="M ${x} ${y-s} Q ${x+w*0.35} ${y-w} ${x+s} ${y} Q ${x+w*0.35} ${y+w} ${x} ${y+s} Q ${x-w*0.35} ${y+w} ${x-s} ${y} Q ${x-w*0.35} ${y-w} ${x} ${y-s} Z"/>`;
   }
   out += "</g>";
@@ -455,7 +494,7 @@ function render(){
 const $ = id => document.getElementById(id);
 
 const textInputs = ["topText","bottomText"];
-const checkInputs = ["uppercase","starOn","chargeTint","sepMirror"];
+const checkInputs = ["uppercase","starOn","starSparkles","chargeTint","sepMirror","lockRings","lockAccents"];
 const selectInputs = ["sepStyle","charge"];
 const rangeInputs = [
   ["fontSize",1],["letterSpacing",1],["deltaSize",2],
@@ -490,12 +529,86 @@ $("sepMirror").addEventListener("change", e => {
   const opts = [["none","None"],["bolt","BF Bolt"]].concat(Object.keys(CHARGES).map(k => [k, CHARGES[k].name]));
   opts.forEach(([v,l]) => { const o = document.createElement("option"); o.value=v; o.textContent=l; sel.appendChild(o); });
 }
+/* width locks: dragging one slider of a locked pair drags its partner,
+   clamped to the partner's own range */
+const LOCK_PAIRS = {
+  edgeW:  {partner:"gapW",   flag:"lockRings"},
+  gapW:   {partner:"edgeW",  flag:"lockRings"},
+  ring1W: {partner:"ring2W", flag:"lockAccents"},
+  ring2W: {partner:"ring1W", flag:"lockAccents"},
+};
 rangeInputs.forEach(([id,dec]) => $(id).addEventListener("input", e => {
   S[id]=parseFloat(e.target.value);
   const v=$(id+"V"); if(v) v.textContent = S[id].toFixed(dec);
+  const lp = LOCK_PAIRS[id];
+  if(lp && S[lp.flag]){
+    const el = $(lp.partner);
+    const val = Math.min(parseFloat(el.max), Math.max(parseFloat(el.min), S[id]));
+    S[lp.partner] = val; el.value = val;
+    const pv = $(lp.partner+"V"); if(pv) pv.textContent = val.toFixed(dec);
+  }
   render();
 }));
 colorInputs.forEach(id => $(id).addEventListener("input", e => { S[id]=e.target.value; render(); }));
+
+/* ---------- swatch popover ----------
+   Clicking a color well opens a swatch picker (active preset's colors + the
+   full palette across every preset) instead of the native color picker;
+   "Custom color…" falls through to the native one. */
+const pop = document.createElement("div");
+pop.id = "swatchpop";
+document.body.appendChild(pop);
+let popFor = null, nativeBypass = false;
+
+function paletteAll(){
+  const out = [];
+  PRESETS.forEach(p => Object.values(p.colors).forEach(c => { if(!out.includes(c)) out.push(c); }));
+  return out;
+}
+function swatchSection(title, colors){
+  const cur = (S[popFor]||"").toLowerCase();
+  return `<h3>${title}</h3><div class="swgrid">` +
+    colors.map(c => `<button data-c="${c}" class="${c.toLowerCase()===cur?"cur":""}" style="background:${c}" title="${c}"></button>`).join("") +
+    `</div>`;
+}
+function openPop(id, anchor){
+  popFor = id;
+  const preset = PRESETS.find(p => p.name === S.lastPreset);
+  pop.innerHTML =
+    (preset ? swatchSection("Preset · "+preset.name, [...new Set(Object.values(preset.colors))]) : "") +
+    swatchSection("Palette", paletteAll()) +
+    `<button class="btn custom" id="swCustom">Custom color…</button>`;
+  const r = anchor.getBoundingClientRect();
+  pop.style.display = "block";
+  pop.style.left = Math.max(8, Math.min(r.left, innerWidth - pop.offsetWidth - 12)) + "px";
+  const below = r.bottom + 6;
+  pop.style.top = (below + pop.offsetHeight > innerHeight - 8
+    ? Math.max(8, r.top - pop.offsetHeight - 6) : below) + "px";
+}
+function closePop(){ pop.style.display = "none"; popFor = null; }
+
+colorInputs.forEach(id => $(id).addEventListener("click", e => {
+  if(nativeBypass) return;
+  e.preventDefault();
+  openPop(id, e.target);
+}));
+pop.addEventListener("click", e => {
+  const b = e.target.closest("button"); if(!b || !popFor) return;
+  if(b.id === "swCustom"){
+    const inp = $(popFor); closePop();
+    nativeBypass = true;
+    try{ inp.showPicker ? inp.showPicker() : inp.click(); } finally { nativeBypass = false; }
+    return;
+  }
+  S[popFor] = b.dataset.c; $(popFor).value = b.dataset.c;
+  pop.querySelectorAll(".cur").forEach(x => x.classList.remove("cur"));
+  pop.querySelectorAll(`[data-c="${b.dataset.c}"]`).forEach(x => x.classList.add("cur"));
+  render();
+});
+document.addEventListener("pointerdown", e => {
+  if(pop.style.display === "block" && !pop.contains(e.target)) closePop();
+});
+document.addEventListener("keydown", e => { if(e.key === "Escape") closePop(); });
 
 /* presets */
 const presetBox = $("presets");
@@ -504,7 +617,7 @@ PRESETS.forEach(p => {
   b.className = "preset";
   const sw = ["c_edge","c_band","c_text","c_center"].map(k=>`<i style="background:${p.colors[k]}"></i>`).join("");
   b.innerHTML = `<span class="sw">${sw}</span>${p.name}`;
-  b.addEventListener("click", ()=>{ Object.assign(S, p.colors); syncUI(); render(); });
+  b.addEventListener("click", ()=>{ Object.assign(S, p.colors); S.lastPreset = p.name; syncUI(); render(); });
   presetBox.appendChild(b);
 });
 
@@ -629,7 +742,7 @@ $("exportPng").addEventListener("click", async ()=>{
 });
 
 /* ================= persistence ================= */
-const LS_KEY = "sealbuilder-v3";
+const LS_KEY = "sealbuilder-v4";
 let persistT = null;
 function persist(){
   clearTimeout(persistT);
@@ -638,8 +751,8 @@ function persist(){
   }, 300);
 }
 try{
-  /* v2 → v3 migration: new separator-group fields are additive, defaults match old behavior */
-  const saved = localStorage.getItem(LS_KEY) || localStorage.getItem("sealbuilder-v2");
+  /* older-key migration: new fields are additive, defaults match old behavior */
+  const saved = localStorage.getItem(LS_KEY) || localStorage.getItem("sealbuilder-v3") || localStorage.getItem("sealbuilder-v2");
   if(saved) S = Object.assign({}, DEFAULTS, JSON.parse(saved));
 }catch(e){}
 
