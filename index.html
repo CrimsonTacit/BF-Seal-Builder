@@ -191,6 +191,24 @@
   .stagebg button + button{border-left:1px solid var(--line-bright)}
   .stagebg button:hover{color:var(--ink)}
   .stagebg button.active{background:var(--bolt-gold);color:#14100a}
+  .stagebg .sep{width:1px;background:var(--line-bright);align-self:stretch}
+
+  /* ---------- alignment grid overlay ---------- */
+  #gridOverlay{
+    display:none;position:absolute;z-index:2;pointer-events:none;
+    inset:0;
+    background-image:
+      linear-gradient(rgba(20,25,35,.16) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(20,25,35,.16) 1px, transparent 1px);
+    background-size:36px 36px;
+    background-position:center center;
+  }
+  #gridOverlay.on{display:block}
+  #gridOverlay::before,#gridOverlay::after{
+    content:"";position:absolute;background:rgba(211,169,44,.55);
+  }
+  #gridOverlay::before{left:50%;top:0;bottom:0;width:1px;margin-left:-.5px}
+  #gridOverlay::after{top:50%;left:0;right:0;height:1px;margin-top:-.5px}
 
   /* ---------- swatch popover ---------- */
   #swatchpop{
@@ -347,8 +365,11 @@
     <div class="stagebg" id="stageBg">
       <button type="button" data-mode="dark">Dark</button>
       <button type="button" data-mode="light">Light</button>
+      <span class="sep"></span>
+      <button type="button" id="gridToggle">Grid Overlay</button>
     </div>
     <div id="sealwrap"></div>
+    <div id="gridOverlay"></div>
     <div class="stagehint">Drag seal to position image · Scroll to zoom</div>
   </div>
 </main>
@@ -375,14 +396,14 @@ const DEFAULTS = {
   fontSize: 46, letterSpacing: 5, uppercase: true,
   sepStyle: "delta", deltaSize: 1.25, sepRot: 0, sepRotL: 0, sepMirror: true,
   sepCount: 1, sepSpacing: 14, sepShift: 4,
-  c_band: "#175a6c", c_text: "#d8dee4", c_edge: "#0c3b48", c_delta: "#d8dee4",
-  c_ring1: "#c9d1d9", c_gap: "#dce1e7", c_ring2: "#c9d1d9", c_center: "#0e2a33",
-  edgeW: 12, bandW: 116, ring1W: 5, ring2W: 5, inset: 12, gapW: 34,
+  c_band: "#2864a8", c_text: "#ffffff", c_edge: "#1b4574", c_delta: "#d3a92c",
+  c_ring1: "#d3a92c", c_gap: "#1b4574", c_ring2: "#d3a92c", c_center: "#143356",
+  edgeW: 20, bandW: 116, ring1W: 5, ring2W: 5, inset: 12, gapW: 20,
   lockRings: true, lockAccents: true,
   imgZoom: 1, imgRot: 0, imgX: 0, imgY: 0,
   charge: "none", chargeSize: 0.8, chargeY: 0, chargeTint: false, c_charge: "#ffffff",
-  starOn: false, c_star: "#e9c46a", starDensity: 90, starSeed: 7, starSparkles: true,
-  lastPreset: "",
+  starOn: false, c_star: "#d3a92c", starDensity: 90, starSeed: 7, starSparkles: true,
+  lastPreset: "Bravo Blue",
 };
 let S = Object.assign({}, DEFAULTS);
 
@@ -941,7 +962,7 @@ try{
 /* ================= stage background preview ================= */
 const STAGEBG_KEY = "sealbuilder-stagebg";
 const stage = $("stage");
-const stageBgBtns = document.querySelectorAll("#stageBg button");
+const stageBgBtns = document.querySelectorAll("#stageBg button[data-mode]");
 function setStageBg(mode){
   stage.classList.toggle("light", mode === "light");
   stageBgBtns.forEach(b => b.classList.toggle("active", b.dataset.mode === mode));
@@ -951,6 +972,19 @@ stageBgBtns.forEach(b => b.addEventListener("click", () => setStageBg(b.dataset.
 let stageBgMode = "dark";
 try{ stageBgMode = localStorage.getItem(STAGEBG_KEY) || "dark"; }catch(e){}
 setStageBg(stageBgMode);
+
+const GRID_KEY = "sealbuilder-grid";
+const gridOverlay = $("gridOverlay");
+const gridToggleBtn = $("gridToggle");
+function setGrid(on){
+  gridOverlay.classList.toggle("on", on);
+  gridToggleBtn.classList.toggle("active", on);
+  try{ localStorage.setItem(GRID_KEY, on ? "1" : "0"); }catch(e){}
+}
+gridToggleBtn.addEventListener("click", () => setGrid(!gridOverlay.classList.contains("on")));
+let gridOn = false;
+try{ gridOn = localStorage.getItem(GRID_KEY) === "1"; }catch(e){}
+setGrid(gridOn);
 
 /* ================= boot ================= */
 document.fonts.load('16px "Sealstile"').then(()=>render());
