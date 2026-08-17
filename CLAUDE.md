@@ -32,6 +32,8 @@ python3 tools/embed_assets.py --font   # + font (needs a venv with fonttools & b
 
 Bravo Blue `#2864A8` · Bolt Gold `#D3A92C` · TF17 Gray `#434E5F` · TF21 Purple `#651060` · TF47 Orange `#C64F1C` · TF72 Navy `#20347F` · TF86 Red `#7C0309` · TF93 Green `#1A4A3C`. These exist as presets in `PRESETS` (band = TF color, darker shade for edge/center computed by eye). BF graphics are copyrighted; this tool is for the user's in-fleet use.
 
+`PRESETS` also has an unofficial "Starfleet division colors" group (Command Red, Sciences Blue, Operations Gold, Medical White) for inspiration — same darker-shade-by-eye convention, not tied to any real fleet's graphics. Every preset sets `c_edge`/`c_gap` to the same color and `c_ring1`/`c_ring2` to the same color (the click handler also forces `edgeW`/`gapW` to 20), and `c_delta` (separators) must differ from `c_band` — check new presets against this before adding them.
+
 ## Testing notes
 
 - Use the launch.json server (`http://localhost:8517`) — the browser pane renders `file://` pages as `data:` snapshots where data-URI font loads fail with NetworkError, which looks like a font bug but isn't.
