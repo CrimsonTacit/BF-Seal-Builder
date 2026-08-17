@@ -313,7 +313,7 @@
     </details>
 
     <details class="acc" open>
-      <summary>Center Image</summary>
+      <summary>Background Image</summary>
       <div class="acc-body">
       <div class="filebox" id="filebox">Drop an image here or click to choose</div>
       <input type="file" id="fileInput" accept="image/*" style="display:none">
@@ -331,11 +331,17 @@
       <summary>Center Charge</summary>
       <div class="acc-body">
       <div class="row"><label>Emblem</label><select id="charge" style="flex:1.4"></select></div>
+      <div id="chargeUpload" style="display:none">
+        <div class="filebox" id="chargeFilebox">Drop an image here or click to choose</div>
+        <input type="file" id="chargeFileInput" accept="image/*" style="display:none">
+        <div class="btnrow"><button class="btn" id="chargeImgRemove">Remove custom image</button></div>
+        <div class="hint">PNG or SVG preferred — both preserve transparency, so the charge sits cleanly over the center fill, starfield, or artwork.</div>
+      </div>
       <div class="row"><label>Size</label><input type="range" id="chargeSize" min="0.2" max="1.6" step="0.02"><span class="val" id="chargeSizeV"></span></div>
       <div class="row"><label>Vert. offset</label><input type="range" id="chargeY" min="-200" max="200" step="2"><span class="val" id="chargeYV"></span></div>
       <div class="row"><label>Recolor</label><input type="checkbox" id="chargeTint"></div>
       <div class="row"><label>Charge color</label><input type="color" id="c_charge"></div>
-      <div class="hint">Task force emblems or the BF bolt, layered over the center fill, starfield, or artwork. Enable recolor to tint.</div>
+      <div class="hint">Task force emblems, the BF bolt, or your own uploaded image, layered over the center fill, starfield, or artwork. Enable recolor to tint — this fills the shape's alpha with a flat color, so it suits silhouette-style art better than a full-color photo or logo.</div>
       </div>
     </details>
 
@@ -370,7 +376,7 @@
     </div>
     <div id="sealwrap"></div>
     <div id="gridOverlay"></div>
-    <div class="stagehint">Drag seal to position image · Scroll to zoom</div>
+    <div class="stagehint">Drag to position background image · Scroll to zoom</div>
   </div>
 </main>
 
@@ -407,8 +413,9 @@ const DEFAULTS = {
 };
 let S = Object.assign({}, DEFAULTS);
 
-/* image kept out of persisted state (can be large) */
+/* images kept out of persisted state (can be large) */
 let IMG = null; // {dataUrl, w, h}
+let CUSTOM_CHARGE = null; // {dataUrl, w, h} — user-uploaded center charge
 
 const PRESETS = [
   /* Official Bravo Fleet colors — bravofleet.com/graphics */
@@ -578,6 +585,12 @@ function buildSVG(opts){
     const w = c.w * base, h = c.h * base;
     const filt = S.chargeTint ? ` filter="url(#chargeTintF)"` : "";
     chargeSVG = `<image href="${c.b64}" x="${(CX - w/2).toFixed(1)}" y="${(CY + S.chargeY - h/2).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}"${filt}/>`;
+  } else if(S.charge === "custom" && CUSTOM_CHARGE){
+    const c = CUSTOM_CHARGE;
+    const base = (centerR * 2 * S.chargeSize) / Math.max(c.w, c.h);
+    const w = c.w * base, h = c.h * base;
+    const filt = S.chargeTint ? ` filter="url(#chargeTintF)"` : "";
+    chargeSVG = `<image href="${c.dataUrl}" x="${(CX - w/2).toFixed(1)}" y="${(CY + S.chargeY - h/2).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}"${filt}/>`;
   }
 
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${VB} ${VB}">
@@ -634,11 +647,13 @@ function syncUI(){
   rangeInputs.forEach(([id,dec]) => { $(id).value = S[id]; const v=$(id+"V"); if(v) v.textContent = Number(S[id]).toFixed(dec); });
   colorInputs.forEach(id => $(id).value = S[id]);
   $("sepRotL").disabled = S.sepMirror;
+  $("chargeUpload").style.display = S.charge === "custom" ? "" : "none";
 }
 
 textInputs.forEach(id => $(id).addEventListener("input", e => { S[id]=e.target.value; render(); }));
 checkInputs.forEach(id => $(id).addEventListener("change", e => { S[id]=e.target.checked; render(); }));
 selectInputs.forEach(id => $(id).addEventListener("change", e => { S[id]=e.target.value; render(); }));
+$("charge").addEventListener("change", () => { $("chargeUpload").style.display = S.charge === "custom" ? "" : "none"; });
 
 /* unlinking the mirror seeds the left angle from the shared one so nothing jumps */
 $("sepMirror").addEventListener("change", e => {
@@ -649,7 +664,7 @@ $("sepMirror").addEventListener("change", e => {
 /* charge + separator dropdown options */
 {
   const sel = $("charge");
-  const opts = [["none","None"],["bolt","BF Bolt"]].concat(Object.keys(CHARGES).map(k => [k, CHARGES[k].name]));
+  const opts = [["none","None"],["bolt","BF Bolt"],["custom","Custom image…"]].concat(Object.keys(CHARGES).map(k => [k, CHARGES[k].name]));
   opts.forEach(([v,l]) => { const o = document.createElement("option"); o.value=v; o.textContent=l; sel.appendChild(o); });
 
   const ssel = $("sepStyle");
@@ -849,6 +864,31 @@ $("imgRemove").addEventListener("click", ()=>{
   IMG = null; filebox.textContent = "Drop an image here or click to choose"; render();
 });
 $("imgCenter").addEventListener("click", ()=>{ S.imgX=0; S.imgY=0; render(); });
+
+/* ---------- custom center charge upload ---------- */
+const chargeFilebox = $("chargeFilebox"), chargeFileInput = $("chargeFileInput");
+chargeFilebox.addEventListener("click", ()=>chargeFileInput.click());
+chargeFileInput.addEventListener("change", e => { if(e.target.files[0]) loadChargeImageFile(e.target.files[0]); });
+["dragover","dragenter"].forEach(ev => chargeFilebox.addEventListener(ev, e=>{e.preventDefault();chargeFilebox.classList.add("drag");}));
+["dragleave","drop"].forEach(ev => chargeFilebox.addEventListener(ev, e=>{e.preventDefault();chargeFilebox.classList.remove("drag");}));
+chargeFilebox.addEventListener("drop", e => { if(e.dataTransfer.files[0]) loadChargeImageFile(e.dataTransfer.files[0]); });
+
+function loadChargeImageFile(file){
+  const rd = new FileReader();
+  rd.onload = () => {
+    const im = new Image();
+    im.onload = () => {
+      CUSTOM_CHARGE = { dataUrl: rd.result, w: im.naturalWidth, h: im.naturalHeight };
+      chargeFilebox.textContent = file.name + " · " + im.naturalWidth + "×" + im.naturalHeight;
+      render();
+    };
+    im.src = rd.result;
+  };
+  rd.readAsDataURL(file);
+}
+$("chargeImgRemove").addEventListener("click", ()=>{
+  CUSTOM_CHARGE = null; chargeFilebox.textContent = "Drop an image here or click to choose"; render();
+});
 
 /* drag-to-pan + scroll-zoom over the preview */
 let dragging = null;
