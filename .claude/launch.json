@@ -1,0 +1,29 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "seal-builder",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8517",
+        "--bind",
+        "127.0.0.1"
+      ],
+      "port": 8517
+    },
+    {
+      "name": "seal-builder-alt",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8518",
+        "--bind",
+        "127.0.0.1"
+      ],
+      "port": 8518
+    }
+  ]
+}
