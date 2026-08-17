@@ -6,7 +6,7 @@ Reference seals the design replicates live in this folder (`*Seal.png`, `USS*.pn
 
 ## Architecture (all inside index.html)
 
-- **State**: single `S` object (see `DEFAULTS`); persisted to localStorage key `sealbuilder-v4` (uploaded image excluded). Bump the key when changing state shape (boot falls back through older keys, since additive fields merge cleanly over `DEFAULTS`).
+- **State**: single `S` object (see `DEFAULTS`); persisted to localStorage key `sealbuilder-v5` (uploaded image excluded). Bump the key when changing state shape (boot falls back through older keys; additive fields merge cleanly over `DEFAULTS`, and the v4→v5 step also rescales text metrics for the font swap).
 - **Colors**: clicking a color well opens the `#swatchpop` popover (last-applied preset's colors via `S.lastPreset`, then the deduped palette across all `PRESETS`); "Custom color…" falls through to the native picker via `showPicker()` guarded by a `nativeBypass` flag. The popover stays open while swatches are tried; outside click / Esc closes it.
 - **Width locks**: `LOCK_PAIRS` ties `edgeW`↔`gapW` (`lockRings`) and `ring1W`↔`ring2W` (`lockAccents`), both on by default; dragging one slider drives its partner, clamped to the partner's slider range.
 - **Rendering**: `buildSVG({embedFont})` returns the full SVG string (viewBox 1000×1000, center 500,500, outer radius 496). Live preview injects it without the font; exports embed the font via `<defs><style>@font-face…`.
@@ -19,14 +19,14 @@ Reference seals the design replicates live in this folder (`*Seal.png`, `USS*.pn
 
 ## Embedded assets
 
-`FONT_B64` (Microstyle WOFF2) and `CHARGES` (TF emblem PNGs from `TFEmblems/`) are base64 constants. Regenerate with:
+`FONT_B64` ("Sealstile" WOFF2) and `CHARGES` (TF emblem PNGs from `TFEmblems/`) are base64 constants. Regenerate with:
 
 ```bash
 python3 tools/embed_assets.py          # emblems (stdlib only)
 python3 tools/embed_assets.py --font   # + font (needs a venv with fonttools & brotli)
 ```
 
-**Font gotcha**: the seal font is `~/Library/Fonts/microsbe.ttf` ("Microstyle Bold Extended ATT", 1991 Agfa). Browsers' OTS sanitizer rejects the raw file — `usWeightClass` is 7 (legacy 1–9 scale) and the `PCLT`/`kern` tables are bad. `embed_assets.py --font` repairs it (weightClass 700, fsSelection 0x40, macStyle 0, drop PCLT/kern) and converts to WOFF2.
+**Font**: "Sealstile" is `fonts/LibrestileExtBold.ttf` (Librestile by ocelothe2k1, SIL OFL 1.1 — `fonts/OFL-Librestile.txt`), patched by `embed_assets.py --font`: adds a bullet glyph (Librestile has no U+2022, and "•" is the seal separator convention; circle sized to match the original Microstyle bullet — 0.84×cap diameter, center 0.60×cap up), aliases en dash→hyphen and U+2019→apostrophe, and renames the family ("Librestile" is an OFL Reserved Font Name, so the modified font can't keep it). It replaced the original Microstyle Bold Extended (1991 Agfa, copyrighted — undistributable) in the v5 storage bump; Sealstile runs ~13% wider at equal size, so the boot migration from v4-and-older keys scales `fontSize` ×46/52 and `letterSpacing` ×5/8, and `DEFAULTS` moved from 52/8 to 46/5. Old designs re-exported from a v5 build may still need a nudge if their text was near-overflow.
 
 ## Bravo Fleet official colors (bravofleet.com/graphics)
 
@@ -36,4 +36,4 @@ Bravo Blue `#2864A8` · Bolt Gold `#D3A92C` · TF17 Gray `#434E5F` · TF21 Purpl
 
 - Use the launch.json server (`http://localhost:8517`) — the browser pane renders `file://` pages as `data:` snapshots where data-URI font loads fail with NetworkError, which looks like a font bug but isn't.
 - Verify PNG export by calling `renderToCanvas(1000)` in the console and sampling pixels rather than downloading.
-- User's UI font conventions: app chrome uses the embedded Microstyle for headings; keep the dark console aesthetic.
+- User's UI font conventions: app chrome uses the embedded seal font (Sealstile) for headings; keep the dark console aesthetic.
