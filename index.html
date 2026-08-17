@@ -111,6 +111,11 @@
   .preset:hover{border-color:var(--gold)}
   .preset .sw{display:flex}
   .preset .sw i{width:9px;height:9px;display:block}
+  .credit{
+    padding:14px 16px 18px;text-align:center;color:var(--ink-dim);
+    font-size:10px;letter-spacing:.08em;line-height:1.8;text-transform:uppercase;
+  }
+  .credit b{color:var(--ink);font-weight:normal}
   .filebox{
     border:1px dashed var(--line-bright);border-radius:2px;padding:12px;text-align:center;
     color:var(--ink-dim);cursor:pointer;font-size:11px;letter-spacing:.06em;
@@ -223,6 +228,7 @@
       <h2>Ring Text</h2>
       <input type="text" id="topText" spellcheck="false">
       <input type="text" id="bottomText" spellcheck="false">
+      <div class="row"><label>TF text preset</label><select id="tfTextPreset" style="flex:1.4"></select></div>
       <div class="row"><label>Font size</label><input type="range" id="fontSize" min="28" max="80" step="1"><span class="val" id="fontSizeV"></span></div>
       <div class="row"><label>Letter spacing</label><input type="range" id="letterSpacing" min="0" max="30" step="0.5"><span class="val" id="letterSpacingV"></span></div>
       <div class="row"><label>Uppercase</label><input type="checkbox" id="uppercase"></div>
@@ -234,7 +240,7 @@
       <div class="row"><label>Mirror angles</label><input type="checkbox" id="sepMirror"></div>
       <div class="row"><label>Sep. angle</label><input type="range" id="sepRot" min="-180" max="180" step="5"><span class="val" id="sepRotV"></span></div>
       <div class="row"><label>Sep. angle L</label><input type="range" id="sepRotL" min="-180" max="180" step="5"><span class="val" id="sepRotLV"></span></div>
-      <div class="hint">Use “•” as a text separator (⌥8 on macOS). Separator groups sit mirrored at 3 and 9 o’clock and follow the band’s curve: 0° points up, ±90° outward. Track shift slides both groups toward the top text — useful when the bottom text runs long. Uncheck Mirror to angle the left group independently.</div>
+      <div class="hint">Use “•” as a text separator (⌥8 on macOS). Separator groups sit mirrored at 3 and 9 o’clock and follow the band’s curve: 0° points up, ±90° outward. Track shift slides both groups toward the top text — useful when the bottom text runs long. Uncheck Mirror to angle the left group independently. TF text preset swaps the bottom text for a Task Force operations line and shrinks the font to fit.</div>
     </section>
 
     <section>
@@ -261,6 +267,7 @@
       <div class="row"><label>Inner ring</label><input type="range" id="gapW" min="0" max="90" step="1"><span class="val" id="gapWV"></span></div>
       <div class="row"><label>Lock outer+inner</label><input type="checkbox" id="lockRings"></div>
       <div class="row"><label>Lock accents</label><input type="checkbox" id="lockAccents"></div>
+      <div class="btnrow"><button class="btn" id="resetGeom">Reset dimensions</button></div>
       <div class="hint">Accent rings float inside the band, inset from the thick outer and inner rings so they never touch them or the text. Locks keep each pair's widths in step: drag either slider and its partner follows.</div>
     </section>
 
@@ -303,6 +310,8 @@
       </div>
     </section>
 
+    <div class="credit">© Bravo Fleet 1997–<span id="copyYear"></span><br>Original design by <b>CrimsonTacit</b></div>
+
   </div>
 
   <div id="stage">
@@ -335,8 +344,8 @@ const DEFAULTS = {
   topText: "USS PEGASUS • NCC-91775",
   bottomText: "UNITED FEDERATION OF PLANETS",
   fontSize: 46, letterSpacing: 5, uppercase: true,
-  sepStyle: "delta", deltaSize: 1.0, sepRot: 0, sepRotL: 0, sepMirror: true,
-  sepCount: 1, sepSpacing: 14, sepShift: 0,
+  sepStyle: "delta", deltaSize: 1.25, sepRot: 0, sepRotL: 0, sepMirror: true,
+  sepCount: 1, sepSpacing: 14, sepShift: 4,
   c_band: "#175a6c", c_text: "#d8dee4", c_edge: "#0c3b48", c_delta: "#d8dee4",
   c_ring1: "#c9d1d9", c_gap: "#dce1e7", c_ring2: "#c9d1d9", c_center: "#0e2a33",
   edgeW: 12, bandW: 116, ring1W: 5, ring2W: 5, inset: 12, gapW: 34,
@@ -366,6 +375,17 @@ const PRESETS = [
   { name:"TF72 Navy", colors:{c_band:"#20347f",c_text:"#ffffff",c_edge:"#142153",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#e9ecf5",c_ring2:"#ffffff",c_center:"#0e1839",c_star:"#e9ecf5",c_charge:"#20347f"} },
   { name:"TF86 Red", colors:{c_band:"#7c0309",c_text:"#ffffff",c_edge:"#4e0206",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#f3e7e7",c_ring2:"#ffffff",c_center:"#370204",c_star:"#f3e7e7",c_charge:"#7c0309"} },
   { name:"TF93 Green", colors:{c_band:"#1a4a3c",c_text:"#ffffff",c_edge:"#103028",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#e7f0ed",c_ring2:"#ffffff",c_center:"#0b221c",c_star:"#e7f0ed",c_charge:"#1a4a3c"} },
+];
+
+/* Fourth Fleet task force operating lines — quick-fill for the bottom ring
+   text, in place of "UNITED FEDERATION OF PLANETS" */
+const TF_TEXT_PRESETS = [
+  { tf:17, text:"FOURTH FLEET DEEP SPACE OPERATIONS" },
+  { tf:21, text:"FOURTH FLEET FRONTIER OPERATIONS" },
+  { tf:47, text:"FOURTH FLEET PATHFINDING OPERATIONS" },
+  { tf:72, text:"FOURTH FLEET DIPLOMATIC OPERATIONS" },
+  { tf:86, text:"FOURTH FLEET BORDER OPERATIONS" },
+  { tf:93, text:"FOURTH FLEET HUMANITARIAN OPERATIONS" },
 ];
 
 /* embedded task-force emblem PNGs (populated by tools/embed_assets.py) */
@@ -539,6 +559,7 @@ function render(){
 
 /* ================= controls wiring ================= */
 const $ = id => document.getElementById(id);
+$("copyYear").textContent = new Date().getFullYear();
 
 const textInputs = ["topText","bottomText"];
 const checkInputs = ["uppercase","starOn","starSparkles","chargeTint","sepMirror","lockRings","lockAccents"];
@@ -674,10 +695,59 @@ PRESETS.forEach(p => {
   presetBox.appendChild(b);
 });
 
+const GEOMETRY_KEYS = ["edgeW","bandW","ring1W","ring2W","inset","gapW"];
+$("resetGeom").addEventListener("click", ()=>{
+  GEOMETRY_KEYS.forEach(k => S[k] = DEFAULTS[k]);
+  syncUI(); render();
+});
+
 $("resetBtn").addEventListener("click", ()=>{
   S = Object.assign({}, DEFAULTS);
   syncUI(); render();
 });
+
+/* ---------- TF text presets ----------
+   Quick-fill for the bottom ring text; shrinks font size (and letter
+   spacing, in step) until the rendered text clears the band's curve
+   without crowding the separator groups near 3/9 o'clock. */
+{
+  const sel = $("tfTextPreset");
+  const ph = document.createElement("option");
+  ph.value = ""; ph.textContent = "Apply TF text…";
+  sel.appendChild(ph);
+  TF_TEXT_PRESETS.forEach(p => {
+    const o = document.createElement("option");
+    o.value = String(p.tf); o.textContent = "TF" + p.tf + " — " + p.text;
+    sel.appendChild(o);
+  });
+  sel.addEventListener("change", () => {
+    const p = TF_TEXT_PRESETS.find(x => String(x.tf) === sel.value);
+    sel.value = "";
+    if(!p) return;
+    S.bottomText = p.text;
+    S.fontSize = DEFAULTS.fontSize;
+    S.letterSpacing = DEFAULTS.letterSpacing;
+    fitBottomText();
+    syncUI(); render();
+  });
+}
+
+function fitBottomText(){
+  const MIN_FS = 28; // slider floor
+  for(let i=0;i<25;i++){
+    render();
+    const svg = wrap.querySelector("svg");
+    const arc = svg.getElementById("arcBot");
+    const tp = svg.querySelectorAll("g > text > textPath")[1];
+    const pathLen = arc.getTotalLength();
+    const textLen = tp.getComputedTextLength();
+    const limit = pathLen * 0.86; // leaves clearance for the separator groups near the ends
+    if(textLen <= limit || S.fontSize <= MIN_FS) break;
+    const scale = Math.max(0.9, limit / textLen);
+    S.fontSize = Math.max(MIN_FS, Math.round(S.fontSize * scale));
+    S.letterSpacing = Math.max(0, Math.round(S.letterSpacing * scale * 2) / 2);
+  }
+}
 
 /* ================= image handling ================= */
 const filebox = $("filebox"), fileInput = $("fileInput");
