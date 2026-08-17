@@ -13,8 +13,8 @@
     --line-bright:#2c3b52;
     --ink:#c7d3e0;
     --ink-dim:#6d7d92;
-    --gold:#d8a63a;
-    --teal:#3b98a8;
+    --bolt-gold:#d3a92c;
+    --bf-blue:#2864a8;
     --danger:#b8503f;
   }
   *{box-sizing:border-box;margin:0;padding:0}
@@ -38,13 +38,13 @@
   }
   header .mark{
     width:26px;height:26px;border-radius:50%;
-    border:2px solid var(--gold);
-    box-shadow:inset 0 0 0 4px var(--bg), inset 0 0 0 6px var(--teal);
+    border:2px solid var(--bolt-gold);
+    box-shadow:inset 0 0 0 4px var(--bg), inset 0 0 0 6px var(--bf-blue);
     flex:none;
   }
   header h1{
     font-family:"Sealstile",ui-monospace,monospace;
-    font-size:17px;letter-spacing:.28em;color:var(--gold);
+    font-size:17px;letter-spacing:.28em;color:var(--bolt-gold);
     font-weight:normal;text-transform:uppercase;white-space:nowrap;
   }
   header .sub{color:var(--ink-dim);letter-spacing:.12em;font-size:11px;text-transform:uppercase}
@@ -54,9 +54,9 @@
     padding:7px 14px;cursor:pointer;font:inherit;letter-spacing:.08em;text-transform:uppercase;
     font-size:11px; border-radius:2px; white-space:nowrap;
   }
-  .btn:hover{border-color:var(--gold);color:var(--gold)}
-  .btn.primary{border-color:var(--gold);color:var(--gold)}
-  .btn.primary:hover{background:var(--gold);color:#14100a}
+  .btn:hover{border-color:var(--bolt-gold);color:var(--bolt-gold)}
+  .btn.primary{border-color:var(--bolt-gold);color:var(--bolt-gold)}
+  .btn.primary:hover{background:var(--bolt-gold);color:#14100a}
   select{
     background:var(--panel2);border:1px solid var(--line-bright);color:var(--ink);
     font:inherit;font-size:11px;padding:6px 8px;border-radius:2px;
@@ -71,12 +71,27 @@
     scrollbar-width:thin; scrollbar-color:var(--line-bright) transparent;
   }
   section{border-bottom:1px solid var(--line);padding:14px 16px 16px}
-  section h2{
+  details.acc{border-bottom:1px solid var(--line)}
+  details.acc > summary{
+    cursor:pointer;user-select:none;list-style:none;
+    padding:14px 16px 14px;
     font-family:"Sealstile",ui-monospace,monospace;font-weight:normal;
-    font-size:11px;letter-spacing:.3em;color:var(--teal);text-transform:uppercase;
-    margin-bottom:12px;display:flex;align-items:center;gap:8px;
+    font-size:11px;letter-spacing:.3em;color:var(--bf-blue);text-transform:uppercase;
+    display:flex;align-items:center;gap:8px;
   }
-  section h2::after{content:"";flex:1;height:1px;background:var(--line-bright)}
+  details.acc > summary::-webkit-details-marker{display:none}
+  details.acc > summary::before{
+    content:"▸";flex:none;font-size:9px;color:var(--ink-dim);letter-spacing:0;
+    display:inline-block;transition:transform .15s ease;
+  }
+  details.acc[open] > summary::before{transform:rotate(90deg)}
+  details.acc > summary::after{content:"";flex:1;height:1px;background:var(--line-bright)}
+  details.acc > .acc-body{padding:0 16px 16px}
+  .presets-group{
+    font-size:10px;letter-spacing:.15em;color:var(--ink-dim);text-transform:uppercase;
+    margin:12px 0 6px;
+  }
+  .presets-group:first-child{margin-top:0}
   .row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
   .row label{flex:1;color:var(--ink-dim);letter-spacing:.05em;font-size:12px}
   .row .val{width:44px;text-align:right;color:var(--ink);font-size:11px}
@@ -84,13 +99,13 @@
     width:100%;background:#0a111c;border:1px solid var(--line-bright);color:var(--ink);
     font:inherit;padding:7px 9px;letter-spacing:.05em;border-radius:2px;margin-bottom:8px;
   }
-  input[type=text]:focus{outline:none;border-color:var(--teal)}
+  input[type=text]:focus{outline:none;border-color:var(--bf-blue)}
   input[type=range]{
     flex:1.4;appearance:none;height:2px;background:var(--line-bright);border-radius:1px;outline:none;
   }
   input[type=range]::-webkit-slider-thumb{
     appearance:none;width:12px;height:12px;border-radius:50%;
-    background:var(--gold);border:2px solid #0a0f18;cursor:pointer;
+    background:var(--bolt-gold);border:2px solid #0a0f18;cursor:pointer;
   }
   input[type=color]{
     appearance:none;-webkit-appearance:none;width:30px;height:22px;border:1px solid var(--line-bright);
@@ -98,7 +113,7 @@
   }
   input[type=color]::-webkit-color-swatch-wrapper{padding:2px}
   input[type=color]::-webkit-color-swatch{border:none;border-radius:1px}
-  input[type=checkbox]{accent-color:var(--gold);width:14px;height:14px;cursor:pointer}
+  input[type=checkbox]{accent-color:var(--bolt-gold);width:14px;height:14px;cursor:pointer}
   .colorgrid{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px}
   .colorgrid .row{margin-bottom:4px}
   .hint{color:var(--ink-dim);font-size:11px;margin-top:6px;line-height:1.45}
@@ -108,7 +123,7 @@
     background:var(--panel2);border:1px solid var(--line-bright);border-radius:2px;
     padding:5px 9px;cursor:pointer;font-size:11px;letter-spacing:.06em;color:var(--ink);
   }
-  .preset:hover{border-color:var(--gold)}
+  .preset:hover{border-color:var(--bolt-gold)}
   .preset .sw{display:flex}
   .preset .sw i{width:9px;height:9px;display:block}
   .credit{
@@ -120,7 +135,7 @@
     border:1px dashed var(--line-bright);border-radius:2px;padding:12px;text-align:center;
     color:var(--ink-dim);cursor:pointer;font-size:11px;letter-spacing:.06em;
   }
-  .filebox:hover,.filebox.drag{border-color:var(--teal);color:var(--teal)}
+  .filebox:hover,.filebox.drag{border-color:var(--bf-blue);color:var(--bf-blue)}
   .btnrow{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
 
   /* ---------- stage ---------- */
@@ -175,7 +190,7 @@
   }
   .stagebg button + button{border-left:1px solid var(--line-bright)}
   .stagebg button:hover{color:var(--ink)}
-  .stagebg button.active{background:var(--gold);color:#14100a}
+  .stagebg button.active{background:var(--bolt-gold);color:#14100a}
 
   /* ---------- swatch popover ---------- */
   #swatchpop{
@@ -194,8 +209,8 @@
     aspect-ratio:1;border:1px solid var(--line-bright);border-radius:2px;
     cursor:pointer;padding:0;
   }
-  .swgrid button:hover{border-color:var(--gold)}
-  .swgrid button.cur{outline:2px solid var(--gold);outline-offset:1px}
+  .swgrid button:hover{border-color:var(--bolt-gold)}
+  .swgrid button.cur{outline:2px solid var(--bolt-gold);outline-offset:1px}
   #swatchpop .custom{margin-top:10px;width:100%}
 </style>
 </head>
@@ -219,13 +234,16 @@
 <main>
   <div id="panel">
 
-    <section>
-      <h2>Presets</h2>
-      <div class="presets" id="presets"></div>
-    </section>
+    <details class="acc" open>
+      <summary>Presets</summary>
+      <div class="acc-body">
+        <div id="presets"></div>
+      </div>
+    </details>
 
-    <section>
-      <h2>Ring Text</h2>
+    <details class="acc" open>
+      <summary>Ring Text</summary>
+      <div class="acc-body">
       <input type="text" id="topText" spellcheck="false">
       <input type="text" id="bottomText" spellcheck="false">
       <div class="row"><label>TF text preset</label><select id="tfTextPreset" style="flex:1.4"></select></div>
@@ -241,10 +259,12 @@
       <div class="row"><label>Sep. angle</label><input type="range" id="sepRot" min="-180" max="180" step="5"><span class="val" id="sepRotV"></span></div>
       <div class="row"><label>Sep. angle L</label><input type="range" id="sepRotL" min="-180" max="180" step="5"><span class="val" id="sepRotLV"></span></div>
       <div class="hint">Use “•” as a text separator (⌥8 on macOS). Separator groups sit mirrored at 3 and 9 o’clock and follow the band’s curve: 0° points up, ±90° outward. Track shift slides both groups toward the top text — useful when the bottom text runs long. Uncheck Mirror to angle the left group independently. TF text preset swaps the bottom text for a Task Force operations line and shrinks the font to fit.</div>
-    </section>
+      </div>
+    </details>
 
-    <section>
-      <h2>Colors</h2>
+    <details class="acc" open>
+      <summary>Colors</summary>
+      <div class="acc-body">
       <div class="colorgrid">
         <div class="row"><label>Ring band</label><input type="color" id="c_band"></div>
         <div class="row"><label>Ring text</label><input type="color" id="c_text"></div>
@@ -255,10 +275,12 @@
         <div class="row"><label>Accent ring B</label><input type="color" id="c_ring2"></div>
         <div class="row"><label>Center fill</label><input type="color" id="c_center"></div>
       </div>
-    </section>
+      </div>
+    </details>
 
-    <section>
-      <h2>Geometry</h2>
+    <details class="acc" open>
+      <summary>Geometry</summary>
+      <div class="acc-body">
       <div class="row"><label>Outer edge</label><input type="range" id="edgeW" min="0" max="40" step="1"><span class="val" id="edgeWV"></span></div>
       <div class="row"><label>Ring band</label><input type="range" id="bandW" min="60" max="180" step="1"><span class="val" id="bandWV"></span></div>
       <div class="row"><label>Accent ring A</label><input type="range" id="ring1W" min="0" max="20" step="0.5"><span class="val" id="ring1WV"></span></div>
@@ -269,10 +291,12 @@
       <div class="row"><label>Lock accents</label><input type="checkbox" id="lockAccents"></div>
       <div class="btnrow"><button class="btn" id="resetGeom">Reset dimensions</button></div>
       <div class="hint">Accent rings float inside the band, inset from the thick outer and inner rings so they never touch them or the text. Locks keep each pair's widths in step: drag either slider and its partner follows.</div>
-    </section>
+      </div>
+    </details>
 
-    <section>
-      <h2>Center Image</h2>
+    <details class="acc" open>
+      <summary>Center Image</summary>
+      <div class="acc-body">
       <div class="filebox" id="filebox">Drop an image here or click to choose</div>
       <input type="file" id="fileInput" accept="image/*" style="display:none">
       <div class="row" style="margin-top:10px"><label>Zoom</label><input type="range" id="imgZoom" min="0.4" max="4" step="0.01"><span class="val" id="imgZoomV"></span></div>
@@ -282,27 +306,32 @@
         <button class="btn" id="imgRemove">Remove image</button>
       </div>
       <div class="hint">Drag the seal preview to reposition the image inside its mask. Scroll over the seal to zoom.</div>
-    </section>
+      </div>
+    </details>
 
-    <section>
-      <h2>Center Charge</h2>
+    <details class="acc" open>
+      <summary>Center Charge</summary>
+      <div class="acc-body">
       <div class="row"><label>Emblem</label><select id="charge" style="flex:1.4"></select></div>
       <div class="row"><label>Size</label><input type="range" id="chargeSize" min="0.2" max="1.6" step="0.02"><span class="val" id="chargeSizeV"></span></div>
       <div class="row"><label>Vert. offset</label><input type="range" id="chargeY" min="-200" max="200" step="2"><span class="val" id="chargeYV"></span></div>
       <div class="row"><label>Recolor</label><input type="checkbox" id="chargeTint"></div>
       <div class="row"><label>Charge color</label><input type="color" id="c_charge"></div>
       <div class="hint">Task force emblems or the BF bolt, layered over the center fill, starfield, or artwork. Enable recolor to tint.</div>
-    </section>
+      </div>
+    </details>
 
-    <section>
-      <h2>Starfield</h2>
+    <details class="acc" open>
+      <summary>Starfield</summary>
+      <div class="acc-body">
       <div class="row"><label>Show starfield</label><input type="checkbox" id="starOn"></div>
       <div class="row"><label>Big sparkles</label><input type="checkbox" id="starSparkles"></div>
       <div class="row"><label>Star color</label><input type="color" id="c_star"></div>
       <div class="row"><label>Density</label><input type="range" id="starDensity" min="20" max="220" step="5"><span class="val" id="starDensityV"></span></div>
       <div class="btnrow"><button class="btn" id="starReroll">Reroll pattern</button></div>
       <div class="hint">A procedural star scatter with four-point sparkles, for seals without artwork — or behind a transparent emblem.</div>
-    </section>
+      </div>
+    </details>
 
     <section>
       <div class="btnrow">
@@ -361,24 +390,25 @@ let S = Object.assign({}, DEFAULTS);
 let IMG = null; // {dataUrl, w, h}
 
 const PRESETS = [
-  { name:"Hokuleʻa", colors:{c_band:"#175a6c",c_text:"#d8dee4",c_edge:"#0c3b48",c_delta:"#d8dee4",c_ring1:"#c9d1d9",c_gap:"#0c3b48",c_ring2:"#c9d1d9",c_center:"#0e2a33",c_star:"#d8dee4"} },
-  { name:"Federation", colors:{c_band:"#9e2b25",c_text:"#ede6da",c_edge:"#141f4b",c_delta:"#ede6da",c_ring1:"#ede6da",c_gap:"#141f4b",c_ring2:"#ede6da",c_center:"#2a3e8c",c_star:"#ffffff"} },
-  { name:"Olympia", colors:{c_band:"#14245c",c_text:"#f4f6f8",c_edge:"#c9a227",c_delta:"#f4f6f8",c_ring1:"#c9a227",c_gap:"#c9a227",c_ring2:"#c9a227",c_center:"#14245c",c_star:"#e9c46a"} },
-  { name:"Panacea", colors:{c_band:"#2e6b7e",c_text:"#e8ecef",c_edge:"#dfe5e9",c_delta:"#e8ecef",c_ring1:"#dfe5e9",c_gap:"#dfe5e9",c_ring2:"#dfe5e9",c_center:"#4a5a6e",c_star:"#e8ecef"} },
-  /* Starfleet division colors — for inspiration, not official Bravo Fleet palettes */
-  { name:"Command Red", colors:{c_band:"#a71313",c_text:"#ffffff",c_edge:"#6b0c0c",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#6b0c0c",c_ring2:"#ffffff",c_center:"#4b0909",c_star:"#f5e3e3",c_charge:"#a71313"} },
-  { name:"Sciences Blue", colors:{c_band:"#2b53a7",c_text:"#ffffff",c_edge:"#1c356b",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#1c356b",c_ring2:"#ffffff",c_center:"#13254b",c_star:"#e9eef7",c_charge:"#2b53a7"} },
-  { name:"Operations Gold", colors:{c_band:"#d6a444",c_text:"#14161c",c_edge:"#967330",c_delta:"#14161c",c_ring1:"#14161c",c_gap:"#967330",c_ring2:"#14161c",c_center:"#14161c",c_star:"#d6a444",c_charge:"#d6a444"} },
-  { name:"Medical White", colors:{c_band:"#f4f6f8",c_text:"#1c2b3a",c_edge:"#b7c2cc",c_delta:"#1c2b3a",c_ring1:"#1c2b3a",c_gap:"#b7c2cc",c_ring2:"#1c2b3a",c_center:"#2f4a52",c_star:"#eef2f5",c_charge:"#f4f6f8"} },
   /* Official Bravo Fleet colors — bravofleet.com/graphics */
-  { name:"Bravo Blue", colors:{c_band:"#2864a8",c_text:"#ffffff",c_edge:"#1b4574",c_delta:"#d3a92c",c_ring1:"#d3a92c",c_gap:"#1b4574",c_ring2:"#d3a92c",c_center:"#143356",c_star:"#d3a92c",c_charge:"#ffffff"} },
-  { name:"Bolt Gold", colors:{c_band:"#d3a92c",c_text:"#14161c",c_edge:"#96781e",c_delta:"#14161c",c_ring1:"#14161c",c_gap:"#96781e",c_ring2:"#14161c",c_center:"#14161c",c_star:"#d3a92c",c_charge:"#d3a92c"} },
-  { name:"TF17 Gray", colors:{c_band:"#434e5f",c_text:"#ffffff",c_edge:"#2a323e",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#2a323e",c_ring2:"#ffffff",c_center:"#1e242d",c_star:"#e8ecef",c_charge:"#434e5f"} },
-  { name:"TF21 Purple", colors:{c_band:"#651060",c_text:"#ffffff",c_edge:"#40093d",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#40093d",c_ring2:"#ffffff",c_center:"#2e062b",c_star:"#f0e6ef",c_charge:"#651060"} },
-  { name:"TF47 Orange", colors:{c_band:"#c64f1c",c_text:"#ffffff",c_edge:"#8a3512",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#8a3512",c_ring2:"#ffffff",c_center:"#5e240c",c_star:"#f5ece6",c_charge:"#c64f1c"} },
-  { name:"TF72 Navy", colors:{c_band:"#20347f",c_text:"#ffffff",c_edge:"#142153",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#142153",c_ring2:"#ffffff",c_center:"#0e1839",c_star:"#e9ecf5",c_charge:"#20347f"} },
-  { name:"TF86 Red", colors:{c_band:"#7c0309",c_text:"#ffffff",c_edge:"#4e0206",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#4e0206",c_ring2:"#ffffff",c_center:"#370204",c_star:"#f3e7e7",c_charge:"#7c0309"} },
-  { name:"TF93 Green", colors:{c_band:"#1a4a3c",c_text:"#ffffff",c_edge:"#103028",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#103028",c_ring2:"#ffffff",c_center:"#0b221c",c_star:"#e7f0ed",c_charge:"#1a4a3c"} },
+  { name:"Bravo Blue", group:"Official Bravo Fleet", colors:{c_band:"#2864a8",c_text:"#ffffff",c_edge:"#1b4574",c_delta:"#d3a92c",c_ring1:"#d3a92c",c_gap:"#1b4574",c_ring2:"#d3a92c",c_center:"#143356",c_star:"#d3a92c",c_charge:"#ffffff"} },
+  { name:"Bolt Gold", group:"Official Bravo Fleet", colors:{c_band:"#d3a92c",c_text:"#14161c",c_edge:"#96781e",c_delta:"#14161c",c_ring1:"#14161c",c_gap:"#96781e",c_ring2:"#14161c",c_center:"#14161c",c_star:"#d3a92c",c_charge:"#d3a92c"} },
+  { name:"TF17 Gray", group:"Official Bravo Fleet", colors:{c_band:"#434e5f",c_text:"#ffffff",c_edge:"#2a323e",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#2a323e",c_ring2:"#ffffff",c_center:"#1e242d",c_star:"#e8ecef",c_charge:"#434e5f"} },
+  { name:"TF21 Purple", group:"Official Bravo Fleet", colors:{c_band:"#651060",c_text:"#ffffff",c_edge:"#40093d",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#40093d",c_ring2:"#ffffff",c_center:"#2e062b",c_star:"#f0e6ef",c_charge:"#651060"} },
+  { name:"TF47 Orange", group:"Official Bravo Fleet", colors:{c_band:"#c64f1c",c_text:"#ffffff",c_edge:"#8a3512",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#8a3512",c_ring2:"#ffffff",c_center:"#5e240c",c_star:"#f5ece6",c_charge:"#c64f1c"} },
+  { name:"TF72 Navy", group:"Official Bravo Fleet", colors:{c_band:"#20347f",c_text:"#ffffff",c_edge:"#142153",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#142153",c_ring2:"#ffffff",c_center:"#0e1839",c_star:"#e9ecf5",c_charge:"#20347f"} },
+  { name:"TF86 Red", group:"Official Bravo Fleet", colors:{c_band:"#7c0309",c_text:"#ffffff",c_edge:"#4e0206",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#4e0206",c_ring2:"#ffffff",c_center:"#370204",c_star:"#f3e7e7",c_charge:"#7c0309"} },
+  { name:"TF93 Green", group:"Official Bravo Fleet", colors:{c_band:"#1a4a3c",c_text:"#ffffff",c_edge:"#103028",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#103028",c_ring2:"#ffffff",c_center:"#0b221c",c_star:"#e7f0ed",c_charge:"#1a4a3c"} },
+  /* Starfleet division colors — for inspiration, not official Bravo Fleet palettes */
+  { name:"Command Red", group:"Department Inspired", colors:{c_band:"#a71313",c_text:"#ffffff",c_edge:"#6b0c0c",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#6b0c0c",c_ring2:"#ffffff",c_center:"#4b0909",c_star:"#f5e3e3",c_charge:"#a71313"} },
+  { name:"Sciences Blue", group:"Department Inspired", colors:{c_band:"#2b53a7",c_text:"#ffffff",c_edge:"#1c356b",c_delta:"#ffffff",c_ring1:"#ffffff",c_gap:"#1c356b",c_ring2:"#ffffff",c_center:"#13254b",c_star:"#e9eef7",c_charge:"#2b53a7"} },
+  { name:"Operations Gold", group:"Department Inspired", colors:{c_band:"#d6a444",c_text:"#14161c",c_edge:"#967330",c_delta:"#14161c",c_ring1:"#14161c",c_gap:"#967330",c_ring2:"#14161c",c_center:"#14161c",c_star:"#d6a444",c_charge:"#d6a444"} },
+  { name:"Medical White", group:"Department Inspired", colors:{c_band:"#f4f6f8",c_text:"#1c2b3a",c_edge:"#b7c2cc",c_delta:"#1c2b3a",c_ring1:"#1c2b3a",c_gap:"#b7c2cc",c_ring2:"#1c2b3a",c_center:"#2f4a52",c_star:"#eef2f5",c_charge:"#f4f6f8"} },
+  /* Hand-picked fictional themes, not tied to any real fleet's graphics */
+  { name:"Sea Greens", group:"Other", colors:{c_band:"#175a6c",c_text:"#d8dee4",c_edge:"#0c3b48",c_delta:"#d8dee4",c_ring1:"#c9d1d9",c_gap:"#0c3b48",c_ring2:"#c9d1d9",c_center:"#0e2a33",c_star:"#d8dee4"} },
+  { name:"Pegasus", group:"Other", colors:{c_band:"#9e2b25",c_text:"#ede6da",c_edge:"#141f4b",c_delta:"#ede6da",c_ring1:"#ede6da",c_gap:"#141f4b",c_ring2:"#ede6da",c_center:"#2a3e8c",c_star:"#ffffff"} },
+  { name:"Federation", group:"Other", colors:{c_band:"#14245c",c_text:"#f4f6f8",c_edge:"#c9a227",c_delta:"#f4f6f8",c_ring1:"#c9a227",c_gap:"#c9a227",c_ring2:"#c9a227",c_center:"#14245c",c_star:"#e9c46a"} },
+  { name:"Healer", group:"Other", colors:{c_band:"#2e6b7e",c_text:"#e8ecef",c_edge:"#dfe5e9",c_delta:"#e8ecef",c_ring1:"#dfe5e9",c_gap:"#dfe5e9",c_ring2:"#dfe5e9",c_center:"#4a5a6e",c_star:"#e8ecef"} },
 ];
 
 /* Fourth Fleet task force operating lines — quick-fill for the bottom ring
@@ -688,9 +718,20 @@ document.addEventListener("pointerdown", e => {
 });
 document.addEventListener("keydown", e => { if(e.key === "Escape") closePop(); });
 
-/* presets */
+/* presets, grouped into labeled sections by p.group (array order = display order) */
 const presetBox = $("presets");
+let presetGroupList = null, presetGroupSeen = null;
 PRESETS.forEach(p => {
+  if(p.group !== presetGroupSeen){
+    presetGroupSeen = p.group;
+    const label = document.createElement("div");
+    label.className = "presets-group";
+    label.textContent = presetGroupSeen;
+    presetBox.appendChild(label);
+    presetGroupList = document.createElement("div");
+    presetGroupList.className = "presets";
+    presetBox.appendChild(presetGroupList);
+  }
   const b = document.createElement("button");
   b.className = "preset";
   const sw = ["c_edge","c_band","c_text","c_center"].map(k=>`<i style="background:${p.colors[k]}"></i>`).join("");
@@ -700,7 +741,7 @@ PRESETS.forEach(p => {
     S.edgeW = 20; S.gapW = 20; // presets frame the band with matching outer/inner ring widths
     S.lastPreset = p.name; syncUI(); render();
   });
-  presetBox.appendChild(b);
+  presetGroupList.appendChild(b);
 });
 
 const GEOMETRY_KEYS = ["edgeW","bandW","ring1W","ring2W","inset","gapW"];

@@ -16,6 +16,8 @@ Reference seals the design replicates live in this folder (`*Seal.png`, `USS*.pn
 - **Center charge**: task-force emblems (embedded PNGs in `CHARGES`) or vector BF bolt, clipped to the center circle; optional recolor via `feFlood`+`feComposite in SourceAlpha` filter (works in canvas export).
 - **Starfield**: seeded (`mulberry32`) so a given `starSeed` is stable. Big four-point sparkles (`starSparkles` toggle) are placed first with mutual separation, then small stars rejection-sample away from every sparkle's arm radius; attempt caps keep the loops bounded, so extreme densities may place fewer stars than `starDensity`.
 - **Exports**: SVG = serialized string download. PNG = SVG blob → `<img>` → canvas → toBlob. Both are fully portable (font + images embedded as data URIs).
+- **Collapsible panel sections**: each `#panel` section (except the trailing Reset-to-defaults one) is a native `<details class="acc" open><summary>…</summary><div class="acc-body">…</div></details>`, not JS-driven — the browser handles open/close state. `summary::before`/`::after` draw the rotating chevron and trailing rule that used to live on `section h2`.
+- **UI accent colors**: `--bf-blue` (`#2864a8`, matches the Bravo Blue preset) and `--bolt-gold` (`#d3a92c`, matches Bolt Gold) are the app-chrome accent variables — chosen to match Bravo Fleet's actual brand colors rather than arbitrary teal/gold.
 
 ## Embedded assets
 
@@ -32,7 +34,7 @@ python3 tools/embed_assets.py --font   # + font (needs a venv with fonttools & b
 
 Bravo Blue `#2864A8` · Bolt Gold `#D3A92C` · TF17 Gray `#434E5F` · TF21 Purple `#651060` · TF47 Orange `#C64F1C` · TF72 Navy `#20347F` · TF86 Red `#7C0309` · TF93 Green `#1A4A3C`. These exist as presets in `PRESETS` (band = TF color, darker shade for edge/center computed by eye). BF graphics are copyrighted; this tool is for the user's in-fleet use.
 
-`PRESETS` also has an unofficial "Starfleet division colors" group (Command Red, Sciences Blue, Operations Gold, Medical White) for inspiration — same darker-shade-by-eye convention, not tied to any real fleet's graphics. Every preset sets `c_edge`/`c_gap` to the same color and `c_ring1`/`c_ring2` to the same color (the click handler also forces `edgeW`/`gapW` to 20), and `c_delta` (separators) must differ from `c_band` — check new presets against this before adding them.
+`PRESETS` also has an unofficial "Department Inspired" group (Command Red, Sciences Blue, Operations Gold, Medical White) for inspiration, and an "Other" group of hand-picked fictional themes (Sea Greens, Pegasus, Federation, Healer) — same darker-shade-by-eye convention, not tied to any real fleet's graphics. Every preset sets `c_edge`/`c_gap` to the same color and `c_ring1`/`c_ring2` to the same color (the click handler also forces `edgeW`/`gapW` to 20), and `c_delta` (separators) must differ from `c_band` — check new presets against this before adding them. Each preset's `group` field controls which labeled section it renders under in the Presets panel (array order = section order = button order within a section).
 
 ## Testing notes
 
