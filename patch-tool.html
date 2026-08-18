@@ -3,41 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Build triangular command, facility and development-project patches, and export them as transparent PNGs.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%225%22%20fill%3D%22%230d1420%22%2F%3E%3Cpath%20d%3D%22M16%205%20L28%2026%20L4%2026%20Z%22%20fill%3D%22none%22%20stroke%3D%22%23d3a92c%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22M16%2012%20L23%2024%20L9%2024%20Z%22%20fill%3D%22%232864a8%22%2F%3E%3C%2Fsvg%3E">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Bravo Fleet Graphics Tools">
+<meta property="og:title" content="Patch Builder — Bravo Fleet Graphics Tools">
+<meta property="og:description" content="Build triangular command, facility and development-project patches, and export them as transparent PNGs.">
+<meta property="og:url" content="https://crimsontacit.github.io/BF-Seal-Builder/patch-tool.html">
+<meta name="twitter:card" content="summary">
 <title>Patch Builder</title>
+<link rel="stylesheet" href="shared/chrome.css">
 <style>
-  :root{
-    --bg:#070b12;
-    --panel:#0d1420;
-    --panel2:#111a29;
-    --line:#1f2a3a;
-    --line-bright:#2c3b52;
-    --ink:#c7d3e0;
-    --ink-dim:#6d7d92;
-    --bolt-gold:#d3a92c;
-    --bf-blue:#2864a8;
-    --danger:#b8503f;
-  }
+  :root{--panel-w:340px}
   @font-face{
     font-family:"Sealstile";font-weight:400;
     src:url(fonts/sealstile.woff2) format("woff2");
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  html,body{height:100%}
-  body{
-    background:
-      radial-gradient(1200px 700px at 75% -10%, rgba(59,152,168,.07), transparent 60%),
-      radial-gradient(900px 600px at -10% 110%, rgba(216,166,58,.05), transparent 60%),
-      var(--bg);
-    color:var(--ink);
-    font:13px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-    display:flex; flex-direction:column; overflow:hidden;
-  }
-
-  header{
-    display:flex;align-items:center;gap:16px;
-    padding:10px 18px;border-bottom:1px solid var(--line);
-    background:linear-gradient(180deg, #0c1320, #0a101b);
-    flex:none;
   }
   header .mark{
     width:24px;height:21px;flex:none;
@@ -45,81 +25,6 @@
     clip-path:polygon(50% 0,100% 100%,0 100%);
     box-shadow:0 0 0 2px var(--bg);
   }
-  header h1{
-    font-family:"Sealstile",ui-monospace,monospace;
-    font-size:17px;letter-spacing:.28em;color:var(--bolt-gold);
-    font-weight:normal;text-transform:uppercase;white-space:nowrap;
-  }
-  header .sub{color:var(--ink-dim);letter-spacing:.12em;font-size:11px;text-transform:uppercase}
-  header .spacer{flex:1}
-  header a.navlink{
-    color:var(--ink-dim);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
-    text-decoration:none;border:1px solid var(--line-bright);border-radius:2px;padding:7px 14px;
-    background:var(--panel2);white-space:nowrap;
-  }
-  header a.navlink:hover{border-color:var(--bolt-gold);color:var(--bolt-gold)}
-  .btn{
-    background:var(--panel2);border:1px solid var(--line-bright);color:var(--ink);
-    padding:7px 14px;cursor:pointer;font:inherit;letter-spacing:.08em;text-transform:uppercase;
-    font-size:11px; border-radius:2px; white-space:nowrap;
-  }
-  .btn:hover{border-color:var(--bolt-gold);color:var(--bolt-gold)}
-  .btn.primary{border-color:var(--bolt-gold);color:var(--bolt-gold)}
-  .btn.primary:hover{background:var(--bolt-gold);color:#14100a}
-  .btn.danger{border-color:var(--danger);color:var(--danger)}
-  .btn.danger:hover{background:var(--danger);color:#fff}
-  select{
-    background:var(--panel2);border:1px solid var(--line-bright);color:var(--ink);
-    font:inherit;font-size:11px;padding:6px 8px;border-radius:2px;max-width:100%;
-  }
-
-  main{flex:1;display:flex;min-height:0}
-
-  #panel{
-    width:340px;flex:none;overflow-y:auto;
-    background:var(--panel);border-right:1px solid var(--line);
-    scrollbar-width:thin; scrollbar-color:var(--line-bright) transparent;
-  }
-  details.acc{border-bottom:1px solid var(--line)}
-  details.acc > summary{
-    cursor:pointer;user-select:none;list-style:none;
-    padding:14px 16px 14px;
-    font-family:"Sealstile",ui-monospace,monospace;font-weight:normal;
-    font-size:11px;letter-spacing:.3em;color:var(--bf-blue);text-transform:uppercase;
-    display:flex;align-items:center;gap:8px;
-  }
-  details.acc > summary::-webkit-details-marker{display:none}
-  details.acc > summary::before{
-    content:"▸";flex:none;font-size:9px;color:var(--ink-dim);letter-spacing:0;
-    display:inline-block;transition:transform .15s ease;
-  }
-  details.acc[open] > summary::before{transform:rotate(90deg)}
-  details.acc > summary::after{content:"";flex:1;height:1px;background:var(--line-bright)}
-  details.acc > .acc-body{padding:0 16px 16px}
-  section.plain{border-bottom:1px solid var(--line);padding:14px 16px 16px}
-  .row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-  .row label{flex:1;color:var(--ink-dim);letter-spacing:.05em;font-size:12px}
-  .row .val{width:46px;text-align:right;color:var(--ink);font-size:11px}
-  input[type=text]{
-    width:100%;background:#0a111c;border:1px solid var(--line-bright);color:var(--ink);
-    font:inherit;padding:7px 9px;letter-spacing:.05em;border-radius:2px;margin-bottom:8px;
-  }
-  input[type=text]:focus{outline:none;border-color:var(--bf-blue)}
-  input[type=range]{
-    flex:1.4;appearance:none;height:2px;background:var(--line-bright);border-radius:1px;outline:none;
-  }
-  input[type=range]::-webkit-slider-thumb{
-    appearance:none;width:12px;height:12px;border-radius:50%;
-    background:var(--bolt-gold);border:2px solid #0a0f18;cursor:pointer;
-  }
-  input[type=checkbox]{accent-color:var(--bolt-gold);width:14px;height:14px;cursor:pointer;flex:none}
-  input[type=color]{
-    width:30px;height:24px;flex:none;padding:0;border:1px solid var(--line-bright);
-    border-radius:2px;background:none;cursor:pointer;
-  }
-  input[type=color]::-webkit-color-swatch-wrapper{padding:2px}
-  input[type=color]::-webkit-color-swatch{border:none;border-radius:1px}
-  .hint{color:var(--ink-dim);font-size:11px;margin-top:6px;line-height:1.45}
   .sublabel{color:var(--ink-dim);font-size:10px;letter-spacing:.14em;text-transform:uppercase;margin:12px 0 6px}
   .sublabel:first-child{margin-top:0}
   .filebox{
@@ -128,14 +33,6 @@
     line-height:1.5;word-break:break-all;
   }
   .filebox:hover,.filebox.drag{border-color:var(--bolt-gold);color:var(--bolt-gold)}
-  .credit{
-    padding:14px 16px 18px;text-align:center;color:var(--ink-dim);
-    font-size:10px;letter-spacing:.08em;line-height:1.8;text-transform:uppercase;
-  }
-  .credit b{color:var(--ink);font-weight:normal}
-  .credit a{color:var(--bf-blue);text-decoration:none;border-bottom:1px solid transparent}
-  .credit a:hover{color:var(--ink);border-bottom-color:var(--bf-blue)}
-  .btnrow{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
   .seg{display:flex;border:1px solid var(--line-bright);border-radius:2px;overflow:hidden;margin-bottom:8px}
   .seg button{
     flex:1;background:var(--panel2);border:none;color:var(--ink-dim);cursor:pointer;
@@ -190,27 +87,11 @@
   #patchwrap svg{
     width:auto;height:auto;max-width:100%;max-height:min(100%, 900px);display:block;
   }
-  .stagehint{
-    position:absolute;bottom:14px;left:0;right:0;text-align:center;z-index:1;
-    color:rgba(140,155,175,.7);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
-    pointer-events:none;
-  }
   #stage.light .stagehint,#stage.checker .stagehint{color:rgba(20,25,35,.45)}
-  .stagebg{
-    position:absolute;top:14px;right:14px;z-index:2;
-    display:flex;background:var(--panel2);border:1px solid var(--line-bright);
-    border-radius:2px;overflow:hidden;
-  }
-  .stagebg button{
-    background:none;border:none;color:var(--ink-dim);cursor:pointer;
-    font:inherit;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:7px 14px;
-  }
-  .stagebg button + button{border-left:1px solid var(--line-bright)}
-  .stagebg button:hover{color:var(--ink)}
-  .stagebg button.active{background:var(--bolt-gold);color:#14100a}
 </style>
 </head>
 <body>
+<noscript><div class="noscript"><b>Patch Builder</b> needs JavaScript switched on — it draws and exports your artwork entirely in the browser, with nothing sent to a server.</div></noscript>
 
 <header>
   <div class="mark"></div>
@@ -378,6 +259,8 @@
   </div>
 </main>
 
+<script src="shared/state.js"></script>
+<script src="shared/text.js"></script>
 <script src="shared/export.js"></script>
 <script>
 "use strict";
@@ -551,28 +434,10 @@ let IMG = null;   /* {dataUrl,w,h} — never persisted, like the other tools */
    A live SVG <text> node, not a canvas context: the patch is laid out in SVG
    and the two engines disagree enough to trip a fit. Widths are cached at a
    reference size and scaled. */
-const MEAS_REF = 100;
-const measSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-measSVG.setAttribute("aria-hidden", "true");
-measSVG.setAttribute("style", "position:absolute;left:-9999px;top:0;width:10px;height:10px;overflow:hidden");
-const measNode = document.createElementNS("http://www.w3.org/2000/svg", "text");
-measSVG.appendChild(measNode);
-document.body.appendChild(measSVG);
-const measCache = new Map();
-function measureRaw(text){
-  let w = measCache.get(text);
-  if(w === undefined){
-    measNode.setAttribute("font-family", "Sealstile");
-    measNode.setAttribute("font-size", MEAS_REF);
-    measNode.textContent = text;
-    w = measNode.getComputedTextLength();
-    measCache.set(text, w);
-  }
-  return w;
-}
-/* letter-spacing lands after the last glyph too — the fit has to count it the
-   same way the browser advances it. */
-const measure = (t, fs, ls) => measureRaw(t)*(fs/MEAS_REF) + t.length*(ls||0);
+/* Widths come from shared/text.js — a hidden live SVG node, not a canvas 2D
+   context, because the two engines disagree and this tool lays out in SVG.
+   Tracking counts the trailing glyph the way the browser advances it. */
+const measure = (t, fs, ls) => TextKit.measure(t, fs, {track: ls});
 
 /* One Sealstile line, shrunk to maxW, with the centred-anchor half-space
    correction that letter-spacing's trailing gap makes necessary. */
@@ -611,7 +476,7 @@ function ringPlan(){
 
 /* ================= starfield ================= */
 function starfield(V){
-  const rnd = (a => () => {a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296})(S.starSeed);
+  const rnd = StateKit.mulberry32(S.starSeed);
   const x0 = V[2][0], x1 = V[1][0], y0 = V[0][1], y1 = V[1][1];
   let out = `<g fill="#cfe0f4">`;
   for(let i=0;i<260;i++){
@@ -731,25 +596,20 @@ async function exportResources(){
 }
 function slug(){
   const src = S.t1_on ? S.t1_txt : (S.eB_txt || S.eL_txt || "patch");
-  return String(src).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || "patch";
+  return StateKit.slugify(src, "patch");
 }
 async function renderToCanvas(widthPx){
   const svg = buildSVG(await exportResources());
   return ExportKit.svgToCanvas(svg, widthPx, Math.round(widthPx*H/W));
 }
-$("exportPng").addEventListener("click", async ()=>{
+ExportKit.wireExport($("exportPng"), async ()=>{
   const size = parseInt($("exportSize").value, 10);
-  const btn = $("exportPng"), old = btn.textContent;
-  btn.textContent = "Rendering…"; btn.disabled = true;
-  try{
-    const cv = await renderToCanvas(size);
-    await ExportKit.downloadCanvasPNG(cv, slug()+"-patch-"+size+".png");
-  }catch(err){ console.error(err); btn.textContent = "Failed"; }
-  setTimeout(()=>{ btn.textContent = old; btn.disabled = false; }, 400);
+  const cv = await renderToCanvas(size);
+  await ExportKit.downloadCanvasPNG(cv, slug()+"-patch-"+size+".png");
 });
-$("exportSvg").addEventListener("click", async ()=>{
+ExportKit.wireExport($("exportSvg"), async ()=>{
   ExportKit.downloadSVG(buildSVG(await exportResources()), slug()+"-patch.svg");
-});
+}, {busy:"Building…"});
 
 /* ================= image upload ================= */
 const filebox = $("filebox"), fileInput = $("fileInput");
@@ -912,13 +772,7 @@ function syncUI(){
 
 /* ================= persistence ================= */
 const LS_KEY = "patchbuilder-v1";
-let persistT = null;
-function persist(){
-  clearTimeout(persistT);
-  persistT = setTimeout(()=>{
-    try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }catch(e){}
-  }, 150);
-}
+const persist = StateKit.persister(LS_KEY, () => S, 150);
 (function boot(){
   buildRingRows(); buildPresets();
   try{
@@ -934,7 +788,7 @@ function persist(){
   $("copyYear").textContent = new Date().getFullYear();
   bindInputs(); syncUI(); render();
   /* anything measured before the webfont lands was measured in fallback metrics */
-  if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ measCache.clear(); render(); });
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ TextKit.clear(); render(); });
 })();
 </script>
 </body>

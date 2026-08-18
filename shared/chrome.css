@@ -1,0 +1,167 @@
+/* Shared dark-console chrome for the Bravo Fleet graphics tools.
+
+   Every tool used to carry its own copy of this: ~100 identical rules each,
+   six times over, so restyling the suite meant six synchronised edits. The
+   copies had also drifted apart in ways nobody chose — panel widths of
+   330/340/352px, nav padding of 12/13/14px, two spellings of the same
+   summary padding — and, more usefully, two of the variants were fixes that
+   had only ever reached some of the tools:
+
+     * select had max-width:100% everywhere except seal-tool, where a long
+       option could push the panel wider than its column;
+     * input[type=checkbox] had flex:none only in patch/mission, without
+       which the box is squashed by a long label in a flex row;
+     * input[type=color] had -webkit-appearance:none only in three tools,
+       which is what stops Safari drawing its own chrome around the swatch.
+
+   The canonical value here is the best of each, so adopting this file fixes
+   those three everywhere rather than freezing the drift.
+
+   For drift that is purely cosmetic (padding, widths) the canonical value is
+   simply the majority one, so adopting this file moves the odd tool out into
+   line rather than restyling five tools to match one. The exceptions are the
+   three functional fixes listed above, which win on merit regardless of how
+   many tools happened to carry them.
+
+   What stays per-tool: `header .mark` (each tool's own identity mark), the
+   `#stage` backdrop and its light/dark variants (seal draws a grid, plaque
+   pads, header sizes an uploaded image), `.filebox`, and anything a tool
+   genuinely does differently. Panel width is a token — set --panel-w in the
+   tool's own <style> to override the 330px default. */
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+    background:
+      radial-gradient(1200px 700px at 75% -10%, rgba(59,152,168,.07), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, rgba(216,166,58,.05), transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    font:13px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+header{
+    display:flex;align-items:center;gap:16px;
+    padding:10px 18px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, #0c1320, #0a101b);
+    flex:none;
+  }
+header h1{
+    font-family:"Sealstile",ui-monospace,monospace;
+    font-size:17px;letter-spacing:.28em;color:var(--bolt-gold);
+    font-weight:normal;text-transform:uppercase;white-space:nowrap;
+  }
+header .sub{color:var(--ink-dim);letter-spacing:.12em;font-size:11px;text-transform:uppercase}
+header .spacer{flex:1}
+header a.navlink{
+    color:var(--ink-dim);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    text-decoration:none;border:1px solid var(--line-bright);border-radius:2px;padding:7px 14px;
+    background:var(--panel2);white-space:nowrap;
+  }
+header a.navlink:hover{border-color:var(--bolt-gold);color:var(--bolt-gold)}
+main{flex:1;display:flex;min-height:0}
+#panel{
+    width:var(--panel-w,330px);flex:none;overflow-y:auto;
+    background:var(--panel);border-right:1px solid var(--line);
+    scrollbar-width:thin; scrollbar-color:var(--line-bright) transparent;
+  }
+section.plain{border-bottom:1px solid var(--line);padding:14px 16px 16px}
+details.acc{border-bottom:1px solid var(--line)}
+details.acc > summary{
+    cursor:pointer;user-select:none;list-style:none;
+    padding:14px 16px 14px;
+    font-family:"Sealstile",ui-monospace,monospace;font-weight:normal;
+    font-size:11px;letter-spacing:.3em;color:var(--bf-blue);text-transform:uppercase;
+    display:flex;align-items:center;gap:8px;
+  }
+details.acc > summary::-webkit-details-marker{display:none}
+details.acc > summary::before{
+    content:"▸";flex:none;font-size:9px;color:var(--ink-dim);letter-spacing:0;
+    display:inline-block;transition:transform .15s ease;
+  }
+details.acc[open] > summary::before{transform:rotate(90deg)}
+details.acc > summary::after{content:"";flex:1;height:1px;background:var(--line-bright)}
+details.acc > .acc-body{padding:0 16px 16px}
+.row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.row label{flex:1;color:var(--ink-dim);letter-spacing:.05em;font-size:12px}
+.row .val{width:44px;text-align:right;color:var(--ink);font-size:11px}
+.hint{color:var(--ink-dim);font-size:11px;margin-top:6px;line-height:1.45}
+.btnrow{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.btn{
+    background:var(--panel2);border:1px solid var(--line-bright);color:var(--ink);
+    padding:7px 14px;cursor:pointer;font:inherit;letter-spacing:.08em;text-transform:uppercase;
+    font-size:11px; border-radius:2px; white-space:nowrap;
+  }
+.btn:hover{border-color:var(--bolt-gold);color:var(--bolt-gold)}
+.btn.primary{border-color:var(--bolt-gold);color:var(--bolt-gold)}
+.btn.primary:hover{background:var(--bolt-gold);color:#14100a}
+.btn.danger{border-color:var(--danger);color:var(--danger)}
+.btn.danger:hover{background:var(--danger);color:#fff}
+input[type=range]{
+    flex:1.4;appearance:none;height:2px;background:var(--line-bright);border-radius:1px;outline:none;
+  }
+input[type=range]::-webkit-slider-thumb{
+    appearance:none;width:12px;height:12px;border-radius:50%;
+    background:var(--bolt-gold);border:2px solid #0a0f18;cursor:pointer;
+  }
+input[type=checkbox]{accent-color:var(--bolt-gold);width:14px;height:14px;cursor:pointer;flex:none}
+input[type=text]{
+    width:100%;background:#0a111c;border:1px solid var(--line-bright);color:var(--ink);
+    font:inherit;padding:7px 9px;letter-spacing:.05em;border-radius:2px;margin-bottom:8px;
+  }
+input[type=text]:focus{outline:none;border-color:var(--bf-blue)}
+select{
+    background:var(--panel2);border:1px solid var(--line-bright);color:var(--ink);
+    font:inherit;font-size:11px;padding:6px 8px;border-radius:2px;max-width:100%;
+  }
+input[type=color]{
+    width:30px;height:22px;flex:none;padding:0;border:1px solid var(--line-bright);
+    border-radius:2px;background:none;cursor:pointer;
+  }
+input[type=color]::-webkit-color-swatch{border:none;border-radius:1px}
+input[type=color]::-webkit-color-swatch-wrapper{padding:2px}
+.stagebg{
+    position:absolute;top:14px;right:14px;z-index:2;
+    display:flex;background:var(--panel2);border:1px solid var(--line-bright);
+    border-radius:2px;overflow:hidden;
+  }
+.stagebg button{
+    background:none;border:none;color:var(--ink-dim);cursor:pointer;
+    font:inherit;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:7px 14px;
+  }
+.stagebg button + button{border-left:1px solid var(--line-bright)}
+.stagebg button.active{background:var(--bolt-gold);color:#14100a}
+.stagebg button:hover{color:var(--ink)}
+.stagehint{
+    position:absolute;bottom:12px;left:0;right:0;text-align:center;z-index:1;
+    color:rgba(140,155,175,.7);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    pointer-events:none;
+  }
+.credit{
+    padding:14px 16px 18px;text-align:center;color:var(--ink-dim);
+    font-size:10px;letter-spacing:.08em;line-height:1.8;text-transform:uppercase;
+  }
+.credit a{color:var(--bf-blue);text-decoration:none;border-bottom:1px solid transparent}
+.credit a:hover{color:var(--ink);border-bottom-color:var(--bf-blue)}
+.credit b{color:var(--ink);font-weight:normal}
+:root{
+    --bg:#070b12;
+    --panel:#0d1420;
+    --panel2:#111a29;
+    --line:#1f2a3a;
+    --line-bright:#2c3b52;
+    --ink:#c7d3e0;
+    --ink-dim:#6d7d92;
+    --bolt-gold:#d3a92c;
+    --bf-blue:#2864a8;
+    --danger:#b8503f;
+  }
+
+/* Shown only with JavaScript off. Every tool renders and exports client-side,
+   so without JS there is nothing to show but this. */
+.noscript{
+  margin:0;padding:18px 20px;background:var(--panel2);
+  border-bottom:1px solid var(--line-bright);color:var(--ink);
+  font-size:13px;line-height:1.6;text-align:center;
+}
+.noscript b{color:var(--bolt-gold)}

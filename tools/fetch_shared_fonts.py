@@ -1,30 +1,28 @@
 #!/usr/bin/env python3
-"""Fetch/derive the loose font files used by the banner, plaque and mission tools.
+"""Download the loose webfonts every tool loads by URL.
 
     python3 tools/fetch_shared_fonts.py
 
-Unlike the seal/header tools (single-file, fonts embedded as base64), these
-tools load fonts as plain files. This script:
+Downloads every loose webfont (all SIL OFL 1.1) from Google Fonts into
+fonts/webfonts/, cached so rebuilds work offline, and checks that
+fonts/sealstile.woff2 is present.
 
-  * extracts fonts/sealstile.woff2 from the FONT_B64 constant already embedded
-    in seal-tool.html (no fonttools venv needed; embed_assets.py --font also
-    writes this file whenever the font is regenerated), and
-  * downloads every loose webfont (all SIL OFL 1.1) from Google Fonts into
-    fonts/webfonts/, cached so rebuilds work offline.
+Sealstile used to be extracted here out of seal-tool.html's FONT_B64 constant.
+Nothing is base64-embedded any more, and the built woff2 is committed, so this
+only verifies the file exists — rebuild it with `embed_assets.py --font`
+(which needs a fonttools venv) if it is ever missing.
 
 This is the single source of truth for fonts/webfonts/. embed_header_assets.py
-downloads four of the same faces on its own (it needs them as base64, not as
-files) and caches into the same directory, so the two agree by construction.
+downloads four of the same faces on its own and caches into the same
+directory, so the two agree by construction.
 
 Stdlib only.
 """
-import base64
 import re
 import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SEAL = ROOT / "seal-tool.html"
 FONTS = ROOT / "fonts"
 CACHE = FONTS / "webfonts"
 
@@ -65,10 +63,11 @@ def latin_woff2(spec: str) -> bytes:
 
 
 def main():
-    b64 = re.search(r'const FONT_B64 = "([^"]*)"', SEAL.read_text()).group(1)
     seal = FONTS / "sealstile.woff2"
-    seal.write_bytes(base64.b64decode(b64))
-    print("wrote", seal)
+    if seal.exists():
+        print(f"present {seal} ({seal.stat().st_size} bytes)")
+    else:
+        print(f"MISSING {seal} -- rebuild with: python3 tools/embed_assets.py --font")
 
     CACHE.mkdir(parents=True, exist_ok=True)
     for stem, spec in WEBFONTS.items():
