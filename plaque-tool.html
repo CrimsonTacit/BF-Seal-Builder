@@ -242,9 +242,16 @@
         <div class="row"><label>Show quote</label><input type="checkbox" data-k="quoteOn"></div>
         <label class="fld">Quote (line breaks respected)</label>
         <textarea data-k="quote" rows="3" spellcheck="false"></textarea>
+        <div class="row"><label>Add quote marks</label><input type="checkbox" data-k="quoteMarks"></div>
+        <div class="row"><label>Quote size</label><input type="range" min="0.5" max="1.8" step="0.05" data-k="quoteScale"><span class="val" data-val="quoteScale"></span></div>
+        <div class="row"><label>Up / down</label><input type="range" min="-450" max="100" step="5" data-k="quoteDy"><span class="val" data-val="quoteDy"></span></div>
         <label class="fld">Attribution</label>
         <input type="text" data-k="speaker" maxlength="60" spellcheck="false">
-        <div class="row"><label>Add quote marks</label><input type="checkbox" data-k="quoteMarks"></div>
+        <div class="row"><label>Attrib. size</label><input type="range" min="0.5" max="1.8" step="0.05" data-k="speakerScale"><span class="val" data-val="speakerScale"></span></div>
+        <div class="row"><label>Up / down</label><input type="range" min="-300" max="300" step="5" data-k="speakerDy"><span class="val" data-val="speakerDy"></span></div>
+        <div class="row"><label>Left / right</label><input type="range" min="-1400" max="80" step="5" data-k="speakerDx"><span class="val" data-val="speakerDx"></span></div>
+        <div class="btnrow"><button class="btn" id="quoteReset">Reset quote layout</button></div>
+        <div class="hint">The quote block hangs from its last baseline and grows upward; the attribution rides that baseline and moves relative to it.</div>
       </div>
     </details>
 
@@ -322,13 +329,13 @@ const ERAS = {
     squeeze: 0.55,
     rows: {
       cornerLeftCX: 650, cornerRightCX: 1709,
-      cornerSize: 80, cornerBase1: 338, cornerBase2: 416, cornerMaxW: 700,
+      cornerSize: 80, cornerBase1: 338, cornerBase2: 416, cornerMaxW: 760,
       nameCX: 1174, nameBase: 709, nameSize: 193, nameMaxW: 1560,
-      regCX: 1152, regBase: 819, regSize: 80, regMaxW: 1500,
+      regCX: 1152, regBase: 819, regSize: 80, regMaxW: 1700,
       colTop: 891, colHeadSize: 30, colNameSize: 25, colLead: 41, colPitch: 31.5,
       colGap: 30, colLeft: 300, colRight: 2050,
       quoteLast: 1503, quoteSize: 61, quoteLead: 43, quoteMaxW: 1400,
-      speakerRight: 2057,
+      speakerRight: 2057, speakerMaxW: 1300,
     },
   },
 };
@@ -368,7 +375,9 @@ const DEFAULTS = {
   badgeOn: true, frameOn: true, colsOn: true,
   quoteOn: true, quoteMarks: true,
   quote: "Astra inclinant, sed non obligant.",
+  quoteDy: 0, quoteScale: 1,
   speaker: "The Homeric Hymns",
+  speakerDx: 0, speakerDy: 0, speakerScale: 1,
   columns: [
     { h:"STARFLEET COMMAND", n:"Teylas Ramar\nElizabeth Wolf\nVictor Murdock\nRobert Chadwick\nValren Arelwynn\nAdrian Mormar\nLucas Duncan\nAubrey Seagraves\nLiam Dahlgren" },
     { h:"STARFLEET OPERATIONS", n:"Dan Taylor\nChristopher A. Pike\nThomas Wolfe\nBarak Aubrey\nReytan Grax\nOliver Tidwell\nPatrick Brice\nGene Han\nMichael Crow" },
@@ -380,12 +389,46 @@ const DEFAULTS = {
 let S = JSON.parse(JSON.stringify(DEFAULTS));
 
 /* ================= helpers ================= */
-const measCtx = document.createElement("canvas").getContext("2d");
-function measure(text, fs, family, weight, style, track){
-  measCtx.font = `${style||"normal"} ${weight||400} ${fs}px "${family}"`;
-  return measCtx.measureText(text).width + Math.max(0, text.length-1)*(track||0);
+/* ---- text metrics ----
+   Measured with a live SVG <text> node rather than a canvas context. The
+   plaque is laid out in SVG, and the two text engines do not always agree —
+   Safari's canvas runs Sealstile wide enough to trip the registry line's fit
+   and shrink it, which is not a thing the SVG it actually draws does. Widths
+   are cached at a reference size and scaled, so a keystroke costs one layout
+   per new string instead of one per line. */
+const MEAS_REF = 100;
+const measSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+measSVG.setAttribute("aria-hidden", "true");
+measSVG.setAttribute("style", "position:absolute;left:-9999px;top:0;width:10px;height:10px;overflow:hidden");
+const measNode = document.createElementNS("http://www.w3.org/2000/svg", "text");
+measSVG.appendChild(measNode);
+document.body.appendChild(measSVG);
+const measCache = new Map();
+function measureRaw(text, family, weight, style){
+  const key = family + "|" + weight + "|" + style + "|" + text;
+  let w = measCache.get(key);
+  if(w === undefined){
+    measNode.setAttribute("font-family", family);
+    measNode.setAttribute("font-weight", weight || 400);
+    measNode.setAttribute("font-style", style || "normal");
+    measNode.setAttribute("font-size", MEAS_REF);
+    measNode.textContent = text;
+    w = measNode.getComputedTextLength();
+    measCache.set(key, w);
+  }
+  return w;
 }
-const seal = (t,fs,track) => measure(t, fs, "Sealstile", 400, "normal", track);
+/* letter-spacing lands after every glyph, the trailing one included — that is
+   what the browser advances, so the fit has to count the same way. */
+function measure(text, fs, family, weight, style, track){
+  return measureRaw(text, family, weight, style) * (fs/MEAS_REF) + text.length*(track||0);
+}
+
+/* Sealstile draws inside a 0.55 horizontal squeeze, which jams its glyphs
+   together; every Sealstile line carries this much tracking as a fraction of
+   its font size, measured pre-squeeze, so the visual gap is TRACK × squeeze em. */
+const TRACK = 0.062;
+const seal = (t, fs) => measure(t, fs, "Sealstile", 400, "normal", fs*TRACK);
 
 function twoLines(text){
   const t = (text||"").trim();
@@ -478,17 +521,24 @@ function buildSVG(res){
   const HS = E.squeeze;
   function sealText(str, cx, base, fs, maxW, anchor){
     if(!str) return "";
-    const w = seal(str, fs, 0) * HS;
-    if(maxW && w > maxW) fs *= maxW/w;
-    return `<text transform="translate(${cx} ${base}) scale(${HS} 1)" x="0" y="0"
-      text-anchor="${anchor||"middle"}" font-family="Sealstile" font-size="${fs.toFixed(2)}">${esc(str)}</text>`;
+    if(maxW){
+      const w = seal(str, fs) * HS;
+      if(w > maxW) fs *= maxW/w;
+    }
+    const ls = fs * TRACK;
+    /* the trailing letter-space is part of the advance, so a centred line sits
+       half a space left of where it reads — nudge it back into place */
+    const x = anchor === "end" ? ls : anchor === "start" ? 0 : ls/2;
+    return `<text transform="translate(${cx} ${base}) scale(${HS} 1)" x="${x.toFixed(2)}" y="0"
+      text-anchor="${anchor||"middle"}" font-family="Sealstile" font-size="${fs.toFixed(2)}"
+      letter-spacing="${ls.toFixed(2)}">${esc(str)}</text>`;
   }
 
   /* ---------- corner blocks ---------- */
   function cornerBlock(lines, cx){
     if(!lines.length) return "";
     let fs = R.cornerSize;
-    const widest = Math.max(...lines.map(l => seal(l.toUpperCase(), fs, 0) * HS));
+    const widest = Math.max(...lines.map(l => seal(l.toUpperCase(), fs) * HS));
     if(widest > R.cornerMaxW) fs *= R.cornerMaxW/widest;
     const bases = lines.length === 1 ? [R.cornerBase2] : [R.cornerBase1, R.cornerBase2];
     return lines.map((l,i) => sealText(l.toUpperCase(), cx, bases[i], fs)).join("");
@@ -516,12 +566,12 @@ function buildSVG(res){
     let headFs = R.colHeadSize, nameFs2 = R.colNameSize;
     let wHead = 0, wName = 0;
     S.columns.forEach(c => {
-      wHead = Math.max(wHead, seal((c.h||"").toUpperCase(), headFs, 0) * HS);
+      wHead = Math.max(wHead, seal((c.h||"").toUpperCase(), headFs) * HS);
       (c.n||"").split("\n").forEach(line => {
         const t = line.trim();
         if(!t) return;
-        if(t.startsWith("##")) wHead = Math.max(wHead, seal(t.slice(2).trim().toUpperCase(), headFs, 0) * HS);
-        else wName = Math.max(wName, seal(t, nameFs2, 0) * HS);
+        if(t.startsWith("##")) wHead = Math.max(wHead, seal(t.slice(2).trim().toUpperCase(), headFs) * HS);
+        else wName = Math.max(wName, seal(t, nameFs2) * HS);
       });
     });
     if(wHead > avail) headFs *= avail/wHead;
@@ -549,27 +599,35 @@ function buildSVG(res){
   }
 
   /* ---------- quote ---------- */
+  /* Bottom-anchored on the original's last-line baseline, so the block grows
+     upward and a long roster pushes it no further down. Quote and attribution
+     each carry their own offset and size multiplier: the original's rhythm is
+     tuned for a two-line quote, and a short one wants the room redistributed. */
+  const quoteBase = R.quoteLast + S.quoteDy;
   let quoteSVG = "";
   if(S.quoteOn && (S.quote||"").trim()){
     const lines = S.quote.split("\n").map(s=>s.trim()).filter(Boolean);
-    let qfs = R.quoteSize;
+    let qfs = R.quoteSize * S.quoteScale;
     const widest = Math.max(...lines.map(l => measure(l, qfs, "EB Garamond", 500, "italic", 0)));
     if(widest > R.quoteMaxW) qfs *= R.quoteMaxW/widest;
     const lead = R.quoteLead * (qfs/R.quoteSize);
-    /* bottom-anchored on the original's last-line baseline, so the block
-       grows upward and long rosters push it no further down */
-    const last = R.quoteLast;
-    const top = last - (lines.length-1)*lead;
+    const top = quoteBase - (lines.length-1)*lead;
     lines.forEach((l, i) => {
       const t = S.quoteMarks ? (i===0 ? "“"+l : l) + (i===lines.length-1 ? "”" : "") : l;
       quoteSVG += `<text x="${R.nameCX}" y="${(top + i*lead).toFixed(1)}" text-anchor="middle"
         font-family="EB Garamond" font-weight="500" font-style="italic" font-size="${qfs.toFixed(1)}">${esc(t)}</text>`;
     });
-    /* the attribution shares the last line's baseline, as on the original */
-    if((S.speaker||"").trim()){
-      quoteSVG += `<text x="${R.speakerRight}" y="${last}" text-anchor="end"
-        font-family="EB Garamond" font-weight="500" font-style="italic" font-size="${(qfs*.92).toFixed(1)}">${esc("— "+S.speaker)}</text>`;
-    }
+  }
+  /* the attribution rides on the quote's last baseline, as on the original,
+     and is nudged off it from there rather than being welded to it */
+  const speakerBase = quoteBase + S.speakerDy;
+  if(S.quoteOn && (S.speaker||"").trim()){
+    const txt = "— " + S.speaker;
+    let sfs = R.quoteSize * .92 * S.speakerScale;
+    const w = measure(txt, sfs, "EB Garamond", 500, "italic", 0);
+    if(w > R.speakerMaxW) sfs *= R.speakerMaxW/w;
+    quoteSVG += `<text x="${(R.speakerRight + S.speakerDx).toFixed(1)}" y="${speakerBase.toFixed(1)}" text-anchor="end"
+      font-family="EB Garamond" font-weight="500" font-style="italic" font-size="${sfs.toFixed(1)}">${esc(txt)}</text>`;
   }
 
   const pr = rampTable(plateRamp()), tr = rampTable(trimRamp());
@@ -578,7 +636,7 @@ function buildSVG(res){
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
 <defs>
 <style>${fontCSS}</style>
-<linearGradient id="gradInk" x1="0" y1="${R.cornerBase1-90}" x2="0" y2="${R.quoteLast}" gradientUnits="userSpaceOnUse">
+<linearGradient id="gradInk" x1="0" y1="${R.cornerBase1-90}" x2="0" y2="${Math.max(R.quoteLast, quoteBase, speakerBase)}" gradientUnits="userSpaceOnUse">
   <stop offset="0" stop-color="${Metal.ltn(ink,.16)}"/>
   <stop offset=".5" stop-color="${ink}"/>
   <stop offset="1" stop-color="${Metal.dkn(ink,.12)}"/>
@@ -759,6 +817,10 @@ $("stageBg").addEventListener("click", e=>{
   $("stage").className = b.dataset.mode;
   document.querySelectorAll("#stageBg button").forEach(x=>x.classList.toggle("active", x===b));
 });
+$("quoteReset").addEventListener("click", ()=>{
+  ["quoteDy","quoteScale","speakerDx","speakerDy","speakerScale"].forEach(k => S[k] = DEFAULTS[k]);
+  syncUI(); render(); persist();
+});
 $("resetBtn").addEventListener("click", ()=>{
   S = JSON.parse(JSON.stringify(DEFAULTS));
   buildColumns(); syncUI(); render(); persist();
@@ -782,7 +844,7 @@ function persist(){
     RAMPS = await (await fetch((ERAS[S.era]||ERAS["2399"]).dir + "ramps.json")).json();
   }catch(e){ console.error("colour ramps failed to load", e); }
   buildSwatches(); render();
-  if(document.fonts && document.fonts.ready) document.fonts.ready.then(render);
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ measCache.clear(); render(); });
 })();
 </script>
 </body>
