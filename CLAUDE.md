@@ -1,25 +1,26 @@
 # Bravo Fleet Graphics Tools
 
-Browser apps for the user's Bravo Fleet continuity (Star Trek fan fleet), replacing Photoshop workflows. No build step and no dependencies — serve the folder (`.claude/launch.json` runs `python3 -m http.server`; the `seal-builder-auto` entry takes any free port when 8517/8518 are busy). **Deployed on GitHub Pages**, so relative-URL assets are fine. Five pages:
+Browser apps for the user's Bravo Fleet continuity (Star Trek fan fleet), replacing Photoshop workflows. No build step and no dependencies — serve the folder (`.claude/launch.json` runs `python3 -m http.server`; the `seal-builder-auto` entry takes any free port when 8517/8518 are busy). **Deployed on GitHub Pages**, so relative-URL assets are fine. Six pages:
 
-- [index.html](index.html) — static landing page linking to the four tools (plain CSS, no embedded assets; card "marks" mimic each tool's look).
+- [index.html](index.html) — static landing page linking to the five tools (plain CSS, no embedded assets; card "marks" mimic each tool's look).
 - [seal-tool.html](seal-tool.html) — **Seal Builder**: round vessel/station/org seals.
 - [header-tool.html](header-tool.html) — **Header Builder**: metallic wordmark overlays for BFMS command pages.
 - [banner-tool.html](banner-tool.html) — **Banner Builder**: ship/station banners (fixed design, swappable TF delta).
 - [plaque-tool.html](plaque-tool.html) — **Plaque Builder**: dedication plaques, built from the original PSD artwork.
+- [patch-tool.html](patch-tool.html) — **Patch Builder**: triangular patches, both the wide-bordered command/facility patch and the rounded development-project patch.
 
-Reference art lives in `examples/`: seals (`*Seal.png`, `USS*.png`), `Examples/Headers/ColumbiaTitle.png`, `examples/Banners/` (+ `BF-banners copy.psd`), `examples/Plaques/PallasPlaque.png` (+ `NewPlaqueDesign copy.psd`). **`examples/` is gitignored** — the source PSDs are local-only, so anything derived from them (the plaque artwork below) must be committed as the derived asset. Every tool carries a `© Bravo Fleet` credit footer (seal design by CrimsonTacit, original Columbia header by JustSlide) and cross-links to the others and the landing page.
+Reference art lives in `examples/`: seals (`*Seal.png`, `USS*.png`), `Examples/Headers/ColumbiaTitle.png`, `examples/Banners/` (+ `BF-banners copy.psd`), `examples/Plaques/PallasPlaque.png` (+ `NewPlaqueDesign copy.psd`), `examples/Triangle Patch/` (+ `AcademyPatch copy.psd`) and `examples/Project Patch/` (canon Memory-Alpha art, no PSD). **`examples/` is gitignored** — the source PSDs are local-only, so anything derived from them (the plaque artwork below) must be committed as the derived asset. Every tool carries a `© Bravo Fleet` credit footer (seal design by CrimsonTacit, original Columbia header by JustSlide) and cross-links to the others and the landing page.
 
 ## Single-file vs. multi-file
 
-The seal and header tools stay **single-file** (fonts and emblems embedded as base64) — they work from `file://` and are easy to hand around. The banner and plaque tools **load assets by relative URL** instead, because their artwork (logo PNGs, the 2350×1700 plaque masters) would bloat a single file for no gain now that the suite is hosted. Both are legitimate; pick per tool, and prefer single-file only when it costs nothing.
+The seal and header tools stay **single-file** (fonts and emblems embedded as base64) — they work from `file://` and are easy to hand around. The banner, plaque and patch tools **load assets by relative URL** instead, because their artwork (logo PNGs, the 2350×1700 plaque masters) would bloat a single file for no gain now that the suite is hosted. Both are legitimate; pick per tool, and prefer single-file only when it costs nothing.
 
 **PNG export is the product**; SVG export is a nice-to-have. An SVG loaded into an `<img>` for canvas rasterizing cannot fetch external resources, so the export path inlines every font and image as a data URI first — see `buildSVG(res)` in the banner/plaque tools, fed by `exportResources()`.
 
-## Shared code (`shared/`, used only by the banner and plaque tools)
+## Shared code (`shared/`, used by the banner, plaque and patch tools)
 
 - [shared/metal.js](shared/metal.js) — `Metal.*`: the `MATERIALS` ramps, colour math (`hexRgb`/`mix`/`ltn`/`dkn`/`rampFor`/`matInfo`), `gradientDef`, and the two relief filters — `bevelFilter` (raised: blur of SourceAlpha → `feSpecularLighting` → drop shadow) and `engraveFilter` (recessed: inverted offset alpha as an inner shadow + negative-surfaceScale specular; pass `flatten` to recolour artwork to the cut colour first). A hand-kept copy of header-tool.html's recipe, not a refactor of it.
-- [shared/export.js](shared/export.js) — `ExportKit.*`: memoized `fetchDataURI`, `fontFaceRule`, `svgToCanvas`, and the download helpers.
+- [shared/export.js](shared/export.js) — `ExportKit.*`: memoized `fetchDataURI`, `fontFaceRule`, `svgToCanvas`, and the download helpers. (The patch tool loads only this one — it draws flat colour, no metal.)
 
 ## Seal Builder architecture (all inside seal-tool.html)
 
@@ -91,6 +92,20 @@ Dedication plaques, 2350×1700 (reference: `examples/Plaques/PallasPlaque.png`, 
 - **Quote block**: the quote hangs from `quoteLast` and grows upward, so a long roster never pushes it down. `quoteDy`/`quoteScale` move and size it; the attribution rides the quote's last baseline (`quoteBase + speakerDy`, right-anchored at `speakerRight + speakerDx`) with its own `speakerScale`, so a short quote can be enlarged and its attribution dropped clear instead of sharing one cramped line. "Reset quote layout" returns just those five keys to `DEFAULTS`. The `gradInk` ramp ends at the lowest of `quoteLast`/`quoteBase`/`speakerBase` so it follows the block down.
 - **Era registry**: `ERAS` holds each era's artwork paths, `squeeze`, and `rows` metrics; `S.era` selects one and the dropdown is already wired, so a new era is a new entry plus its extracted art.
 - **Roster columns**: `S.columns` is an editable array of `{h, n}` (heading + one name per line); columns spread evenly across `colLeft…colRight` and shrink their type to fit. A name line starting with `##` renders as a second heading partway down a column (that is how the reference stacks "Admiralty Board" under "Chiefs of Staff").
+
+## Patch Builder (patch-tool.html)
+
+Triangular patches, one tool covering both families (references: `examples/Triangle Patch/BravoFleetAcademy.png` + `Telescope.png`, source `AcademyPatch copy.psd`; `examples/Project Patch/*.webp`, canon art with no PSD). State `S` in localStorage `patchbuilder-v1`.
+
+- **One tool, two types, on purpose.** The two families differ only in furniture — border thickness, corner rounding, and whether the type runs along the edges or stacks inside — so they share one geometry engine, one canvas, one colour system and one export path. `LAYOUT.triangle` / `LAYOUT.project` are the two sets of defaults; the type switch applies a layout's shape, ring widths and text-slot enables (and opens the panel section that layout puts the text in, closing the other) but **keeps every typed line and every colour**, because switching type is changing furniture, not starting a new document. Nothing stops a triangle patch from carrying centre lines or a project patch from carrying edge lines — the slots are independent.
+- **Same equilateral triangle for both**, centred with equal margins: canvas 1728×1514, base 1600, margin 64. The source art is equilateral in its straight runs (the PSD's shapes are Photoshop 3-sided polygons at exactly √3/2 aspect; the canon project patches measure the same to within 0.5 %), so holding both to one shape costs nothing and makes the border model trivial.
+- **The triangle is carried as three offset lines, not three points** (`triVerts(dS, dB)`). Parallel offsets preserve edge direction, so every inset triangle is still equilateral and every border ring keeps constant width. Side and base insets are independent — that is what lets the band under the bottom line run deeper than the sides, which is what the PSD does (side band 119.6 px vs base band 143.8 px on a 1645-wide triangle).
+- **Border = a stack of up to four rings**, painted outside-in as filled paths rather than strokes, so nesting and corner rounding come out right without fighting SVG's centred stroke alignment. `botExtra` sinks the **widest enabled ring** at the base only; that reproduces the PSD's wider bottom band without moving the rails on the sides. The innermost region is the field.
+- **Corner radius** rounds all three corners (`triPath`); a 60° corner of radius r eats r√3 of each adjacent edge, and inner rings get `corner - sideInset` so the arcs stay parallel. Pointy is r=0. The canon project patches measure r ≈ 0.13 × triangle height (≈180 here); the PSD patches are pointy.
+- **Edge type** runs on the edge's inward normal at a given inset, tops facing **outward**: −60° on the left (bottom corner up to the apex) and +60° on the right (apex down to the bottom corner), matching how the PSD sets its two path-text layers. The bottom line is plain horizontal with its tops facing inward. `inset` is the baseline's distance in from the *outer* edge — the PSD rescales to 90/84/67, but the shipped defaults sit the type slightly further out at 75/75/60; `slide` shifts a line along its own edge. Every line shrinks to the run available at its own depth.
+- **Type is Sealstile throughout.** The PSD sets all three lines in Microstyle Bold Extended at 50 px unsqueezed (cap 0.62 em) — unlike the plaque, there is no horizontal squeeze here — so matched cap height puts them at ~42 px of Sealstile. The canon project patches are the awkward case: they use a *condensed* bold face, and Sealstile is extended, so the centre lines cannot match both the reference's cap heights and its widths. `LAYOUT.project` matches the reference's line **widths** instead; the hierarchy reads the same and the caps sit lower. Bundling one condensed OFL face is the open option if that stops being good enough.
+- **Field artwork**: an uploaded image cover-fitted with zoom/x/y (module-level `IMG`, never persisted, like the other tools), a seeded starfield until one is added, and an optional emblem overlay from `assets/logos/` — all clipped to the field triangle.
+- `PRESETS` recolour the four rings, the field and the type in one click, grouped Official Bravo Fleet / Development Project / Department Inspired; ring widths and text are left alone. Text-measuring uses the same live-SVG `measure()` trick as the plaque tool, cleared on `document.fonts.ready`.
 
 ## Source assets (PSDs)
 
