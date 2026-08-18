@@ -664,24 +664,71 @@ const measNode = document.createElementNS("http://www.w3.org/2000/svg", "text");
 measSVG.appendChild(measNode);
 document.body.appendChild(measSVG);
 const measCache = new Map();
-function measureRaw(text, fk){
-  const key = fk + " " + text;
-  let w = measCache.get(key);
-  if(w === undefined){
-    const F = fontOf(fk);
-    measNode.setAttribute("font-family", F.fam);
-    measNode.setAttribute("font-weight", F.w);
-    measNode.setAttribute("font-style", F.st);
-    measNode.setAttribute("font-size", MEAS_REF);
-    measNode.textContent = text;
-    w = measNode.getComputedTextLength();
-    measCache.set(key, w);
+
+/* A webfont declared in CSS is not fetched until something actually uses it, so
+   the first measurement after picking a new font can land on *fallback* metrics
+   — and caching that poisons the fit for the rest of the session (boot's
+   document.fonts.ready has long since fired by then). So: measure freely once a
+   face is ready, and for one that isn't, kick off its load, skip the cache, and
+   re-render when it arrives. That is also why every font used to report the same
+   ink extent — they were all being measured as the fallback. */
+const boxCache = new Map();
+const faceOK = new Set(), facePending = new Set();
+function faceReady(F){
+  if(faceOK.has(F.k)) return true;
+  if(!document.fonts) return true;
+  const spec = `${F.st === "italic" ? "italic " : ""}${F.w} ${MEAS_REF}px "${F.fam}"`;
+  if(document.fonts.check(spec)){ faceOK.add(F.k); return true; }
+  if(!facePending.has(F.k)){
+    facePending.add(F.k);
+    document.fonts.load(spec).then(() => {
+      facePending.delete(F.k); faceOK.add(F.k);
+      measCache.clear(); boxCache.clear(); render();
+    }).catch(() => { facePending.delete(F.k); });
   }
+  return false;
+}
+function applyFace(F){
+  measNode.setAttribute("font-family", F.fam);
+  measNode.setAttribute("font-weight", F.w);
+  measNode.setAttribute("font-style", F.st);
+  measNode.setAttribute("font-size", MEAS_REF);
+}
+function measureRaw(text, fk){
+  const F = fontOf(fk), ok = faceReady(F), key = fk + " " + text;
+  if(ok){
+    const c = measCache.get(key);
+    if(c !== undefined) return c;
+  }
+  applyFace(F);
+  measNode.textContent = text;
+  const w = measNode.getComputedTextLength();
+  if(ok) measCache.set(key, w);
   return w;
 }
 /* letter-spacing lands after the last glyph too, so the fit counts it the way
    the browser advances it. Width is pre-squeeze. */
 const measure = (t, fk, fs, ls) => measureRaw(t, fk)*(fs/MEAS_REF) + t.length*(ls||0);
+
+/* How far a font's ink actually reaches above and below the baseline, per em.
+   The metal ramp has to span the real ink or its ends clamp to a flat stop, and
+   a fixed cap-height guess can't do that across thirteen faces — Sealstile's
+   caps sit at ~0.72 em but its glyph box reaches ~0.99, and Playfair's
+   ascenders go further still. Measured off the same hidden node as the widths,
+   so it is the engine's own answer rather than a table to keep in sync. */
+function inkExtent(fk){
+  const F = fontOf(fk), ok = faceReady(F);
+  if(ok){
+    const c = boxCache.get(fk);
+    if(c) return c;
+  }
+  applyFace(F);
+  measNode.textContent = "HXAdfhklbgjpqy";   /* caps, ascenders, descenders */
+  const b = measNode.getBBox();
+  const m = { up: Math.max(0.5, -b.y/MEAS_REF), down: Math.max(0.05, (b.y + b.height)/MEAS_REF) };
+  if(ok) boxCache.set(fk, m);
+  return m;
+}
 
 /* ================= row layout ================= */
 const rowGet = (k, p) => S[k+"_"+p];
@@ -719,9 +766,10 @@ function rowLayout(k){
   const lastBase = R(k).anchor === "top" ? yEdge + gap*(n-1) : H - yEdge;
   lines.forEach((L,i) => { L.base = lastBase - gap*(n-1-i); });
 
+  const ink = inkExtent(fk);
   return { lines, x, anchor, sq,
-           top: lines[0].base - fs*0.82,
-           bot: lines[n-1].base + fs*0.10 };
+           top: lines[0].base - fs*ink.up,
+           bot: lines[n-1].base + fs*ink.down };
 }
 const R = k => ROWS.find(r => r.k === k);
 
@@ -961,19 +1009,18 @@ function buildSVG(res){
     if(!L) continue;
 
     const mode = rowGet(k,"fill");
-    let fill = rowGet(k,"col");
+    let stops = null;
     if(mode === "metal"){
       const mk = rowGet(k,"mat") === "custom" ? rowGet(k,"matCustom") : rowGet(k,"mat");
-      defs += Metal.gradientDef("g_"+k, Metal.matInfo(mk).stops, L.top, L.bot);
-      fill = `url(#g_${k})`;
+      stops = Metal.matInfo(mk).stops;
     }else if(mode === "grad"){
-      defs += Metal.gradientDef("g_"+k, [[0, rowGet(k,"col")],[1, rowGet(k,"col2")]], L.top, L.bot);
-      fill = `url(#g_${k})`;
+      stops = [[0, rowGet(k,"col")],[1, rowGet(k,"col2")]];
     }
     /* an engraved cut has no colour of its own — it takes a darkened version of
        whatever the row was wearing, the way the plaque's engraved parts do */
     const relief = rowGet(k,"relief");
-    if(relief === "emboss" && mode === "solid") fill = Metal.dkn(rowGet(k,"col"), .42);
+    let solid = rowGet(k,"col");
+    if(relief === "emboss" && mode === "solid") solid = Metal.dkn(rowGet(k,"col"), .42);
 
     const rid = "r_"+k, aid = "a_"+k;
     const rf = reliefFilter(rid, relief);
@@ -981,8 +1028,25 @@ function buildSVG(res){
     defs += rf + af;
 
     const sw = rowGet(k,"strokeOn") ? rowGet(k,"strokeW") : 0;
-    let inner = L.lines.filter(l => l.str.trim())
-      .map(l => textEl(l, L.x, l.base, L.anchor, L.sq, rowGet(k,"font"), fill, S.strokeCol, sw)).join("");
+    let inner = L.lines.filter(l => l.str.trim()).map((l, i) => {
+      let fill = solid;
+      if(stops){
+        /* A userSpaceOnUse gradient is resolved in the coordinate system of the
+           element that references it — i.e. *after* that element's transform.
+           Each line carries translate(x, base), so feeding the ramp absolute
+           canvas y put it a couple hundred units below the glyphs and clamped
+           every pixel to stop[0]: gold, silver and platinum all came out the
+           same pale near-white, which read as "the material picker does
+           nothing". scale(sq,1) leaves y untouched, so the line's local y is
+           just absolute y minus its baseline — and because every line of the
+           row converts the same absolute top/bot, the ramp stays one
+           continuous run across a multi-line block instead of restarting. */
+        const gid = `g_${k}_${i}`;
+        defs += Metal.gradientDef(gid, stops, L.top - l.base, L.bot - l.base);
+        fill = `url(#${gid})`;
+      }
+      return textEl(l, L.x, l.base, L.anchor, L.sq, rowGet(k,"font"), fill, S.strokeCol, sw);
+    }).join("");
     if(rf) inner = `<g filter="url(#${rid})">${inner}</g>`;
     if(af) inner = `<g filter="url(#${aid})">${inner}</g>`;
     type += inner;
@@ -1358,7 +1422,7 @@ function persist(){
   $("copyYear").textContent = new Date().getFullYear();
   bindInputs(); syncUI(); render();
   /* anything measured before the webfonts land was measured in fallback metrics */
-  if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ measCache.clear(); render(); });
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ measCache.clear(); boxCache.clear(); render(); });
 })();
 </script>
 </body>
