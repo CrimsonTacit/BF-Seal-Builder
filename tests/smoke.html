@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smoke test — Bravo Fleet Graphics Tools</title>
+<style>
+  :root{--bg:#070b12;--panel:#0d1420;--line:#1f2a3a;--ink:#c7d3e0;--dim:#6d7d92;
+        --ok:#3f9d6a;--bad:#b8503f;--warn:#d3a92c}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;padding:24px}
+  h1{font-size:15px;letter-spacing:.25em;text-transform:uppercase;color:var(--warn);margin:0 0 4px}
+  p.lede{color:var(--dim);margin:0 0 20px;max-width:70ch}
+  button{background:#111a29;border:1px solid #2c3b52;color:var(--ink);font:inherit;
+         padding:8px 16px;border-radius:2px;cursor:pointer;letter-spacing:.08em;text-transform:uppercase}
+  button:hover{border-color:var(--warn);color:var(--warn)}
+  button:disabled{opacity:.5;cursor:default}
+  table{border-collapse:collapse;margin-top:18px;width:100%;max-width:1000px}
+  th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--dim);font-weight:normal;text-transform:uppercase;font-size:11px;letter-spacing:.1em}
+  .pass{color:var(--ok)} .fail{color:var(--bad)} .pend{color:var(--dim)}
+  .why{color:var(--dim);font-size:12px}
+  #summary{margin-top:18px;font-size:14px}
+  iframe{position:fixed;left:-9999px;top:0;width:1440px;height:1000px;border:0}
+</style>
+</head>
+<body>
+<h1>Smoke test</h1>
+<p class="lede">
+  Loads every page, then for each tool renders a PNG export and inspects the export SVG.
+  This is the check that catches a broken asset path — the failure mode the tools are most
+  exposed to, since they fetch fonts and artwork by URL and inline them at export time.
+  Serve the repo over HTTP and open this page; it needs no build step and no dependencies.
+</p>
+<button id="run">Run tests</button>
+<table>
+  <thead><tr><th style="width:150px">Page</th><th style="width:110px">Result</th><th>Checks</th></tr></thead>
+  <tbody id="rows"></tbody>
+</table>
+<div id="summary"></div>
+
+<script>
+"use strict";
+const TOOLS = ["index","seal-tool","header-tool","banner-tool","plaque-tool","patch-tool","mission-tool"];
+const $ = id => document.getElementById(id);
+
+function load(page){
+  return new Promise(resolve => {
+    const errs = [];
+    const fr = document.createElement("iframe");
+    fr.onload = () => {
+      fr.contentWindow.addEventListener("error", e => errs.push(e.message));
+      setTimeout(() => resolve({fr, errs}), 1500);
+    };
+    fr.src = "../" + page + ".html?cb=" + Date.now();
+    document.body.appendChild(fr);
+  });
+}
+
+/* Runs inside the tool's own frame: export it and report what came out. */
+const PROBE = `(async () => {
+  if (typeof buildSVG !== "function") return { landing:true };
+  const res = await exportResources();
+  const svg = buildSVG(res);
+  const cv  = await renderToCanvas(600);
+  const d   = cv.getContext("2d").getImageData(0,0,cv.width,cv.height).data;
+  let ink = 0;
+  for (let i=3; i<d.length; i+=4*29) if (d[i] > 0) ink++;
+  return {
+    blank: ink === 0,
+    /* an export that still points at a URL would render blank off-site */
+    external: /(?:href|src)="(?!data:|#)[^"]*\\.(?:png|jpg|jpeg|woff2)"/.test(svg)
+           || /url\\((?!data:|#)[^)]*\\.woff2\\)/.test(svg),
+    fontInlined: /src:url\\(data:font/.test(svg) || !/font-family/.test(svg),
+    w: cv.width, h: cv.height
+  };
+})()`;
+
+
+/* Verify every asset the page references actually resolves ON THE SERVER.
+
+   This has to bypass the browser cache explicitly. Without {cache:"reload"} a
+   stale copy masks a genuinely missing file: with the font deleted from disk
+   and the server returning 404, the tools still exported perfectly from cache
+   and this suite reported all green. A deploy that drops or renames an asset
+   looks exactly like that to anyone who has used the tools before, which is
+   precisely the failure this test exists to catch. */
+async function assetsResolve(page){
+  const src = await (await fetch("../" + page + ".html?cb=" + Date.now(), {cache:"reload"})).text();
+  /* Any quoted relative path into assets/, fonts/ or shared/ — markup src/href,
+     registry entries (url:"..."), and bare constants alike (seal-tool holds its
+     font as `const FONT_URL = "fonts/sealstile.woff2"`, which a src|href-only
+     scan walks straight past). */
+  const paths = new Set();
+  const re = /["'](?:\.\/)?((?:assets|fonts|shared)\/[^"'?#]+\.[A-Za-z0-9]+)["']/g;
+  let m; while((m = re.exec(src))) paths.add(m[1]);
+  const bad = [];
+  for(const rel of paths){
+    try{
+      const r = await fetch("../" + rel, {cache:"reload"});
+      if(!r.ok) bad.push(rel + " -> " + r.status);
+    }catch(e){ bad.push(rel + " -> " + e.message); }
+  }
+  return { count: paths.size, bad };
+}
+
+async function runOne(page){
+  const checks = [];
+  const {fr, errs} = await load(page);
+  checks.push({name:"loads with no JS errors", ok: errs.length===0, why: errs.join("; ")});
+
+  const assets = await assetsResolve(page);
+  checks.push({name:`all ${assets.count} referenced assets resolve`, ok: assets.bad.length===0,
+               why: assets.bad.join("; ")});
+
+  const doc = fr.contentDocument;
+  checks.push({name:"has favicon + description", ok: !!doc.querySelector('link[rel=icon]') && !!doc.querySelector('meta[name=description]')});
+  checks.push({name:"has &lt;noscript&gt; fallback", ok: !!doc.querySelector("noscript")});
+
+  let r = {};
+  try { r = await fr.contentWindow.eval(PROBE); }
+  catch(e){ checks.push({name:"export runs", ok:false, why:String(e.message)}); r = null; }
+
+  if (r && !r.landing) {
+    checks.push({name:"export renders", ok: !r.blank, why: r.blank ? "canvas came out empty" : `${r.w}x${r.h}`});
+    checks.push({name:"export is self-contained", ok: !r.external, why: r.external ? "still references an external URL" : ""});
+    checks.push({name:"font inlined in export", ok: r.fontInlined});
+  } else if (r && r.landing) {
+    checks.push({name:"landing page (no export)", ok:true});
+  }
+  fr.remove();
+  return checks;
+}
+
+$("run").addEventListener("click", async () => {
+  $("run").disabled = true;
+  $("rows").innerHTML = ""; $("summary").textContent = "";
+  const map = {};
+  for (const t of TOOLS){
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${t}</td><td class="pend">running…</td><td class="why"></td>`;
+    $("rows").appendChild(tr); map[t] = tr;
+  }
+  let pass = 0, fail = 0;
+  for (const t of TOOLS){
+    const checks = await runOne(t);
+    const bad = checks.filter(c => !c.ok);
+    bad.length ? fail++ : pass++;
+    const tr = map[t];
+    tr.children[1].className = bad.length ? "fail" : "pass";
+    tr.children[1].textContent = bad.length ? "FAIL" : "pass";
+    tr.children[2].innerHTML = checks.map(c =>
+      `<div class="${c.ok?'pass':'fail'}">${c.ok?'✓':'✗'} ${c.name}${c.why?` <span class="why">— ${c.why}</span>`:''}</div>`
+    ).join("");
+  }
+  $("summary").innerHTML = fail
+    ? `<span class="fail">${fail} page(s) failed</span>, ${pass} passed.`
+    : `<span class="pass">All ${pass} pages passed.</span>`;
+  $("run").disabled = false;
+});
+</script>
+</body>
+</html>

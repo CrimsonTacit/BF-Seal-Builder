@@ -53,7 +53,7 @@ partway down it (that's how "Admiralty Board" sits under "Chiefs of Staff").
 
 ## Fonts & licenses
 
-All embedded fonts are libre (SIL Open Font License 1.1), so the tools can
+All bundled fonts are libre (SIL Open Font License 1.1), so the tools can
 be shared freely:
 
 - **Sealstile** — our patched build of
@@ -61,7 +61,7 @@ be shared freely:
   ocelothe2k1 (license: `fonts/OFL-Librestile.txt`), with a bullet glyph
   added and renamed per the OFL's Reserved Font Name rule.
 - **Tenor Sans**, **Cinzel**, **Michroma**, **Orbitron** — from Google
-  Fonts, embedded in the Header Builder.
+  Fonts, used by the Header Builder.
 - **EB Garamond** — from Google Fonts, used for the plaque's ship name and
   dedication quote (standing in for the original's Adobe Garamond).
 
@@ -71,21 +71,38 @@ these tools are for use within the fleet. Original seal design by
 
 ## For developers
 
-No build step and no dependencies. The Seal and Header Builders are single
-HTML files with their assets embedded as base64; the Banner and Plaque
-Builders load theirs from `assets/` and `fonts/` instead, since their
-artwork is far too big to inline. If you change the font or emblem sources,
-re-embed with:
+No build step and no dependencies. Every tool loads its fonts and artwork
+from `assets/` and `fonts/` by relative URL, so **the pages must be served
+over HTTP** — opening them straight off disk with `file://` won't work.
+Any static server will do:
 
 ```bash
-python3 tools/embed_assets.py            # seal tool: TF emblems (stdlib only)
-python3 tools/embed_assets.py --font     # + rebuild Sealstile (needs fontTools + brotli)
-python3 tools/embed_header_assets.py     # header tool: fonts + emblems (run after the above)
-python3 tools/fetch_shared_fonts.py      # loose fonts for the banner + plaque tools
+python3 -m http.server 8517
 ```
 
-Webfonts are cached in `fonts/webfonts/` after the first run, so rebuilds
-work offline.
+Exports still come out fully self-contained: an SVG rasterised through an
+`<img>` can't fetch anything, so each tool inlines the fonts and art the
+current design uses as data URIs at export time.
+
+If you change the font or emblem sources, refresh the registries with:
+
+```bash
+python3 tools/embed_assets.py            # seal tool: TF emblem registry (stdlib only)
+python3 tools/embed_assets.py --font     # + rebuild Sealstile (needs fontTools + brotli)
+python3 tools/embed_header_assets.py     # header tool: fonts + emblems (run after the above)
+python3 tools/fetch_shared_fonts.py      # loose webfonts for the other tools
+```
+
+These are idempotent — a re-run leaves the HTML byte-identical. Webfonts are
+cached in `fonts/webfonts/` after the first run, so rebuilds work offline.
+
+Shared code lives in `shared/`: `chrome.css` (the dark-console UI every tool
+wears), `state.js` (seeded PRNG, slugs, debounced localStorage), `text.js`
+(SVG text measurement) and `export.js` (asset inlining + the export pipeline).
+
+Before deploying, serve the repo and open `tests/smoke.html`. It loads every
+page and checks that each one's assets resolve on the server and that its PNG
+export renders and comes out self-contained — no build step, no dependencies.
 
 The plaque artwork is extracted from the source PSD by
 `tools/extract_plaque_assets.py`, which needs `pip install
