@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mission Builder</title>
+<title>Mission Poster Builder</title>
 <style>
   :root{
     --bg:#070b12;
@@ -217,8 +217,8 @@
 
 <header>
   <div class="mark"></div>
-  <h1>Mission Builder</h1>
-  <div class="sub">Bravo Fleet · Mission Posters &amp; Story Covers</div>
+  <h1>Mission Poster Builder</h1>
+  <div class="sub">Bravo Fleet · Mission Posters &amp; Cover Art</div>
   <div class="spacer"></div>
   <a class="navlink" href="index.html">⌂</a>
   <a class="navlink" href="seal-tool.html">Seal →</a>
@@ -249,6 +249,14 @@
       <div class="acc-body">
         <div id="presetGroups"></div>
         <div class="hint">A style sets the type's fill, relief and effects across every line, plus the frame. Your text, fonts and layout are left alone.</div>
+      </div>
+    </details>
+
+    <details class="acc" open>
+      <summary>Colour Scheme</summary>
+      <div class="acc-body">
+        <div id="schemeGroups"></div>
+        <div class="hint">The Seal Builder's full palette. A scheme only moves colours — the type's ink and fade, the outline and glow, the frame, the backdrop and the stars — so pick a <b>style</b> for the look and a scheme to colour it, in either order.</div>
       </div>
     </details>
 
@@ -313,8 +321,13 @@
           <button class="btn" id="imgCenter">Center</button>
           <button class="btn danger" id="imgRemove">Remove image</button>
         </div>
-        <div class="row" style="margin-top:12px"><input type="checkbox" data-k="stars"><label>Starfield when there is no image</label></div>
-        <div class="row"><label>Backdrop</label><input type="color" data-k="c_back"></div>
+        <div class="sublabel">Starfield</div>
+        <div class="row"><input type="checkbox" data-k="stars"><label>Use a starfield when there is no image</label></div>
+        <div class="row"><label>Background</label><input type="color" data-k="c_back"><label style="flex:0 0 auto;color:var(--ink-dim)">Stars</label><input type="color" data-k="starFore"></div>
+        <div class="row"><label>Density</label><input type="range" min="0" max="2400" step="20" data-k="starDensity"><span class="val" data-val="starDensity"></span></div>
+        <div class="row"><input type="checkbox" data-k="starSparkles"><label>Large sparkles</label></div>
+        <div class="btnrow"><button class="btn mini" id="starShuffle">Shuffle stars</button></div>
+        <div class="hint">A given seed always draws the same sky, so <b>Shuffle</b> is how you get a different one. Density counts stars per 3:4 poster and scales with the taller shapes. The background also shows behind an uploaded image that doesn't cover the page.</div>
 
         <div class="sublabel">Grade</div>
         <div class="row"><label>Brightness</label><input type="range" min="0.3" max="1.8" step="0.02" data-k="bright"><span class="val" data-val="bright"></span></div>
@@ -340,7 +353,9 @@
         <div class="row"><label>Horizontal</label><input type="range" min="-900" max="900" step="4" data-k="emX"><span class="val" data-val="emX"></span></div>
         <div class="row"><label>Vertical</label><input type="range" min="-1200" max="1200" step="4" data-k="emY"><span class="val" data-val="emY"></span></div>
         <div class="row"><label>Opacity</label><input type="range" min="0.05" max="1" step="0.05" data-k="emOp"><span class="val" data-val="emOp"></span></div>
-        <div class="hint">Uploads stay in this tab — they aren't saved with the design.</div>
+        <div class="filebox" id="emBox" style="display:none">Drop an emblem here or click to choose</div>
+        <input type="file" id="emInput" accept="image/*" style="display:none">
+        <div class="hint">Task-force marks come in both families — the delta on its own, or the wide version with the numeral. Uploads (artwork and emblem alike) stay in this tab; they aren't saved with the design.</div>
       </div>
     </details>
 
@@ -475,18 +490,19 @@ const FRAMES = {
   letterbox: "Letterbox bars",
 };
 
-/* ================= emblems ================= */
-const EMBLEMS = {
-  none: { label:"None", url:null },
-  bf:   { label:"Bravo Fleet delta", url:"assets/logos/bf-delta.png" },
-  bfl:  { label:"Bravo Fleet logo",  url:"assets/logos/bf-logo.png" },
-  tf17: { label:"Task Force 17", url:"assets/logos/tf17a.png" },
-  tf21: { label:"Task Force 21", url:"assets/logos/tf21a.png" },
-  tf47: { label:"Task Force 47", url:"assets/logos/tf47a.png" },
-  tf72: { label:"Task Force 72", url:"assets/logos/tf72a.png" },
-  tf86: { label:"Task Force 86", url:"assets/logos/tf86a.png" },
-  tf93: { label:"Task Force 93", url:"assets/logos/tf93a.png" },
-};
+/* ================= emblems =================
+   Both TF logo families are offered: the `tf##a.png` delta-only marks (what the
+   banner tool uses, since its slot is delta-shaped) and the wide `tf##.png`
+   variants that carry the big numeral — a poster has room for the numeral, so
+   there is no reason to hide them here the way the banner has to. */
+const TFS = [17, 21, 47, 72, 86, 93];
+const EMBLEMS = { none: { label:"None", url:null, group:"" } };
+EMBLEMS.bf  = { label:"Bravo Fleet delta", url:"assets/logos/bf-delta.png", group:"Bravo Fleet" };
+EMBLEMS.bfl = { label:"Bravo Fleet logo",  url:"assets/logos/bf-logo.png",  group:"Bravo Fleet" };
+TFS.forEach(n => { EMBLEMS["tf"+n]     = { label:"Task Force "+n, url:`assets/logos/tf${n}a.png`, group:"Task force delta" }; });
+TFS.forEach(n => { EMBLEMS["tf"+n+"n"] = { label:"Task Force "+n, url:`assets/logos/tf${n}.png`,  group:"Task force with numeral" }; });
+EMBLEMS.custom = { label:"Custom image…", url:null, group:"", custom:true };
+
 const EM_SIZE = {};
 Object.values(EMBLEMS).forEach(E => {
   if(!E.url) return;
@@ -494,6 +510,18 @@ Object.values(EMBLEMS).forEach(E => {
   im.onload = () => { EM_SIZE[E.url] = {w:im.naturalWidth, h:im.naturalHeight}; render(); };
   im.src = E.url;
 });
+/* uploaded emblem art, kept out of S/localStorage like IMG and the seal tool's
+   CUSTOM_CHARGE — it doesn't survive a reload */
+let CUSTOM_EM = null;   /* {dataUrl,w,h} */
+/* the art the emblem slot should draw right now, whichever kind it is */
+function emblemArt(){
+  const E = EMBLEMS[S.emblem];
+  if(!E) return null;
+  if(E.custom) return CUSTOM_EM ? { href:CUSTOM_EM.dataUrl, w:CUSTOM_EM.w, h:CUSTOM_EM.h, url:null } : null;
+  if(!E.url) return null;
+  const nat = EM_SIZE[E.url] || { w:300, h:468 };
+  return { href:E.url, w:nat.w, h:nat.h, url:E.url };
+}
 
 /* ================= state =================
    Row defaults come off the reference PSDs, divided by three for this canvas.
@@ -508,18 +536,18 @@ const FXDEF = {
 };
 const ROWDEF = {
   camp:   { on:true,  txt:"ARCTURUS", font:"sealstile", size:300, track:0,     sq:.9,  lead:.9,  align:"center", y:353, x:0,
-            fill:"solid", col:"#ffffff", col2:"#8a6410", mat:"gold", relief:"raised", strokeOn:true,  strokeW:7, glowOn:false, shadowOn:true },
+            fill:"solid", col:"#ffffff", col2:"#8a6410", mat:"gold", matCustom:"#c9992e", relief:"raised", strokeOn:true,  strokeW:7, glowOn:false, shadowOn:true },
   pre:    { on:false, txt:"THE FOURTH FLEET PRESENTS", font:"sealstile", size:52, track:.16, sq:.9, lead:1, align:"center", y:620, x:0,
-            fill:"solid", col:"#ffffff", col2:"#8a6410", mat:"gold", relief:"none",   strokeOn:false, strokeW:3, glowOn:false, shadowOn:true },
+            fill:"solid", col:"#ffffff", col2:"#8a6410", mat:"gold", matCustom:"#c9992e", relief:"none",   strokeOn:false, strokeW:3, glowOn:false, shadowOn:true },
   title:  { on:true,  txt:"ALL HANDS,\nBURY THE DEAD", font:"sealstile", size:200, track:0, sq:.9, lead:.82, align:"center", y:162, x:0,
-            fill:"solid", col:"#ffffff", col2:"#8a6410", mat:"gold", relief:"raised", strokeOn:true,  strokeW:7, glowOn:false, shadowOn:true },
+            fill:"solid", col:"#ffffff", col2:"#8a6410", mat:"gold", matCustom:"#c9992e", relief:"raised", strokeOn:true,  strokeW:7, glowOn:false, shadowOn:true },
   sub:    { on:false, txt:"A Mission of the USS Arcturus", font:"garamondit", size:72, track:.02, sq:1, lead:1.1, align:"center", y:480, x:0,
-            fill:"solid", col:"#e8eef6", col2:"#8a6410", mat:"silver", relief:"none", strokeOn:false, strokeW:3, glowOn:false, shadowOn:true },
+            fill:"solid", col:"#e8eef6", col2:"#8a6410", mat:"silver", matCustom:"#c9992e", relief:"none", strokeOn:false, strokeW:3, glowOn:false, shadowOn:true },
   credit: { on:true,  txt:"A Bravo Fleet Story", font:"sealstile", size:100, track:-.03, sq:.9, lead:1, align:"center", y:52, x:0,
-            fill:"solid", col:"#ffffff", col2:"#8a6410", mat:"gold", relief:"raised", strokeOn:true,  strokeW:4, glowOn:false, shadowOn:true },
+            fill:"solid", col:"#ffffff", col2:"#8a6410", mat:"gold", matCustom:"#c9992e", relief:"raised", strokeOn:true,  strokeW:4, glowOn:false, shadowOn:true },
   bill:   { on:false, txt:"BRAVO FLEET PRESENTS  A STORY OF TASK FORCE 47\nWRITTEN ON THE HOLODECK · STARDATE 78412.6", font:"oswald",
             size:30, track:.08, sq:1, lead:1.35, align:"center", y:46, x:0,
-            fill:"solid", col:"#cfd8e2", col2:"#8a6410", mat:"silver", relief:"none", strokeOn:false, strokeW:2, glowOn:false, shadowOn:false },
+            fill:"solid", col:"#cfd8e2", col2:"#8a6410", mat:"silver", matCustom:"#c9992e", relief:"none", strokeOn:false, strokeW:2, glowOn:false, shadowOn:false },
 };
 
 const DEFAULTS = (() => {
@@ -529,7 +557,8 @@ const DEFAULTS = (() => {
     frame:"none", frInset:36, frW:8, frGap:14, frRadius:0, frCorner:260,
     frFill:"solid", frCol:"#d3a92c", frMat:"gold", frMatCustom:"#c9992e", frRelief:true,
     /* artwork */
-    c_back:"#080d16", stars:true, starSeed:1701,
+    c_back:"#080d16", scheme:"",
+    stars:true, starSeed:1701, starDensity:800, starSparkles:true, starFore:"#cfe0f4",
     imgZoom:1, imgX:0, imgY:0,
     bright:1, contrast:1, sat:1,
     duoOn:false, duoA:"#08101f", duoB:"#cfe0f4", duoAmt:.85,
@@ -554,12 +583,12 @@ const PRESETS = [
     frame:{ frame:"none" } },
 
   { name:"Gold Foil", group:"Novel Cover", sw:["#f3d356","#8a6410"],
-    all:{ fill:"metal", mat:"gold", relief:"raised", strokeOn:false, glowOn:false, shadowOn:true },
+    all:{ fill:"metal", mat:"gold", matCustom:"#c9992e", relief:"raised", strokeOn:false, glowOn:false, shadowOn:true },
     fx:{ bevel:7, shine:1.05, shadowOp:.55, shadowDy:6, shadowBlur:9 },
     frame:{ frame:"metal", frMat:"gold", frInset:34, frW:14, frRadius:0, frRelief:true } },
 
   { name:"Silver Foil", group:"Novel Cover", sw:["#dfe4ea","#79828e"],
-    all:{ fill:"metal", mat:"silver", relief:"raised", strokeOn:false, glowOn:false, shadowOn:true },
+    all:{ fill:"metal", mat:"silver", matCustom:"#c9992e", relief:"raised", strokeOn:false, glowOn:false, shadowOn:true },
     fx:{ bevel:7, shine:1.05, shadowOp:.5, shadowDy:6, shadowBlur:9 },
     frame:{ frame:"metal", frMat:"silver", frInset:34, frW:14, frRadius:0, frRelief:true } },
 
@@ -589,6 +618,40 @@ const PRESETS = [
     frame:{ frame:"double", frCol:"#7c0309", frInset:36, frW:6, frGap:10, frRadius:0, frRelief:false, frFill:"solid" } },
 ];
 
+/* ================= colour schemes =================
+   The seal tool's whole palette, carried over verbatim: the eight official
+   Bravo Fleet colours from bravofleet.com/graphics, the four unofficial
+   department-inspired ones, and the four hand-picked fictional themes. Each
+   entry keeps the seal preset's own key colours so the two tools stay in step
+   when that palette changes — `band` is the theme colour, `accent` its ring
+   colour, `deep` the darkest shade, `star` the starfield colour.
+
+   A scheme is a separate axis from a style: a style sets fill mode, relief,
+   which effects a line wears and the frame's *shape*; a scheme only moves
+   colours. Applying one over the other keeps the look and recolours it — which
+   is why a scheme also flips a metal fill to the custom ramp, so gold foil
+   becomes foil in the scheme's own colour instead of silently ignoring it. */
+const SCHEMES = [
+  { name:"Bravo Blue",      group:"Official Bravo Fleet", band:"#2864a8", accent:"#d3a92c", deep:"#143356", star:"#d3a92c" },
+  { name:"Bolt Gold",       group:"Official Bravo Fleet", band:"#d3a92c", accent:"#14161c", deep:"#14161c", star:"#d3a92c" },
+  { name:"TF17 Gray",       group:"Official Bravo Fleet", band:"#434e5f", accent:"#ffffff", deep:"#1e242d", star:"#e8ecef" },
+  { name:"TF21 Purple",     group:"Official Bravo Fleet", band:"#651060", accent:"#ffffff", deep:"#2e062b", star:"#f0e6ef" },
+  { name:"TF47 Orange",     group:"Official Bravo Fleet", band:"#c64f1c", accent:"#ffffff", deep:"#5e240c", star:"#f5ece6" },
+  { name:"TF72 Navy",       group:"Official Bravo Fleet", band:"#20347f", accent:"#ffffff", deep:"#0e1839", star:"#e9ecf5" },
+  { name:"TF86 Red",        group:"Official Bravo Fleet", band:"#7c0309", accent:"#ffffff", deep:"#370204", star:"#f3e7e7" },
+  { name:"TF93 Green",      group:"Official Bravo Fleet", band:"#1a4a3c", accent:"#ffffff", deep:"#0b221c", star:"#e7f0ed" },
+
+  { name:"Command Red",     group:"Department Inspired",  band:"#a71313", accent:"#ffffff", deep:"#4b0909", star:"#f5e3e3" },
+  { name:"Sciences Blue",   group:"Department Inspired",  band:"#2b53a7", accent:"#ffffff", deep:"#13254b", star:"#e9eef7" },
+  { name:"Operations Gold", group:"Department Inspired",  band:"#d6a444", accent:"#14161c", deep:"#14161c", star:"#d6a444" },
+  { name:"Medical White",   group:"Department Inspired",  band:"#f4f6f8", accent:"#1c2b3a", deep:"#2f4a52", star:"#eef2f5" },
+
+  { name:"Sea Greens",      group:"Other",                band:"#175a6c", accent:"#c9d1d9", deep:"#0e2a33", star:"#d8dee4" },
+  { name:"Pegasus",         group:"Other",                band:"#9e2b25", accent:"#ede6da", deep:"#2a3e8c", star:"#ffffff" },
+  { name:"Federation",      group:"Other",                band:"#14245c", accent:"#c9a227", deep:"#14245c", star:"#e9c46a" },
+  { name:"Healer",          group:"Other",                band:"#2e6b7e", accent:"#dfe5e9", deep:"#4a5a6e", star:"#e8ecef" },
+];
+
 /* ================= text metrics =================
    A live SVG <text> node, not a canvas 2D context — the poster is laid out in
    SVG and the two engines disagree enough to trip a fit (that is what shrank
@@ -602,7 +665,7 @@ measSVG.appendChild(measNode);
 document.body.appendChild(measSVG);
 const measCache = new Map();
 function measureRaw(text, fk){
-  const key = fk + " " + text;
+  const key = fk + " " + text;
   let w = measCache.get(key);
   if(w === undefined){
     const F = fontOf(fk);
@@ -780,20 +843,45 @@ function frameSVG(H){
   return { defs, body: fx ? `<g${fx}>${body}</g>` : body };
 }
 
-/* ================= artwork ================= */
+/* ================= artwork =================
+   Seeded (`S.starSeed`) so a given seed is stable, and built the same way the
+   seal tool builds its field: the big four-point sparkles are placed first with
+   mutual separation, then the small stars are rejection-sampled away from every
+   sparkle's arms. Attempt caps keep both loops bounded, so an extreme density
+   may place fewer stars than asked rather than hanging.
+
+   Density counts stars per 3:4 poster, scaled by height — otherwise the same
+   number would read as a sparser sky on the taller 2:3 canvas. */
 function starfield(H){
   const rnd = (a => () => {a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296})(S.starSeed);
-  let out = `<g fill="#cfe0f4">`;
-  for(let i=0;i<900;i++){
-    const sx = rnd()*W, sy = rnd()*H, r = .7 + rnd()*rnd()*3.6;
-    out += `<circle cx="${f2(sx)}" cy="${f2(sy)}" r="${f2(r)}" opacity="${(.25+rnd()*.75).toFixed(2)}"/>`;
+
+  const sparkles = [];
+  if(S.starSparkles){
+    const nspark = 4 + Math.floor(rnd()*4);
+    for(let i=0;i<nspark;i++){
+      for(let t=0;t<60;t++){
+        const x = (.08+rnd()*.84)*W, y = (.06+rnd()*.88)*H, sz = 30 + rnd()*58;
+        if(sparkles.every(o => Math.hypot(o.x-x, o.y-y) > (o.s+sz)*0.9)){ sparkles.push({x, y, s:sz}); break; }
+      }
+    }
   }
-  for(let i=0;i<7;i++){
-    const sx = (.1+rnd()*.8)*W, sy = (.1+rnd()*.8)*H, s = 22 + rnd()*34, ww = s*.15;
-    out += `<path d="M ${f2(sx)} ${f2(sy-s)} Q ${f2(sx+ww*.35)} ${f2(sy-ww)} ${f2(sx+s)} ${f2(sy)}`
-        +  ` Q ${f2(sx+ww*.35)} ${f2(sy+ww)} ${f2(sx)} ${f2(sy+s)}`
-        +  ` Q ${f2(sx-ww*.35)} ${f2(sy+ww)} ${f2(sx-s)} ${f2(sy)}`
-        +  ` Q ${f2(sx-ww*.35)} ${f2(sy-ww)} ${f2(sx)} ${f2(sy-s)} Z" opacity=".85"/>`;
+
+  let out = `<g fill="${S.starFore}">`;
+  const n = Math.round(S.starDensity * (H/2400));
+  for(let i=0;i<n;i++){
+    for(let t=0;t<24;t++){
+      const sx = rnd()*W, sy = rnd()*H, r = .9 + rnd()*rnd()*4.2;
+      if(sparkles.some(o => Math.hypot(o.x-sx, o.y-sy) < o.s + r + 4)) continue;
+      out += `<circle cx="${f2(sx)}" cy="${f2(sy)}" r="${f2(r)}" opacity="${(.25+rnd()*.75).toFixed(2)}"/>`;
+      break;
+    }
+  }
+  for(const o of sparkles){
+    const ww = o.s*.15;
+    out += `<path d="M ${f2(o.x)} ${f2(o.y-o.s)} Q ${f2(o.x+ww*.35)} ${f2(o.y-ww)} ${f2(o.x+o.s)} ${f2(o.y)}`
+        +  ` Q ${f2(o.x+ww*.35)} ${f2(o.y+ww)} ${f2(o.x)} ${f2(o.y+o.s)}`
+        +  ` Q ${f2(o.x-ww*.35)} ${f2(o.y+ww)} ${f2(o.x-o.s)} ${f2(o.y)}`
+        +  ` Q ${f2(o.x-ww*.35)} ${f2(o.y-ww)} ${f2(o.x)} ${f2(o.y-o.s)} Z" opacity=".9"/>`;
   }
   return out + `</g>`;
 }
@@ -856,11 +944,10 @@ function buildSVG(res){
   if(S.scrimB > 0) overlays += `<rect x="0" y="${f2(H*(1-S.scrimBH))}" width="${W}" height="${f2(H*S.scrimBH)}" fill="url(#scrimBG)"/>`;
 
   let emblem = "";
-  const EM = EMBLEMS[S.emblem];
-  if(EM && EM.url){
-    const nat = EM_SIZE[EM.url] || {w:300, h:468};
-    const href = res.emHref || EM.url;
-    const eh = H*S.emScale, ew = eh*nat.w/nat.h;
+  const EA = emblemArt();
+  if(EA){
+    const href = res.emHref || EA.href;
+    const eh = H*S.emScale, ew = eh*EA.w/EA.h;
     emblem = `<image href="${href}" x="${f2(W/2 + S.emX - ew/2)}" y="${f2(H/2 + S.emY - eh/2)}"`
            + ` width="${f2(ew)}" height="${f2(eh)}" opacity="${f2(S.emOp)}"/>`;
   }
@@ -876,7 +963,7 @@ function buildSVG(res){
     const mode = rowGet(k,"fill");
     let fill = rowGet(k,"col");
     if(mode === "metal"){
-      const mk = rowGet(k,"mat") === "custom" ? rowGet(k,"col") : rowGet(k,"mat");
+      const mk = rowGet(k,"mat") === "custom" ? rowGet(k,"matCustom") : rowGet(k,"mat");
       defs += Metal.gradientDef("g_"+k, Metal.matInfo(mk).stops, L.top, L.bot);
       fill = `url(#g_${k})`;
     }else if(mode === "grad"){
@@ -945,10 +1032,12 @@ function usedFonts(){
 }
 async function exportResources(){
   const fonts = usedFonts();
-  const EM = EMBLEMS[S.emblem];
+  const EA = emblemArt();
   const [faces, emHref] = await Promise.all([
     Promise.all(fonts.map(f => ExportKit.fetchDataURI(f.url))),
-    EM && EM.url ? ExportKit.fetchDataURI(EM.url) : Promise.resolve(null),
+    /* a built-in emblem is a URL that has to be inlined; an uploaded one is
+       already a data URI */
+    EA && EA.url ? ExportKit.fetchDataURI(EA.url) : Promise.resolve(EA ? EA.href : null),
   ]);
   return {
     fontCSS: fonts.map((f,i) => ExportKit.fontFaceRule(f.fam, f.w, f.st, faces[i])).join(""),
@@ -1007,6 +1096,37 @@ $("imgRemove").addEventListener("click", ()=>{
   IMG = null; filebox.textContent = "Drop an image here or click to choose"; render();
 });
 $("imgCenter").addEventListener("click", ()=>{ S.imgX=0; S.imgY=0; syncUI(); render(); persist(); });
+$("starShuffle").addEventListener("click", ()=>{
+  S.starSeed = Math.floor(Math.random()*1e9);
+  render(); persist();
+});
+
+/* ================= custom emblem upload ================= */
+const emBox = $("emBox"), emInput = $("emInput");
+emBox.addEventListener("click", ()=>emInput.click());
+emInput.addEventListener("change", e => { if(e.target.files[0]) loadEmblemFile(e.target.files[0]); });
+["dragover","dragenter"].forEach(ev => emBox.addEventListener(ev, e=>{e.preventDefault();e.stopPropagation();emBox.classList.add("drag");}));
+["dragleave","drop"].forEach(ev => emBox.addEventListener(ev, e=>{e.preventDefault();emBox.classList.remove("drag");}));
+/* stopPropagation so an emblem dropped here doesn't also land in the body
+   handler that loads the background artwork */
+emBox.addEventListener("drop", e => {
+  e.preventDefault(); e.stopPropagation();
+  if(e.dataTransfer.files[0]) loadEmblemFile(e.dataTransfer.files[0]);
+});
+function loadEmblemFile(file){
+  const rd = new FileReader();
+  rd.onload = () => {
+    const im = new Image();
+    im.onload = () => {
+      CUSTOM_EM = { dataUrl: rd.result, w: im.naturalWidth, h: im.naturalHeight };
+      S.emblem = "custom";
+      emBox.textContent = file.name + " · " + im.naturalWidth + "×" + im.naturalHeight;
+      syncUI(); render(); persist();
+    };
+    im.src = rd.result;
+  };
+  rd.readAsDataURL(file);
+}
 
 /* ================= panel: text rows =================
    Generated from ROWS so a slot is one spec entry, not sixteen hand-written
@@ -1039,14 +1159,14 @@ function buildTextRows(){
           <button data-v="solid">Solid</button><button data-v="metal">Metal</button><button data-v="grad">Fade</button>
         </div>
         <div class="row"><label>Colour</label><input type="color" data-k="${K("col")}"><label style="flex:0 0 auto;color:var(--ink-dim)">to</label><input type="color" data-k="${K("col2")}"></div>
-        <div class="row"><label>Material</label><select data-k="${K("mat")}">${matOpts}</select></div>
+        <div class="row"><label>Material</label><select data-k="${K("mat")}">${matOpts}</select><input type="color" data-k="${K("matCustom")}"></div>
 
         <div class="sublabel">Effects</div>
         <div class="row"><label>Relief</label><select data-k="${K("relief")}">${RELIEFS.map(([v,l])=>`<option value="${v}">${l}</option>`).join("")}</select></div>
         <div class="row"><input type="checkbox" data-k="${K("strokeOn")}"><label>Outline</label><input type="range" min="0.5" max="40" step="0.5" data-k="${K("strokeW")}"><span class="val" data-val="${K("strokeW")}"></span></div>
         <div class="row"><input type="checkbox" data-k="${K("glowOn")}"><label>Glow</label></div>
         <div class="row"><input type="checkbox" data-k="${K("shadowOn")}"><label>Drop shadow</label></div>
-        <div class="hint">Break the text over several lines with Return; the whole block takes one size, set by its longest line. <b>Squeeze</b> narrows the glyphs the way the original artwork sets its type at 90 %; <b>Material</b> and the second colour apply to the Metal and Fade fills. Effect strengths live in <b>Text Effects</b>.${R.note ? " " + esc(R.note) : ""}</div>
+        <div class="hint">Break the text over several lines with Return; the whole block takes one size, set by its longest line. <b>Squeeze</b> narrows the glyphs the way the original artwork sets its type at 90 %; <b>Material</b> and the swatch beside it apply to the Metal fill (the swatch drives the ramp when the material is <b>Custom</b>); the second colour is the Fade fill's far end. Effect strengths live in <b>Text Effects</b>.${R.note ? " " + esc(R.note) : ""}</div>
       </div>
     </details>`;
   }).join("");
@@ -1074,7 +1194,7 @@ function buildPresets(){
 }
 function applyPreset(name){
   const p = PRESETS.find(x => x.name === name); if(!p) return;
-  S.preset = name;
+  S.preset = name; S.scheme = "";
   if(p.fx) Object.assign(S, p.fx);
   ROWS.forEach(R => {
     const src = Object.assign({}, p.all, p[R.k] || {});
@@ -1084,6 +1204,48 @@ function applyPreset(name){
     Object.assign(S, { frame:"none", frFill:"solid" }, p.frame);
     if(p.frame.frame === "metal") S.frFill = "metal";
   }
+  syncUI(); render(); persist();
+}
+
+function buildSchemes(){
+  const groups = [];
+  SCHEMES.forEach(c => {
+    let g = groups.find(x => x.name === c.group);
+    if(!g) groups.push(g = {name:c.group, items:[]});
+    g.items.push(c);
+  });
+  $("schemeGroups").innerHTML = groups.map(g => `
+    <div class="swgroup">
+      <div class="swgroup-label">${esc(g.name)}</div>
+      <div class="swatches">${g.items.map(c =>
+        `<button class="sw" data-scheme="${esc(c.name)}" title="${esc(c.name)}"
+          style="background:linear-gradient(135deg,${c.accent} 0 46%,${c.band} 46% 100%)"></button>`).join("")}</div>
+    </div>`).join("");
+  $("schemeGroups").addEventListener("click", e => {
+    const b = e.target.closest("[data-scheme]"); if(!b) return;
+    applyScheme(b.dataset.scheme);
+  });
+}
+function applyScheme(name){
+  const c = SCHEMES.find(x => x.name === name); if(!c) return;
+  S.scheme = name;
+  S.strokeCol = c.band;
+  S.glowCol = c.band;
+  S.c_back = c.deep;
+  S.starFore = c.star;
+  S.frCol = c.accent;
+  S.frMatCustom = c.accent;
+  if(S.frFill === "metal") S.frMat = "custom";
+  ROWS.forEach(R => {
+    S[R.k+"_col"] = c.accent;
+    S[R.k+"_col2"] = c.band;
+    /* a metal row follows the scheme by driving Metal's custom ramp off the
+       theme colour, rather than staying gold and looking like the click did
+       nothing. The ramp gets `band`, not `accent`: accent is often plain white,
+       and white foil would read as "the scheme was ignored". */
+    S[R.k+"_matCustom"] = c.band;
+    if(S[R.k+"_fill"] === "metal") S[R.k+"_mat"] = "custom";
+  });
   syncUI(); render(); persist();
 }
 
@@ -1119,6 +1281,10 @@ function syncVals(){
 }
 /* dim what has no effect right now, so the panel says what it is doing */
 function syncEnable(){
+  const E = EMBLEMS[S.emblem];
+  $("emBox").style.display = (E && E.custom) ? "" : "none";
+  const starOn = !!S.stars;
+  $("starShuffle").disabled = !starOn;
   ROWS.forEach(R => {
     const sec = $("sec_"+R.k);
     if(sec) sec.classList.toggle("rowoff", !rowGet(R.k,"on"));
@@ -1143,12 +1309,25 @@ function syncUI(){
   });
   document.querySelectorAll("[data-preset]").forEach(b =>
     b.classList.toggle("on", b.dataset.preset === S.preset));
+  document.querySelectorAll("[data-scheme]").forEach(b =>
+    b.classList.toggle("on", b.dataset.scheme === S.scheme));
   syncVals(); syncEnable();
 }
 
 $("frameSel").innerHTML = Object.entries(FRAMES).map(([k,l])=>`<option value="${k}">${esc(l)}</option>`).join("");
 document.querySelectorAll("[data-mats]").forEach(sel => { sel.innerHTML = matOpts; });
-$("emblemSel").innerHTML = Object.entries(EMBLEMS).map(([k,E])=>`<option value="${k}">${esc(E.label)}</option>`).join("");
+$("emblemSel").innerHTML = (() => {
+  let html = "", open = "";
+  for(const [k,E] of Object.entries(EMBLEMS)){
+    if(E.group !== open){
+      if(open) html += "</optgroup>";
+      open = E.group;
+      if(open) html += `<optgroup label="${esc(open)}">`;
+    }
+    html += `<option value="${k}">${esc(E.label)}</option>`;
+  }
+  return html + (open ? "</optgroup>" : "");
+})();
 
 $("stageBg").addEventListener("click", e=>{
   const b = e.target.closest("button"); if(!b) return;
@@ -1170,7 +1349,7 @@ function persist(){
   }, 150);
 }
 (function boot(){
-  buildTextRows(); buildPresets();
+  buildTextRows(); buildPresets(); buildSchemes();
   try{
     const saved = localStorage.getItem(LS_KEY);
     if(saved) S = Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), JSON.parse(saved));
