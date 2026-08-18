@@ -3,99 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Build Starfleet dedication plaques with your own roster and quote, and export them at print resolution.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%225%22%20fill%3D%22%230d1420%22%2F%3E%3Crect%20x%3D%224%22%20y%3D%227%22%20width%3D%2224%22%20height%3D%2218%22%20rx%3D%223%22%20fill%3D%22%237a4a24%22%20stroke%3D%22%23b9c2cc%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M16%2011%20L19%2019%20L16%2017.5%20L13%2019%20Z%22%20fill%3D%22%23d3a92c%22%2F%3E%3C%2Fsvg%3E">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Bravo Fleet Graphics Tools">
+<meta property="og:title" content="Plaque Builder — Bravo Fleet Graphics Tools">
+<meta property="og:description" content="Build Starfleet dedication plaques with your own roster and quote, and export them at print resolution.">
+<meta property="og:url" content="https://crimsontacit.github.io/BF-Seal-Builder/plaque-tool.html">
+<meta name="twitter:card" content="summary">
 <title>Plaque Builder</title>
+<link rel="stylesheet" href="shared/chrome.css">
 <style>
-  :root{
-    --bg:#070b12;
-    --panel:#0d1420;
-    --panel2:#111a29;
-    --line:#1f2a3a;
-    --line-bright:#2c3b52;
-    --ink:#c7d3e0;
-    --ink-dim:#6d7d92;
-    --bolt-gold:#d3a92c;
-    --bf-blue:#2864a8;
-    --danger:#b8503f;
-  }
+  :root{--panel-w:340px}
   @font-face{font-family:"Sealstile";font-weight:400;src:url(fonts/sealstile.woff2) format("woff2");}
   @font-face{font-family:"EB Garamond";font-weight:500;font-style:normal;src:url(fonts/webfonts/ebgaramond-500.woff2) format("woff2");}
   @font-face{font-family:"EB Garamond";font-weight:600;font-style:normal;src:url(fonts/webfonts/ebgaramond-600.woff2) format("woff2");}
   @font-face{font-family:"EB Garamond";font-weight:500;font-style:italic;src:url(fonts/webfonts/ebgaramond-it500.woff2) format("woff2");}
-  *{box-sizing:border-box;margin:0;padding:0}
-  html,body{height:100%}
-  body{
-    background:
-      radial-gradient(1200px 700px at 75% -10%, rgba(59,152,168,.07), transparent 60%),
-      radial-gradient(900px 600px at -10% 110%, rgba(216,166,58,.05), transparent 60%),
-      var(--bg);
-    color:var(--ink);
-    font:13px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-    display:flex; flex-direction:column; overflow:hidden;
-  }
-  header{
-    display:flex;align-items:center;gap:16px;
-    padding:10px 18px;border-bottom:1px solid var(--line);
-    background:linear-gradient(180deg, #0c1320, #0a101b);
-    flex:none;
-  }
   header .mark{
     width:26px;height:18px;border-radius:3px;flex:none;
     background:linear-gradient(150deg,#4c5f70,#2f3d4a);
     box-shadow:inset 0 0 0 2px #c9992e, 0 0 0 2px var(--bg), 0 0 0 3px var(--line-bright);
   }
-  header h1{
-    font-family:"Sealstile",ui-monospace,monospace;
-    font-size:17px;letter-spacing:.28em;color:var(--bolt-gold);
-    font-weight:normal;text-transform:uppercase;white-space:nowrap;
-  }
-  header .sub{color:var(--ink-dim);letter-spacing:.12em;font-size:11px;text-transform:uppercase}
-  header .spacer{flex:1}
-  header a.navlink{
-    color:var(--ink-dim);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
-    text-decoration:none;border:1px solid var(--line-bright);border-radius:2px;padding:7px 14px;
-    background:var(--panel2);white-space:nowrap;
-  }
-  header a.navlink:hover{border-color:var(--bolt-gold);color:var(--bolt-gold)}
-  .btn{
-    background:var(--panel2);border:1px solid var(--line-bright);color:var(--ink);
-    padding:7px 14px;cursor:pointer;font:inherit;letter-spacing:.08em;text-transform:uppercase;
-    font-size:11px; border-radius:2px; white-space:nowrap;
-  }
-  .btn:hover{border-color:var(--bolt-gold);color:var(--bolt-gold)}
-  .btn.primary{border-color:var(--bolt-gold);color:var(--bolt-gold)}
-  .btn.primary:hover{background:var(--bolt-gold);color:#14100a}
-  .btn.danger{border-color:var(--danger);color:var(--danger)}
-  .btn.danger:hover{background:var(--danger);color:#fff}
   .btn.mini{padding:3px 8px;font-size:10px}
-  select{
-    background:var(--panel2);border:1px solid var(--line-bright);color:var(--ink);
-    font:inherit;font-size:11px;padding:6px 8px;border-radius:2px;max-width:100%;
-  }
-  main{flex:1;display:flex;min-height:0}
-  #panel{
-    width:340px;flex:none;overflow-y:auto;
-    background:var(--panel);border-right:1px solid var(--line);
-    scrollbar-width:thin; scrollbar-color:var(--line-bright) transparent;
-  }
-  details.acc{border-bottom:1px solid var(--line)}
-  details.acc > summary{
-    cursor:pointer;user-select:none;list-style:none;padding:14px 16px;
-    font-family:"Sealstile",ui-monospace,monospace;font-weight:normal;
-    font-size:11px;letter-spacing:.3em;color:var(--bf-blue);text-transform:uppercase;
-    display:flex;align-items:center;gap:8px;
-  }
-  details.acc > summary::-webkit-details-marker{display:none}
-  details.acc > summary::before{
-    content:"▸";flex:none;font-size:9px;color:var(--ink-dim);letter-spacing:0;
-    display:inline-block;transition:transform .15s ease;
-  }
-  details.acc[open] > summary::before{transform:rotate(90deg)}
-  details.acc > summary::after{content:"";flex:1;height:1px;background:var(--line-bright)}
-  details.acc > .acc-body{padding:0 16px 16px}
-  section.plain{border-bottom:1px solid var(--line);padding:14px 16px 16px}
-  .row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-  .row label{flex:1;color:var(--ink-dim);letter-spacing:.05em;font-size:12px}
-  .row .val{width:44px;text-align:right;color:var(--ink);font-size:11px}
   label.fld{display:block;color:var(--ink-dim);font-size:11px;margin-bottom:3px;letter-spacing:.05em}
   input[type=text],textarea{
     width:100%;background:#0a111c;border:1px solid var(--line-bright);color:var(--ink);
@@ -103,20 +32,6 @@
   }
   textarea{resize:vertical;min-height:64px;line-height:1.6}
   input[type=text]:focus,textarea:focus{outline:none;border-color:var(--bf-blue)}
-  input[type=range]{flex:1.4;appearance:none;height:2px;background:var(--line-bright);border-radius:1px;outline:none}
-  input[type=range]::-webkit-slider-thumb{
-    appearance:none;width:12px;height:12px;border-radius:50%;
-    background:var(--bolt-gold);border:2px solid #0a0f18;cursor:pointer;
-  }
-  input[type=color]{
-    appearance:none;-webkit-appearance:none;width:30px;height:22px;border:1px solid var(--line-bright);
-    background:none;padding:0;cursor:pointer;border-radius:2px;flex:none;
-  }
-  input[type=color]::-webkit-color-swatch-wrapper{padding:2px}
-  input[type=color]::-webkit-color-swatch{border:none;border-radius:1px}
-  input[type=checkbox]{accent-color:var(--bolt-gold);width:14px;height:14px;cursor:pointer}
-  .hint{color:var(--ink-dim);font-size:11px;margin-top:6px;line-height:1.45}
-  .btnrow{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
   .swatches{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px}
   .swgroup{margin-bottom:10px}
   .swgroup:last-child{margin-bottom:0}
@@ -134,13 +49,6 @@
   }
   .toggle button + button{border-left:1px solid var(--line-bright)}
   .toggle button.active{background:var(--bolt-gold);color:#14100a}
-  .credit{
-    padding:14px 16px 18px;text-align:center;color:var(--ink-dim);
-    font-size:10px;letter-spacing:.08em;line-height:1.8;text-transform:uppercase;
-  }
-  .credit b{color:var(--ink);font-weight:normal}
-  .credit a{color:var(--bf-blue);text-decoration:none;border-bottom:1px solid transparent}
-  .credit a:hover{color:var(--ink);border-bottom-color:var(--bf-blue)}
   #stage{
     flex:1;display:flex;align-items:center;justify-content:center;position:relative;
     min-width:0;background-color:#10151d;padding:26px;
@@ -159,21 +67,10 @@
   #stage.light{background-color:#eceef1;background-image:linear-gradient(180deg,#f6f7f9,#dfe2e7)}
   #plqwrap{position:relative;z-index:1;width:min(96%,1180px)}
   #plqwrap svg{width:100%;height:auto;display:block}
-  .stagebg{
-    position:absolute;top:14px;right:14px;z-index:2;
-    display:flex;background:var(--panel2);border:1px solid var(--line-bright);
-    border-radius:2px;overflow:hidden;
-  }
-  .stagebg button{
-    background:none;border:none;color:var(--ink-dim);cursor:pointer;
-    font:inherit;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:7px 14px;
-  }
-  .stagebg button + button{border-left:1px solid var(--line-bright)}
-  .stagebg button:hover{color:var(--ink)}
-  .stagebg button.active{background:var(--bolt-gold);color:#14100a}
 </style>
 </head>
 <body>
+<noscript><div class="noscript"><b>Plaque Builder</b> needs JavaScript switched on — it draws and exports your artwork entirely in the browser, with nothing sent to a server.</div></noscript>
 
 <header>
   <div class="mark"></div>
@@ -329,7 +226,9 @@
   </div>
 </main>
 
+<script src="shared/state.js"></script>
 <script src="shared/metal.js"></script>
+<script src="shared/text.js"></script>
 <script src="shared/export.js"></script>
 <script>
 "use strict";
@@ -486,32 +385,12 @@ let S = JSON.parse(JSON.stringify(DEFAULTS));
    and shrink it, which is not a thing the SVG it actually draws does. Widths
    are cached at a reference size and scaled, so a keystroke costs one layout
    per new string instead of one per line. */
-const MEAS_REF = 100;
-const measSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-measSVG.setAttribute("aria-hidden", "true");
-measSVG.setAttribute("style", "position:absolute;left:-9999px;top:0;width:10px;height:10px;overflow:hidden");
-const measNode = document.createElementNS("http://www.w3.org/2000/svg", "text");
-measSVG.appendChild(measNode);
-document.body.appendChild(measSVG);
-const measCache = new Map();
-function measureRaw(text, family, weight, style){
-  const key = family + "|" + weight + "|" + style + "|" + text;
-  let w = measCache.get(key);
-  if(w === undefined){
-    measNode.setAttribute("font-family", family);
-    measNode.setAttribute("font-weight", weight || 400);
-    measNode.setAttribute("font-style", style || "normal");
-    measNode.setAttribute("font-size", MEAS_REF);
-    measNode.textContent = text;
-    w = measNode.getComputedTextLength();
-    measCache.set(key, w);
-  }
-  return w;
-}
-/* letter-spacing lands after every glyph, the trailing one included — that is
-   what the browser advances, so the fit has to count the same way. */
+/* Widths come from shared/text.js — a hidden live SVG node, not a canvas 2D
+   context, because the two engines disagree and this tool lays out in SVG.
+   Tracking counts every glyph including the last, which is how the browser
+   advances letter-spacing. */
 function measure(text, fs, family, weight, style, track){
-  return measureRaw(text, family, weight, style) * (fs/MEAS_REF) + text.length*(track||0);
+  return TextKit.measure(text, fs, {family, weight, style, track});
 }
 
 /* Sealstile draws inside a 0.55 horizontal squeeze, which jams its glyphs
@@ -947,26 +826,19 @@ async function exportResources(){
     art,
   };
 }
-function slug(){
-  return (S.name||"plaque").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || "plaque";
-}
+const slug = () => StateKit.slugify(S.name, "plaque");
 async function renderToCanvas(widthPx){
   const svg = buildSVG(await exportResources());
   return ExportKit.svgToCanvas(svg, widthPx, Math.round(widthPx*H/W));
 }
-$("exportPng").addEventListener("click", async ()=>{
+ExportKit.wireExport($("exportPng"), async ()=>{
   const size = parseInt($("exportSize").value, 10);
-  const btn = $("exportPng"), old = btn.textContent;
-  btn.textContent = "Rendering…"; btn.disabled = true;
-  try{
-    const cv = await renderToCanvas(size);
-    await ExportKit.downloadCanvasPNG(cv, slug()+"-plaque-"+size+".png");
-  }catch(err){ console.error(err); btn.textContent = "Failed"; }
-  setTimeout(()=>{ btn.textContent = old; btn.disabled = false; }, 400);
+  const cv = await renderToCanvas(size);
+  await ExportKit.downloadCanvasPNG(cv, slug()+"-plaque-"+size+".png");
 });
-$("exportSvg").addEventListener("click", async ()=>{
+ExportKit.wireExport($("exportSvg"), async ()=>{
   ExportKit.downloadSVG(buildSVG(await exportResources()), slug()+"-plaque.svg");
-});
+}, {busy:"Building…"});
 
 /* ================= panel wiring ================= */
 /* the "Custom…" swatch *is* the colour selector — a native <input type=color>
@@ -1191,11 +1063,7 @@ $("resetBtn").addEventListener("click", ()=>{
    colourways so it applies over any finish */
 const LS_KEY = "plaquebuilder-v3";
 const LS_OLD = ["plaquebuilder-v2", "plaquebuilder-v1"];
-let persistT = null;
-function persist(){
-  clearTimeout(persistT);
-  persistT = setTimeout(()=>{ try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }catch(e){} }, 150);
-}
+const persist = StateKit.persister(LS_KEY, () => S, 150);
 (async function boot(){
   try{
     let saved = localStorage.getItem(LS_KEY);
@@ -1227,7 +1095,7 @@ function persist(){
     RAMPS = await (await fetch((ERAS[S.era]||ERAS["2399"]).dir + "ramps.json")).json();
   }catch(e){ console.error("colour ramps failed to load", e); }
   buildSwatches(); render();
-  if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ measCache.clear(); render(); });
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ TextKit.clear(); render(); });
 })();
 </script>
 </body>

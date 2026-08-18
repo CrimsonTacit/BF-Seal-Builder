@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
-"""Embed assets into header-tool.html (the BFMS header/wordmark builder).
+"""Refresh header-tool.html's font + emblem registries.
 
     python3 tools/embed_header_assets.py
 
-Reuses the Sealstile font and TF emblem CHARGES already embedded in
-seal-tool.html (run tools/embed_assets.py first if those changed), and embeds
-four OFL-licensed webfonts downloaded from Google Fonts. Downloads are
-cached in fonts/webfonts/ so rebuilds work offline.
+Downloads four OFL-licensed webfonts from Google Fonts into fonts/webfonts/
+(cached, so rebuilds work offline) and writes the FONTS registry that points
+at them. The Sealstile entry and the TF emblem CHARGES block are copied from
+seal-tool.html, so run tools/embed_assets.py first if those changed.
+
+Nothing is base64-embedded: header-tool.html fetches these by URL and inlines
+them as data URIs only at export time.
 """
-import base64
-import json
 import re
 import urllib.request
 from pathlib import Path
@@ -47,23 +48,25 @@ def main():
     html = HEADER.read_text()
     idx = INDEX.read_text()
 
-    seal_b64 = re.search(r'const FONT_B64 = "([^"]*)"', idx).group(1)
     charges = re.search(r"/\*CHARGES_START\*/(.*?)/\*CHARGES_END\*/", idx, re.S).group(1)
 
     CACHE.mkdir(parents=True, exist_ok=True)
     fonts = [{"id": "sealstile", "label": "Sealstile (seal font)", "family": "Sealstile",
-              "weight": 400, "b64": seal_b64}]
+              "weight": 400, "url": "fonts/sealstile.woff2"}]
     for fid, label, family, spec, weight in WEBFONTS:
         p = CACHE / f"{fid}.woff2"
         if not p.exists():
             p.write_bytes(latin_woff2(spec))
             print(f"downloaded {label} -> {p.name}")
         fonts.append({"id": fid, "label": label, "family": family, "weight": weight,
-                      "b64": base64.b64encode(p.read_bytes()).decode()})
+                      "url": f"fonts/webfonts/{fid}.woff2"})
 
+    rows = ",\n".join(
+        '  {{id:"{id}", label:"{label}", family:"{family}", weight:{weight}, url:"{url}"}}'.format(**f)
+        for f in fonts)
     html, n = re.subn(
         r"/\*HDRFONTS_START\*/.*?/\*HDRFONTS_END\*/",
-        "/*HDRFONTS_START*/const FONTS = " + json.dumps(fonts) + ";/*HDRFONTS_END*/",
+        "/*HDRFONTS_START*/const FONTS = [\n" + rows + "\n];/*HDRFONTS_END*/",
         html, flags=re.S)
     assert n == 1, "HDRFONTS markers not found"
 
@@ -74,7 +77,7 @@ def main():
     assert n == 1, "CHARGES markers not found"
 
     HEADER.write_text(html)
-    print(f"embedded {len(fonts)} fonts + charges; wrote {HEADER}")
+    print(f"registered {len(fonts)} fonts + charges; wrote {HEADER}")
 
 
 if __name__ == "__main__":

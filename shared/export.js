@@ -1,4 +1,4 @@
-/* Asset + export helpers shared by banner-tool.html and plaque-tool.html.
+/* Asset + export helpers shared by every tool that loads assets by URL.
    Plain script, no modules: everything hangs off window.ExportKit.
 
    The live preview is inline SVG in the DOM, so it can reference fonts and
@@ -9,19 +9,32 @@
 const ExportKit = (() => {
 
   const duriCache = new Map();
-  /* Relative/absolute URL -> "data:...;base64,..." promise, memoized. */
+  /* Relative/absolute URL -> "data:...;base64,..." promise, memoized.
+
+     Only *successful* fetches stay cached. Caching a rejected promise would
+     mean one flaky request permanently broke every later export in the tab —
+     the retry would keep handing back the same rejection until a reload. */
   function fetchDataURI(url){
     if(!duriCache.has(url)){
-      duriCache.set(url, fetch(url)
+      const p = fetch(url)
         .then(r => { if(!r.ok) throw new Error(`fetch ${url}: ${r.status}`); return r.blob(); })
         .then(blob => new Promise((res, rej) => {
           const fr = new FileReader();
           fr.onload = () => res(fr.result);
-          fr.onerror = rej;
+          fr.onerror = () => rej(new Error(`read ${url}`));
           fr.readAsDataURL(blob);
-        })));
+        }))
+        .catch(err => { duriCache.delete(url); throw err; });
+      duriCache.set(url, p);
     }
     return duriCache.get(url);
+  }
+
+  /* Resolve several URLs at once into a { url: dataURI } map. */
+  function fetchDataURIs(urls){
+    const list = [...new Set(urls)].filter(Boolean);
+    return Promise.all(list.map(u => fetchDataURI(u).then(d => [u, d])))
+      .then(pairs => Object.fromEntries(pairs));
   }
 
   function fontFaceRule(family, weight, style, src){
@@ -68,5 +81,38 @@ const ExportKit = (() => {
     }, "image/png"));
   }
 
-  return { fetchDataURI, fontFaceRule, svgToCanvas, download, downloadSVG, downloadCanvasPNG };
+  /* Wire up an export button.
+
+     Every tool had this same block copy-pasted, and each copy had two holes:
+     the SVG button had no try/catch at all (a failed asset fetch surfaced as
+     an unhandled rejection and a button that just did nothing), and the
+     failure label cleared after 400ms — quicker than anyone can read. Failure
+     now holds long enough to notice and parks the reason on the tooltip. */
+  function wireExport(btn, run, opts){
+    if(typeof btn === "string") btn = document.getElementById(btn);
+    if(!btn) return;
+    const busyLabel = (opts && opts.busy) || "Rendering…";
+    let running = false;
+    btn.addEventListener("click", async () => {
+      if(running) return;              /* double-click shouldn't start two renders */
+      running = true;
+      const label = btn.textContent;
+      btn.textContent = busyLabel; btn.disabled = true; btn.removeAttribute("title");
+      let hold = 400;
+      try{
+        await run();
+      }catch(err){
+        console.error(err);
+        btn.textContent = "Export failed";
+        btn.title = String((err && err.message) || err);
+        hold = 2600;
+      }
+      setTimeout(() => {
+        btn.textContent = label; btn.disabled = false; running = false;
+      }, hold);
+    });
+  }
+
+  return { fetchDataURI, fetchDataURIs, fontFaceRule, svgToCanvas,
+           download, downloadSVG, downloadCanvasPNG, wireExport };
 })();

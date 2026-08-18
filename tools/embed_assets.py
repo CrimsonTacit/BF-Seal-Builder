@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""Re-embed binary assets into seal-tool.html (the Seal Builder).
+"""Refresh seal-tool.html's asset registry, and rebuild the Sealstile font.
 
 Run after changing the font or any emblem in assets/emblems/:
 
-    python3 tools/embed_assets.py            # emblems only (stdlib)
-    python3 tools/embed_assets.py --font     # also rebuild the embedded font (needs fontTools+brotli)
+    python3 tools/embed_assets.py            # emblem registry only (stdlib)
+    python3 tools/embed_assets.py --font     # also rebuild the font (needs fontTools+brotli)
 
-The app is a single self-contained file, so the Sealstile font (patched
-Librestile) and the task-force emblem PNGs live inside seal-tool.html as
-base64 constants.
+Nothing is base64-embedded any more. The tools are served over HTTP, so the
+emblems and the font are fetched by URL and inlined as data URIs only at
+export time (an SVG rasterised through an <img> can't fetch). This script
+therefore writes the CHARGES *registry* — names, pixel sizes and paths — plus
+the built font at fonts/sealstile.woff2.
 """
-import base64
-import json
 import re
 import struct
 import sys
@@ -42,12 +42,16 @@ def build_charges() -> str:
         charges[key] = {
             "name": EMBLEM_NAMES.get(key, key.upper()),
             "w": w, "h": h,
-            "b64": "data:image/png;base64," + base64.b64encode(data).decode(),
+            "url": f"assets/emblems/{key}.png",
         }
-    return "const CHARGES = " + json.dumps(charges) + ";"
+    rows = ",\n".join(
+        f'  "{k}": {{name:"{v["name"]}", w:{v["w"]}, h:{v["h"]}, url:"{v["url"]}"}}'
+        for k, v in charges.items()
+    )
+    return "const CHARGES = {\n" + rows + "\n};"
 
 
-def build_font_b64() -> str:
+def build_font_woff2() -> bytes:
     # "Sealstile" = Librestile Ext Bold (OFL 1.1, fonts/OFL-Librestile.txt) with
     # a bullet glyph added and cmap aliases for en dash / right quote. Librestile
     # ships no U+2022, but the seal text convention uses "•" as a separator.
@@ -99,7 +103,7 @@ def build_font_b64() -> str:
     f.flavor = "woff2"
     buf = BytesIO()
     f.save(buf)
-    return base64.b64encode(buf.getvalue()).decode()
+    return buf.getvalue()
 
 
 def main():
@@ -111,17 +115,13 @@ def main():
         html, flags=re.S,
     )
     assert n == 1, "CHARGES markers not found"
-    print(f"embedded {len(list(EMBLEM_DIR.glob('*.png')))} emblems")
+    print(f"registered {len(list(EMBLEM_DIR.glob('*.png')))} emblems")
 
     if "--font" in sys.argv:
-        b64 = build_font_b64()
-        html, n = re.subn(r'const FONT_B64 = "[^"]*";', f'const FONT_B64 = "{b64}";', html)
-        assert n == 1, "FONT_B64 not found"
-        print(f"embedded font ({len(b64)} chars)")
-        # banner/plaque tools load the font as a file instead of embedding it
+        # every tool loads this by URL; nothing embeds it
         loose = INDEX.parent / "fonts" / "sealstile.woff2"
-        loose.write_bytes(base64.b64decode(b64))
-        print("wrote", loose)
+        loose.write_bytes(build_font_woff2())
+        print(f"wrote {loose} ({loose.stat().st_size} bytes)")
 
     INDEX.write_text(html)
     print("wrote", INDEX)
