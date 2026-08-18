@@ -235,7 +235,7 @@
       </div>
     </details>
 
-    <details class="acc" open>
+    <details class="acc" id="secEdge" open>
       <summary>Edge Text</summary>
       <div class="acc-body">
         <div class="sublabel">Left edge</div>
@@ -263,7 +263,7 @@
       </div>
     </details>
 
-    <details class="acc">
+    <details class="acc" id="secCentre">
       <summary>Centre Text</summary>
       <div class="acc-body">
         <div class="sublabel">Line 1</div>
@@ -479,7 +479,7 @@ const LAYOUT = {
     ringW:[20,77,20,16], ringOn:[true,true,true,false],
     eL_on:true, eR_on:true, eB_on:true,
     eL_size:42, eR_size:42, eB_size:42,
-    eL_inset:90, eR_inset:84, eB_inset:67, eTrack:0.02,
+    eL_inset:75, eR_inset:75, eB_inset:60, eTrack:0.02,
     t1_on:false, t2_on:false, t3_on:false,
   },
   /* The canon project patches set their three centre lines in a condensed bold
@@ -491,7 +491,7 @@ const LAYOUT = {
     ringW:[15,18,20,16], ringOn:[true,true,false,false],
     eL_on:false, eR_on:false, eB_on:false,
     eL_size:42, eR_size:42, eB_size:42,
-    eL_inset:90, eR_inset:84, eB_inset:67, eTrack:0.02,
+    eL_inset:75, eR_inset:75, eB_inset:60, eTrack:0.02,
     t1_on:true, t2_on:true, t3_on:true,
     t1_size:64, t1_track:0.02, t1_base:232,
     t2_size:46, t2_track:0.10, t2_base:150,
@@ -837,6 +837,10 @@ function applyType(type){
   });
   S.ringW = L.ringW.slice();
   S.ringOn = L.ringOn.slice();
+  /* a patch reads as one or the other in practice, so follow the type into the
+     panel: open the section it just switched the text on in, close the other */
+  $("secEdge").open   = type === "triangle";
+  $("secCentre").open = type === "project";
   syncUI(); render(); persist();
 }
 $("typeSeg").addEventListener("click", e => {
