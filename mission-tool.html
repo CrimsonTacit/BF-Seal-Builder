@@ -266,9 +266,13 @@
     <details class="acc" open>
       <summary>Colour Scheme</summary>
       <div class="acc-body">
-        <div class="row"><input type="checkbox" data-k="schemeInv" id="schemeInv"><label>Inverted — dark type on a pale field</label></div>
+        <div class="seg" data-seg="schemeMode" id="schemeModeSeg">
+          <button data-v="std">Standard</button>
+          <button data-v="swap">Swapped</button>
+          <button data-v="inv">Inverted</button>
+        </div>
         <div id="schemeGroups"></div>
-        <div class="hint">The Seal Builder's full palette. A scheme only moves colours — the type's ink and fade, the outline and glow, the frame, the backdrop, the stars and the scrims — so pick a <b>style</b> for the look and a scheme to colour it, in either order. <b>Inverted</b> reads each scheme the other way up: the field goes pale, the type takes the theme colour, and the scrims turn white. The swatches preview whichever reading is switched on.</div>
+        <div class="hint">The Seal Builder's full palette. A scheme only moves colours — the type's ink and fade, the outline and glow, the frame, the backdrop, the stars and the scrims — so pick a <b>style</b> for the look and a scheme to colour it, in either order. Each scheme reads three ways: <b>Standard</b> puts the light accent in the type over the theme colour's outline, <b>Swapped</b> trades those two round so the type itself carries the theme colour, and <b>Inverted</b> turns the whole poster over — pale field, dark type, white scrims. The swatches preview whichever reading is picked.</div>
       </div>
     </details>
 
@@ -576,7 +580,7 @@ const DEFAULTS = (() => {
     frame:"none", frInset:36, frW:8, frGap:14, frRadius:0, frCorner:260,
     frFill:"solid", frCol:"#d3a92c", frMat:"gold", frMatCustom:"#c9992e", frRelief:true,
     /* artwork */
-    c_back:"#080d16", scheme:"", schemeInv:false,
+    c_back:"#080d16", scheme:"", schemeMode:"std",
     stars:true, starSeed:1701, starDensity:800, starSparkles:true, starFore:"#cfe0f4",
     imgZoom:1, imgX:0, imgY:0,
     bright:1, contrast:1, sat:1,
@@ -636,6 +640,41 @@ const PRESETS = [
     all:{ fill:"solid", col:"#ffffff", relief:"raised", strokeOn:true, glowOn:true, shadowOn:true },
     fx:{ strokeCol:"#7c0309", glowCol:"#c2160f", glowSize:4, glowBlur:30, glowOp:.6, bevel:4, shine:.8, shadowOp:.5, shadowDy:4, shadowBlur:8 },
     frame:{ frame:"double", frCol:"#7c0309", frInset:36, frW:6, frGap:10, frRadius:0, frRelief:false, frFill:"solid" } },
+
+  { name:"Etched Bronze", group:"Novel Cover", sw:["#c98f3d","#3a2a18"],
+    all:{ fill:"metal", mat:"bronze", matCustom:"#a9702c", relief:"inlay", strokeOn:false, glowOn:false, shadowOn:false },
+    fx:{ bevel:6, shine:.5, shadowOp:.4, shadowDy:3, shadowBlur:6 },
+    frame:{ frame:"deco", frCol:"#a9702c", frInset:44, frW:4, frGap:10, frRadius:0, frRelief:false, frFill:"solid" } },
+
+  { name:"Paperback", group:"Novel Cover", sw:["#f5ead4","#c9a544"],
+    all:{ fill:"solid", col:"#f5ead4", relief:"none", strokeOn:false, glowOn:false, shadowOn:true },
+    fx:{ shadowOp:.5, shadowDy:3, shadowBlur:10 },
+    frame:{ frame:"rule", frCol:"#c9a544", frInset:52, frW:2, frRadius:0, frRelief:false, frFill:"solid" } },
+
+  { name:"Chrome Titles", group:"Movie Poster", sw:["#e8eef6","#2a3340"],
+    all:{ fill:"metal", mat:"platinum", matCustom:"#9fb2c6", relief:"raised", strokeOn:true, glowOn:false, shadowOn:true },
+    fx:{ strokeCol:"#141a22", bevel:9, shine:1.15, shadowOp:.6, shadowDy:7, shadowBlur:12 },
+    frame:{ frame:"none" } },
+
+  { name:"Neon Noir", group:"Movie Poster", sw:["#ffd9f6","#22d3ee"],
+    all:{ fill:"solid", col:"#ffd9f6", relief:"none", strokeOn:true, glowOn:true, shadowOn:false },
+    fx:{ strokeCol:"#ff2fc4", glowCol:"#22d3ee", glowSize:5, glowBlur:34, glowOp:.85, shadowOp:.4, shadowDy:0, shadowBlur:14 },
+    frame:{ frame:"letterbox", frCol:"#05060a", frInset:0, frW:60, frRadius:0, frRelief:false, frFill:"solid" } },
+
+  /* the solid band and the wide-inset rules are the two frame kinds no other
+     style reaches for, and both belong to flat printed art rather than to a
+     jacket or a one-sheet */
+  { name:"Gallery Print", group:"Print", sw:["#ece7dc","#23262e"],
+    all:{ fill:"solid", col:"#ece7dc", relief:"none", strokeOn:false, glowOn:false, shadowOn:false },
+    fx:{ shadowOp:.35, shadowDy:2, shadowBlur:8 },
+    /* the band is a mat, so it wants to read as a border against dark art too —
+       pure black would simply vanish into a night sky */
+    frame:{ frame:"band", frCol:"#23262e", frInset:0, frW:64, frRadius:0, frRelief:false, frFill:"solid" } },
+
+  { name:"Blueprint", group:"Print", sw:["#dbeaff","#0b2f5c"],
+    all:{ fill:"solid", col:"#dbeaff", relief:"none", strokeOn:true, glowOn:false, shadowOn:false },
+    fx:{ strokeCol:"#0b2f5c", shadowOp:.35, shadowDy:2, shadowBlur:6 },
+    frame:{ frame:"double", frCol:"#8fb8e8", frInset:50, frW:2, frGap:8, frRadius:0, frRelief:false, frFill:"solid" } },
 ];
 
 /* ================= colour schemes =================
@@ -672,38 +711,71 @@ const SCHEMES = [
   { name:"Healer",          group:"Other",                band:"#2e6b7e", accent:"#dfe5e9", deep:"#4a5a6e", star:"#e8ecef" },
 ];
 
-/* Each scheme can be read two ways, and `S.schemeInv` picks which — one table,
-   twice the options, and no second set of hand-picked colours to keep in step
-   with the seal tool's palette. Upright is the reference poster: light ink on
-   the scheme's darkest shade, black scrims. Inverted swaps the roles — the
-   field goes pale and the ink takes the theme colour, which is a different
-   poster rather than the same one with the hue moved, and the scrims have to
-   turn white with it or they would fight the type they exist to support.
+/* Each scheme reads three ways and `S.schemeMode` picks which — one table,
+   three times the options, and no second set of hand-picked colours to keep in
+   step with the seal tool's palette.
 
-   Two guards keep that honest across the whole palette: `band` is only
-   lightened into a field when there is room to lighten it (Medical White's band
-   is already near-white), and the ink falls back to `deep` whenever the field
-   didn't end up far enough from the band to read against it (Bolt Gold). */
+     std   the reference poster: the light `accent` in the type, the theme
+           colour `band` in the outline and glow, over the scheme's darkest
+           shade, black scrims.
+     swap  the same poster with primary and secondary traded round — the type
+           carries the theme colour and the accent moves out to the outline.
+           The field stays dark, so this is a recolour of the same design
+           rather than a different one.
+     inv   the whole poster turned over: a pale field lightened out of `band`,
+           dark type, and white scrims — a black scrim on a pale poster fights
+           the type it exists to support, which is what `S.overlayCol` is for.
+
+   Each reading carries a guard, because the palette is not uniform. `std`:
+   three schemes set `accent` to the same near-black as `deep` (Bolt Gold and
+   Operations Gold share one hex outright), which put the ink and the backdrop
+   on top of each other, so a non-separating accent becomes a pale wash of the
+   theme colour. `swap`: the theme colour is often close to its own darkest
+   shade (Federation's `band` and `deep` are the same navy), so the ink is
+   lifted toward white until it clears the backdrop. `inv`: `band` is only
+   lightened into a field when there is room to lighten it (Medical White's is
+   already near-white), and the ink falls back to `deep` when the field didn't
+   land far enough from it (Bolt Gold). */
 const lum = h => { const [r,g,b] = Metal.hexRgb(h); return (.2126*r + .7152*g + .0722*b)/255; };
-function schemeColors(c, inv){
-  if(!inv){
-    /* `accent` is normally the light ring colour, but three schemes set it to
-       the same near-black as `deep` (Bolt Gold and Operations Gold literally
-       share one hex; Medical White's is darker still) — which put the ink and
-       the backdrop on top of each other. When the two don't separate, the ink
-       becomes a pale wash of the theme colour instead. */
-    const ink = (lum(c.accent) - lum(c.deep) > .3) ? c.accent : Metal.ltn(c.band, .82);
+/* WCAG relative luminance and contrast ratio — the plain weighted average above
+   is fine for "are these two far apart", but the swap guard is deciding how far
+   to lift an ink until it reads, which wants the gamma-corrected one. */
+function relLum(h){
+  const c = Metal.hexRgb(h).map(v => { v /= 255; return v <= .03928 ? v/12.92 : Math.pow((v+.055)/1.055, 2.4); });
+  return .2126*c[0] + .7152*c[1] + .0722*c[2];
+}
+function contrast(a, b){
+  const x = relLum(a)+.05, y = relLum(b)+.05;
+  return Math.max(x,y)/Math.min(x,y);
+}
+function lift(ink, back, want){
+  for(let t = 0; t < .65; t += .05){
+    const v = Metal.ltn(ink, t);
+    if(contrast(v, back) >= want) return v;
+  }
+  return Metal.ltn(ink, .65);
+}
+function schemeColors(c, mode){
+  if(mode === "inv"){
+    const bl = lum(c.band);
+    const field = bl > .74 ? c.band : Metal.ltn(c.band, .84);
+    const ink = (lum(field) - bl > .34) ? c.band : c.deep;
     return {
-      ink, fade:c.band, line:c.band, glow:c.band,
+      ink, fade:c.deep, line:c.deep, glow:c.deep,
+      back:field, star:Metal.dkn(c.band, .35), frame:ink, ramp:c.band, overlay:"#ffffff",
+    };
+  }
+  if(mode === "swap"){
+    const ink = lift(c.band, c.deep, 3.2);
+    return {
+      ink, fade:c.accent, line:c.accent, glow:c.accent,
       back:c.deep, star:c.star, frame:ink, ramp:c.band, overlay:"#000000",
     };
   }
-  const bl = lum(c.band);
-  const field = bl > .74 ? c.band : Metal.ltn(c.band, .84);
-  const ink = (lum(field) - bl > .34) ? c.band : c.deep;
+  const ink = (lum(c.accent) - lum(c.deep) > .3) ? c.accent : Metal.ltn(c.band, .82);
   return {
-    ink, fade:c.deep, line:c.deep, glow:c.deep,
-    back:field, star:Metal.dkn(c.band, .35), frame:ink, ramp:c.band, overlay:"#ffffff",
+    ink, fade:c.band, line:c.band, glow:c.band,
+    back:c.deep, star:c.star, frame:ink, ramp:c.band, overlay:"#000000",
   };
 }
 
@@ -1365,8 +1437,10 @@ function paintSchemes(){
     <div class="swgroup">
       <div class="swgroup-label">${esc(g.name)}</div>
       <div class="swatches">${g.items.map(c => {
-        const P = schemeColors(c, S.schemeInv);
-        const pair = S.schemeInv ? [P.back, P.ink] : [c.accent, c.band];
+        const P = schemeColors(c, S.schemeMode);
+        /* inverted's story is the pale field, the other two are ink against
+           outline — so the swatch shows whichever pair the reading is about */
+        const pair = S.schemeMode === "inv" ? [P.back, P.ink] : [P.ink, P.line];
         return `<button class="sw" data-scheme="${esc(c.name)}" title="${esc(c.name)}"
           style="background:linear-gradient(135deg,${pair[0]} 0 46%,${pair[1]} 46% 100%)"></button>`;
       }).join("")}</div>
@@ -1378,17 +1452,18 @@ function buildSchemes(){
     const b = e.target.closest("[data-scheme]"); if(!b) return;
     applyScheme(b.dataset.scheme);
   });
-  /* bindInputs also holds this checkbox, but it is wired later in boot and so
-     fires second — set the flag here rather than reading a stale S */
-  $("schemeInv").addEventListener("change", e => {
-    S.schemeInv = e.target.checked;
+  /* bindInputs also holds this segment, but it is wired later in boot and so
+     fires second — set the mode here rather than reading a stale S */
+  $("schemeModeSeg").addEventListener("click", e => {
+    const b = e.target.closest("[data-v]"); if(!b) return;
+    S.schemeMode = b.dataset.v;
     paintSchemes();
     if(S.scheme) applyScheme(S.scheme);
   });
 }
 function applyScheme(name){
   const c = SCHEMES.find(x => x.name === name); if(!c) return;
-  const P = schemeColors(c, S.schemeInv);
+  const P = schemeColors(c, S.schemeMode);
   S.scheme = name;
   S.strokeCol = P.line;
   S.glowCol = P.glow;
@@ -1503,7 +1578,8 @@ $("resetBtn").addEventListener("click", ()=>{
 });
 
 /* ================= persistence ================= */
-const LS_KEY = "missionbuilder-v1";
+const LS_KEY = "missionbuilder-v2";
+const LS_OLD = ["missionbuilder-v1"];
 let persistT = null;
 function persist(){
   clearTimeout(persistT);
@@ -1514,8 +1590,15 @@ function persist(){
 (function boot(){
   buildTextRows(); buildPresets(); buildSchemes();
   try{
-    const saved = localStorage.getItem(LS_KEY);
-    if(saved) S = Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), JSON.parse(saved));
+    let raw = localStorage.getItem(LS_KEY), old = false;
+    for(const k of LS_OLD){ if(raw) break; raw = localStorage.getItem(k); old = !!raw; }
+    if(raw){
+      const j = JSON.parse(raw);
+      /* v1 carried a single inverted flag; the three readings replaced it */
+      if(old) j.schemeMode = j.schemeInv ? "inv" : "std";
+      delete j.schemeInv;
+      S = Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), j);
+    }
   }catch(e){}
   if(!RATIOS[S.ratio]) S.ratio = DEFAULTS.ratio;
   $("copyYear").textContent = new Date().getFullYear();
