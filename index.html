@@ -36,7 +36,7 @@
     color:var(--ink-dim);letter-spacing:.18em;font-size:11px;text-transform:uppercase;
     text-align:center;margin-top:8px;
   }
-  .cards{display:flex;gap:22px;flex-wrap:wrap;justify-content:center;max-width:1320px}
+  .cards{display:flex;gap:22px;flex-wrap:wrap;justify-content:center;max-width:980px}
   a.card{
     display:flex;flex-direction:column;align-items:center;gap:16px;
     width:290px;padding:30px 26px 26px;text-decoration:none;color:var(--ink);
@@ -103,6 +103,19 @@
   .mark-plq i{
     display:block;width:48px;height:44px;border-radius:3px;border:3px solid #c9a541;
   }
+  /* patch mark: nested triangles, the border rings scaled off the incenter
+     (2/3 down) the way the tool insets them — exaggerated so the thin rails
+     still read at 72px */
+  .mark-pat{width:72px;height:62px;position:relative;flex:none}
+  .mark-pat i{
+    position:absolute;inset:0;display:block;
+    clip-path:polygon(50% 0,100% 100%,0 100%);
+    transform-origin:50% 66.7%;
+  }
+  .mark-pat i:nth-child(1){background:#2864a8}
+  .mark-pat i:nth-child(2){background:#d3a92c;transform:scale(.88)}
+  .mark-pat i:nth-child(3){background:#2864a8;transform:scale(.62)}
+  .mark-pat i:nth-child(4){background:#13223a;transform:scale(.55)}
   footer{
     color:var(--ink-dim);font-size:10px;letter-spacing:.08em;line-height:1.8;
     text-transform:uppercase;text-align:center;
@@ -142,12 +155,18 @@
     <p>Dedication plaques from the original 2399 artwork — twelve backings, seven trims, editable rosters, raised or engraved lettering.</p>
     <div class="go">Open →</div>
   </a>
+  <a class="card" href="patch-tool.html">
+    <div class="mark-pat"><i></i><i></i><i></i><i></i></div>
+    <h2>Patch Builder</h2>
+    <p>Triangular patches — the wide-bordered command patch with type along its edges, or a rounded development-project patch with the title inside.</p>
+    <div class="go">Open →</div>
+  </a>
 </div>
 
 <footer>
   © Bravo Fleet 1997–<span id="copyYear"></span><br>
   Seal design by <b>CrimsonTacit</b> · original Columbia header by <b>JustSlide</b><br>
-  Banner and plaque artwork © <b>Bravo Fleet</b>
+  Banner, plaque and patch artwork © <b>Bravo Fleet</b>
 </footer>
 
 <script>
