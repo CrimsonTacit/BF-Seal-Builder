@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Re-embed binary assets into index.html.
+"""Re-embed binary assets into seal-tool.html (the Seal Builder).
 
 Run after changing the font or any emblem in TFEmblems/:
 
@@ -7,8 +7,8 @@ Run after changing the font or any emblem in TFEmblems/:
     python3 tools/embed_assets.py --font     # also rebuild the embedded font (needs fontTools+brotli)
 
 The app is a single self-contained file, so the Sealstile font (patched
-Librestile) and the task-force emblem PNGs live inside index.html as base64
-constants.
+Librestile) and the task-force emblem PNGs live inside seal-tool.html as
+base64 constants.
 """
 import base64
 import json
@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-INDEX = ROOT / "index.html"
+INDEX = ROOT / "seal-tool.html"
 EMBLEM_DIR = ROOT / "TFEmblems"
 FONT_SRC = ROOT / "fonts/LibrestileExtBold.ttf"
 
