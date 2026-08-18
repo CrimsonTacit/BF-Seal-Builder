@@ -9,18 +9,30 @@ build — run it only when the source PSD changes and commit the results.
 
 The PSD carries every part in every colourway (12 backings, 7 border
 materials, 8 text materials). Every colourway of a given part turns out to be
-the *same* grayscale art run through a different colour ramp — verified here
-by correlating luminance between variants — so instead of shipping dozens of
-full-size PNGs we ship one grayscale PNG per part plus a small colour table
+the *same* grayscale art run through a different colour ramp, so instead of
+shipping dozens of full-size PNGs we ship one grayscale PNG per part plus a
+small colour table
 per variant. The tool re-applies the ramp at render time with an SVG
 <feComponentTransfer type="table">, which reproduces the original pixels and
-also lets a user pick a colour the PSD never had.
+also lets a user pick a colour the PSD never had. Each table is checked by
+replaying it over the grayscale base and diffing against the variant the PSD
+actually draws; everything here lands within a few counts of 255.
+
+The metal parts come out as four *independently colourable* pieces, because
+that is how the PSD builds them: `Border/<variant>` holds `Bolts` over the
+rails, and `Badge` holds a `Bars` group and a `Delta` group with their own
+variant stacks. Each piece ships twice — a polished base and a matte one —
+since the two finishes bevel in opposite directions (measured: polished
+variants correlate ~0.98+ with each other, matte ones anti-correlate), and
+one ramp table cannot serve both.
 
 Writes:
-    assets/plaque/plate.png    grayscale + alpha, the plate/backing
-    assets/plaque/border.png   grayscale + alpha, frame rails + corner bolts
-    assets/plaque/badge.png    grayscale + alpha, 2399 delta + bars
-    assets/plaque/ramps.json   colour tables for every variant + text ramps
+    assets/plaque/plate.png        grayscale + alpha, the plate/backing
+    assets/plaque/frame.png        + frame-matte.png   the frame rails
+    assets/plaque/bolts.png        + bolts-matte.png   the corner bolts
+    assets/plaque/delta.png        + delta-matte.png   the 2399 badge delta
+    assets/plaque/bars.png         + bars-matte.png    the badge bars
+    assets/plaque/ramps.json       colour tables for every variant + text ramps
 """
 import json
 from pathlib import Path
@@ -33,6 +45,23 @@ ROOT = Path(__file__).resolve().parent.parent
 PSD_PATH = ROOT / "examples" / "Plaques" / "NewPlaqueDesign copy.psd"
 OUT = ROOT / "assets" / "plaque"
 STEPS = 33  # table resolution for the gradient maps
+
+# Colourway ids as the tool knows them, mapped to each part's PSD layer names.
+# The polished and matte sets are extracted separately (opposite bevels).
+POLISHED = {
+    "border": {"gold": "Gold Border Shiny", "silver": "Silver Border Shiny", "blue": "Blue Border"},
+    "delta": {"gold": "Gold Delta Shiny", "silver": "Silver Delta Shiny", "blue": "Blue Delta"},
+    # the PSD has no blue bars; that one ramp is borrowed from the delta below
+    "bars": {"gold": "Gold Bars Shiny", "silver": "Silver Bars Shiny"},
+}
+MATTE = {
+    "border": {"goldMatte": "Gold Border", "silverMatte": "Silver Border",
+               "steel": "Steel Border", "black": "Black Border"},
+    "delta": {"goldMatte": "Gold Delta", "silverMatte": "Silver Delta",
+              "steel": "Steel Delta", "black": "Black Delta"},
+    "bars": {"goldMatte": "Gold Bars", "silverMatte": "Silver Bars",
+             "steel": "Steel Bars", "black": "Black Bars"},
+}
 
 
 def find(group, name):
@@ -75,9 +104,21 @@ def ramp_from(lum, alpha, rgba, lo, hi):
     return [[round(v / 255, 5) for v in row] for row in table]
 
 
-def part(psd, group, variants, default, out_name, results_key, results):
-    """Write one grayscale PNG for `group` + a colour table per variant."""
-    base = as_rgba(solo(group, default), psd) if variants else as_rgba(group, psd)
+def apply_ramp(lum, lo, hi, table):
+    """Render a ramp table over a part's own luminance — the tool's feComponentTransfer."""
+    t = np.clip((lum - lo) / (hi - lo), 0, 1)
+    xs = np.linspace(0, 1, STEPS)
+    arr = np.array(table)
+    return np.dstack([np.interp(t, xs, arr[:, c]) * 255 for c in range(3)])
+
+
+def part(psd, render, variants, default, out_name, results_key, results):
+    """Write one grayscale PNG for a part + a colour table per variant.
+
+    `render(variant_name)` composites the part in that colourway; `default`
+    is the variant the grayscale base is normalised from.
+    """
+    base = render(default)
     lum, alpha = gray_and_alpha(base)
     inside = alpha > 250
     lo, hi = float(lum[inside].min()), float(lum[inside].max())
@@ -90,17 +131,38 @@ def part(psd, group, variants, default, out_name, results_key, results):
     img.save(OUT / out_name, optimize=True)
     print(f"  {out_name}: {img.size} {(OUT / out_name).stat().st_size // 1024} KB")
 
+    # What matters is not whether a variant *correlates* with the base but
+    # whether its table, replayed over the base, lands back on its own pixels:
+    # the low-contrast mattes correlate poorly (their range is a few dozen
+    # counts, so antialiasing dominates) yet still reconstruct to ~1/255.
     ramps = {}
     for vid, vname in variants.items():
-        rgba = as_rgba(solo(group, vname), psd)
-        vlum, valpha = gray_and_alpha(rgba)
-        corr = np.corrcoef(lum[inside].ravel(), vlum[inside].ravel())[0, 1]
-        if corr < 0.97:
-            print(f"    ! {vname}: luminance correlation {corr:.3f} — not a pure recolour")
+        rgba = render(vname)
         ramps[vid] = ramp_from(lum, alpha, rgba, lo, hi)
-    if not variants:
-        ramps["default"] = ramp_from(lum, alpha, base, lo, hi)
+        err = np.abs(apply_ramp(lum, lo, hi, ramps[vid])[inside]
+                     - rgba[:, :, :3][inside]).mean()
+        flag = "!" if err > 8 else " "
+        print(f"    {flag} {vname}: reconstructs to {err:.1f}/255")
     results[results_key] = ramps
+    return {"lum": lum, "alpha": alpha, "lo": lo, "hi": hi, "render": render}
+
+
+def borrow(dst, dst_key, results, vid, donor_key, check_vid, check_layer):
+    """Copy a colourway the PSD never drew for this part off a sibling part.
+
+    Both pieces are the same metal in every colourway that *does* exist, and
+    both tables are indexed by position within their own part's dynamic range,
+    so the donor's table transfers directly. The printed check re-renders a
+    colourway both parts do have, through the donor's table, to show what that
+    transfer costs in raw pixel counts.
+    """
+    results[dst_key][vid] = list(results[donor_key][vid])
+    got = apply_ramp(dst["lum"], dst["lo"], dst["hi"], results[donor_key][check_vid])
+    want = dst["render"](check_layer)[:, :, :3]
+    m = dst["alpha"] > 250
+    err = np.abs(got[m] - want[m]).mean()
+    print(f"    borrowed {vid!r} from {donor_key} "
+          f"(cross-check on {check_vid!r}: mean error {err:.1f}/255)")
 
 
 def text_ramps(psd, text_group, variants):
@@ -141,29 +203,49 @@ def main():
     results = {}
 
     print("plate:")
-    part(psd, find(color, "Backing"), {
+    backing = find(color, "Backing")
+    part(psd, lambda n: as_rgba(solo(backing, n), psd), {
         "blue": "Blue Backing", "steel": "Steel Backing", "silver": "Silver Backing",
         "gold": "Gold Backing", "bronze": "Bronze Backing", "copper": "Copper Backing",
         "emerald": "Emerald Backing", "ruby": "Ruby Backing", "cyan": "Green-Cyan Backing",
         "cobalt": "Cobalt Backing", "amethyst": "Amethyst Backing", "black": "Black Backing",
     }, "Blue Backing", "plate.png", "plate", results)
 
-    # The border ships in two finishes whose bevels run opposite ways (a
-    # polished rail lit from above vs a matte one), so they need separate
-    # grayscale bases — one ramp table cannot serve both.
-    print("border (polished):")
-    part(psd, find(color, "Border"), {
-        "gold": "Gold Border Shiny", "silver": "Silver Border Shiny", "blue": "Blue Border",
-    }, "Gold Border Shiny", "border.png", "border", results)
+    # Each border colourway is its own group holding the bolts over the rails;
+    # solo the colourway, then solo the piece inside it.
+    border = find(color, "Border")
 
-    print("border (matte):")
-    part(psd, find(color, "Border"), {
-        "goldMatte": "Gold Border", "silverMatte": "Silver Border",
-        "steel": "Steel Border", "black": "Black Border",
-    }, "Gold Border", "border-matte.png", "borderMatte", results)
+    def border_piece(bolts):
+        def render(vname):
+            for v in border:
+                v.visible = v.name == vname
+            g = find(border, vname)
+            for layer in g:
+                layer.visible = (layer.name == "Bolts") == bolts
+            return as_rgba(g, psd)
+        return render
 
-    print("badge:")
-    part(psd, find(color, "Badge"), {}, None, "badge.png", "badge", results)
+    badge = find(color, "Badge")
+    bars_group, delta_group = find(badge, "Bars"), find(badge, "Delta")
+
+    def group_piece(group):
+        return lambda vname: as_rgba(solo(group, vname), psd)
+
+    pieces = [
+        ("frame", border_piece(False), "border", "Gold Border Shiny", "Gold Border"),
+        ("bolts", border_piece(True), "border", "Gold Border Shiny", "Gold Border"),
+        ("delta", group_piece(delta_group), "delta", "Gold Delta Shiny", "Gold Delta"),
+        ("bars", group_piece(bars_group), "bars", "Gold Bars Shiny", "Gold Bars"),
+    ]
+    for key, render, vkey, shiny_default, matte_default in pieces:
+        print(f"{key} (polished):")
+        info = part(psd, render, POLISHED[vkey], shiny_default,
+                    f"{key}.png", key, results)
+        if key == "bars":
+            borrow(info, key, results, "blue", "delta", "gold", "Gold Bars Shiny")
+        print(f"{key} (matte):")
+        part(psd, render, MATTE[vkey], matte_default,
+             f"{key}-matte.png", key + "Matte", results)
 
     print("text ramps:")
     results["text"] = text_ramps(psd, find(color, "Text"), {
