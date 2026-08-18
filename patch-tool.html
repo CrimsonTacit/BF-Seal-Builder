@@ -177,8 +177,19 @@
     background-color:#eceef1;
     background-image:linear-gradient(180deg,#f6f7f9,#dfe2e7);
   }
-  #patchwrap{position:relative;z-index:1;height:min(92%, 900px);display:flex;align-items:center}
-  #patchwrap svg{height:100%;width:auto;max-width:100%;display:block}
+  /* The wrap fills the stage and centres the patch itself, rather than being
+     sized by it: a flex item whose width comes from a percentage height on a
+     replaced child is the case Safari resolves to the SVG's intrinsic width,
+     which overflows the stage and leaves the art flush to the panel. Same fix
+     as the mission tool's #posterwrap. */
+  #patchwrap{
+    position:relative;z-index:1;width:100%;height:100%;
+    padding:22px 22px 40px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  #patchwrap svg{
+    width:auto;height:auto;max-width:100%;max-height:min(100%, 900px);display:block;
+  }
   .stagehint{
     position:absolute;bottom:14px;left:0;right:0;text-align:center;z-index:1;
     color:rgba(140,155,175,.7);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
