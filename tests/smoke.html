@@ -19,7 +19,7 @@
   table{border-collapse:collapse;margin-top:18px;width:100%;max-width:1000px}
   th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
   th{color:var(--dim);font-weight:normal;text-transform:uppercase;font-size:11px;letter-spacing:.1em}
-  .pass{color:var(--ok)} .fail{color:var(--bad)} .pend{color:var(--dim)}
+  .pass{color:var(--ok)} .fail{color:var(--bad)} .pend{color:var(--dim)} .note{color:var(--warn)}
   .why{color:var(--dim);font-size:12px}
   #summary{margin-top:18px;font-size:14px}
   iframe{position:fixed;left:-9999px;top:0;width:1440px;height:1000px;border:0}
@@ -45,13 +45,30 @@
 const TOOLS = ["index","seal-tool","header-tool","banner-tool","plaque-tool","patch-tool","mission-tool"];
 const $ = id => document.getElementById(id);
 
+/* Errors are split by whether they can be attributed to the page at all.
+
+   An error thrown by a script from another origin is reported to the page as
+   the bare string "Script error." with no file and no line — the browser
+   withholds the detail on purpose. On these pages, whose only scripts are our
+   own, that means something injected from outside: nearly always a browser
+   extension's content script. Failing the suite on those trains people to
+   ignore it, so they are reported separately as a note.
+
+   Note also that this listener attaches at load, i.e. after the page's own
+   scripts have already run, so it catches async errors rather than
+   parse/boot-time ones. Boot failures are caught by outcome instead — see the
+   "page's own JS ran" check below, and the export checks for the tools. */
 function load(page){
   return new Promise(resolve => {
-    const errs = [];
+    const errs = [], foreign = [];
     const fr = document.createElement("iframe");
     fr.onload = () => {
-      fr.contentWindow.addEventListener("error", e => errs.push(e.message));
-      setTimeout(() => resolve({fr, errs}), 1500);
+      fr.contentWindow.addEventListener("error", e => {
+        const attributable = e.filename && e.filename.length;
+        (attributable ? errs : foreign).push(
+          attributable ? `${e.message} (${e.filename.split("/").pop()}:${e.lineno})` : e.message);
+      });
+      setTimeout(() => resolve({fr, errs, foreign}), 1500);
     };
     fr.src = "../" + page + ".html?cb=" + Date.now();
     document.body.appendChild(fr);
@@ -107,8 +124,11 @@ async function assetsResolve(page){
 
 async function runOne(page){
   const checks = [];
-  const {fr, errs} = await load(page);
+  const {fr, errs, foreign} = await load(page);
   checks.push({name:"loads with no JS errors", ok: errs.length===0, why: errs.join("; ")});
+  if (foreign.length) checks.push({name:"note — error from a cross-origin script", ok:true, note:true,
+    why: `${foreign.join("; ")} — not attributable to this page (no file or line given). ` +
+         `Almost always a browser extension; re-check in a private window with extensions off.`});
 
   const assets = await assetsResolve(page);
   checks.push({name:`all ${assets.count} referenced assets resolve`, ok: assets.bad.length===0,
@@ -127,7 +147,13 @@ async function runOne(page){
     checks.push({name:"export is self-contained", ok: !r.external, why: r.external ? "still references an external URL" : ""});
     checks.push({name:"font inlined in export", ok: r.fontInlined});
   } else if (r && r.landing) {
-    checks.push({name:"landing page (no export)", ok:true});
+    /* the landing page has no export to prove its JS ran, so check its one
+       visible effect instead — this is what catches a boot-time failure that
+       the error listener attaches too late to see */
+    const yr = doc.getElementById("copyYear");
+    checks.push({name:"page's own JS ran", ok: !!(yr && /^\d{4}$/.test(yr.textContent)),
+                 why: yr ? `copyright year = "${yr.textContent}"` : "#copyYear missing"});
+    checks.push({name:"links to all six tools", ok: doc.querySelectorAll('a[href$="-tool.html"]').length === 6});
   }
   fr.remove();
   return checks;
@@ -151,7 +177,7 @@ $("run").addEventListener("click", async () => {
     tr.children[1].className = bad.length ? "fail" : "pass";
     tr.children[1].textContent = bad.length ? "FAIL" : "pass";
     tr.children[2].innerHTML = checks.map(c =>
-      `<div class="${c.ok?'pass':'fail'}">${c.ok?'✓':'✗'} ${c.name}${c.why?` <span class="why">— ${c.why}</span>`:''}</div>`
+      `<div class="${c.note?'note':(c.ok?'pass':'fail')}">${c.note?'!':(c.ok?'✓':'✗')} ${c.name}${c.why?` <span class="why">— ${c.why}</span>`:''}</div>`
     ).join("");
   }
   $("summary").innerHTML = fail
