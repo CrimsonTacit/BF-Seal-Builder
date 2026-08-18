@@ -12,7 +12,7 @@
 <meta property="og:url" content="https://crimsontacit.github.io/BF-Seal-Builder/patch-tool.html">
 <meta name="twitter:card" content="summary">
 <title>Patch Builder</title>
-<link rel="stylesheet" href="shared/chrome.css">
+<link rel="stylesheet" href="shared/chrome.css?v=a84c7f43">
 <style>
   :root{--panel-w:340px}
   @font-face{
@@ -259,9 +259,9 @@
   </div>
 </main>
 
-<script src="shared/state.js"></script>
-<script src="shared/text.js"></script>
-<script src="shared/export.js"></script>
+<script src="shared/state.js?v=fa880068"></script>
+<script src="shared/text.js?v=127a04be"></script>
+<script src="shared/export.js?v=07669e3b"></script>
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
@@ -352,13 +352,13 @@ const PRESETS = [
 /* ================= emblems ================= */
 const EMBLEMS = {
   none: { label:"None", url:null },
-  bf:   { label:"Bravo Fleet delta", url:"assets/logos/bf-delta.png" },
-  tf17: { label:"Task Force 17", url:"assets/logos/tf17a.png" },
-  tf21: { label:"Task Force 21", url:"assets/logos/tf21a.png" },
-  tf47: { label:"Task Force 47", url:"assets/logos/tf47a.png" },
-  tf72: { label:"Task Force 72", url:"assets/logos/tf72a.png" },
-  tf86: { label:"Task Force 86", url:"assets/logos/tf86a.png" },
-  tf93: { label:"Task Force 93", url:"assets/logos/tf93a.png" },
+  bf:   { label:"Bravo Fleet delta", url:"assets/logos/bf-delta.png?v=322c9308" },
+  tf17: { label:"Task Force 17", url:"assets/logos/tf17a.png?v=fd28fa0d" },
+  tf21: { label:"Task Force 21", url:"assets/logos/tf21a.png?v=99523466" },
+  tf47: { label:"Task Force 47", url:"assets/logos/tf47a.png?v=122d6dc8" },
+  tf72: { label:"Task Force 72", url:"assets/logos/tf72a.png?v=b0b4f39d" },
+  tf86: { label:"Task Force 86", url:"assets/logos/tf86a.png?v=8b341f9b" },
+  tf93: { label:"Task Force 93", url:"assets/logos/tf93a.png?v=941b6dec" },
 };
 const EM_SIZE = { };   /* url -> {w,h}, filled in as the files load */
 Object.values(EMBLEMS).forEach(E => {
@@ -584,7 +584,7 @@ function render(){ $("patchwrap").innerHTML = buildSVG(); }
 
 /* ================= export ================= */
 async function exportResources(){
-  const jobs = [ ExportKit.fetchDataURI("fonts/sealstile.woff2") ];
+  const jobs = [ ExportKit.fetchDataURI("fonts/sealstile.woff2?v=8128806d") ];
   const EM = EMBLEMS[S.emblem];
   jobs.push(EM && EM.url ? ExportKit.fetchDataURI(EM.url) : Promise.resolve(null));
   const [font, emHref] = await Promise.all(jobs);

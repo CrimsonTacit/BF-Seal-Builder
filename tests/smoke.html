@@ -107,10 +107,14 @@ async function assetsResolve(page){
   const src = await (await fetch("../" + page + ".html?cb=" + Date.now(), {cache:"reload"})).text();
   /* Any quoted relative path into assets/, fonts/ or shared/ — markup src/href,
      registry entries (url:"..."), and bare constants alike (seal-tool holds its
-     font as `const FONT_URL = "fonts/sealstile.woff2"`, which a src|href-only
+     font as `const FONT_URL = "fonts/sealstile.woff2?v=8128806d"`, which a src|href-only
      scan walks straight past). */
   const paths = new Set();
-  const re = /["'](?:\.\/)?((?:assets|fonts|shared)\/[^"'?#]+\.[A-Za-z0-9]+)["']/g;
+  /* the trailing (\?v=…)? matters: references carry a content-hash stamp
+     (tools/stamp_assets.py), and a pattern anchored straight to the closing
+     quote would match none of them and silently check nothing. The stamped
+     URL is what users actually request, so that is what gets fetched. */
+  const re = /["'](?:\.\/)?((?:assets|fonts|shared)\/[^"'?#]+\.[A-Za-z0-9]+(?:\?v=[0-9a-f]+)?)["']/g;
   let m; while((m = re.exec(src))) paths.add(m[1]);
   const bad = [];
   for(const rel of paths){
@@ -161,7 +165,7 @@ async function runOne(page){
 
 $("run").addEventListener("click", async () => {
   $("run").disabled = true;
-  $("rows").innerHTML = ""; $("summary").textContent = "";
+  $("rows").innerHTML = ""; $("summary").textContent = ""; delete window.__SMOKE_RESULT;
   const map = {};
   for (const t of TOOLS){
     const tr = document.createElement("tr");
@@ -169,8 +173,10 @@ $("run").addEventListener("click", async () => {
     $("rows").appendChild(tr); map[t] = tr;
   }
   let pass = 0, fail = 0;
+  const results = {};
   for (const t of TOOLS){
     const checks = await runOne(t);
+    results[t] = checks;
     const bad = checks.filter(c => !c.ok);
     bad.length ? fail++ : pass++;
     const tr = map[t];
@@ -184,7 +190,25 @@ $("run").addEventListener("click", async () => {
     ? `<span class="fail">${fail} page(s) failed</span>, ${pass} passed.`
     : `<span class="pass">All ${pass} pages passed.</span>`;
   $("run").disabled = false;
+
+  /* Machine-readable result for the CI runner (tools/run_smoke.mjs), so it
+     reads a value rather than scraping the table. Notes are carried but never
+     counted as failures — see the cross-origin note in load(). */
+  window.__SMOKE_RESULT = {
+    pass, fail,
+    pages: Object.entries(results).map(([page, cs]) => ({
+      page,
+      ok: cs.every(c => c.ok),
+      failed: cs.filter(c => !c.ok).map(c => c.name + (c.why ? ` — ${c.why}` : "")),
+      notes:  cs.filter(c => c.note).map(c => c.name + (c.why ? ` — ${c.why}` : "")),
+    })),
+  };
 });
+
+/* ?auto=1 runs on load, for CI. */
+if (new URLSearchParams(location.search).has("auto")) {
+  addEventListener("load", () => $("run").click());
+}
 </script>
 </body>
 </html>

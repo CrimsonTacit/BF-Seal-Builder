@@ -12,7 +12,7 @@
 <meta property="og:url" content="https://crimsontacit.github.io/BF-Seal-Builder/plaque-tool.html">
 <meta name="twitter:card" content="summary">
 <title>Plaque Builder</title>
-<link rel="stylesheet" href="shared/chrome.css">
+<link rel="stylesheet" href="shared/chrome.css?v=a84c7f43">
 <style>
   :root{--panel-w:340px}
   @font-face{font-family:"Sealstile";font-weight:400;src:url(fonts/sealstile.woff2) format("woff2");}
@@ -226,10 +226,10 @@
   </div>
 </main>
 
-<script src="shared/state.js"></script>
-<script src="shared/metal.js"></script>
-<script src="shared/text.js"></script>
-<script src="shared/export.js"></script>
+<script src="shared/state.js?v=fa880068"></script>
+<script src="shared/metal.js?v=8aa4ac74"></script>
+<script src="shared/text.js?v=127a04be"></script>
+<script src="shared/export.js?v=07669e3b"></script>
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
@@ -808,9 +808,9 @@ async function exportResources(){
   const activeBacking = backingOf(S.back);
   const needsPlateTex = activeBacking && activeBacking.kind === "photoTex";
   const [sealF, g600, gIt, plate, plateTex, ...artURIs] = await Promise.all([
-    ExportKit.fetchDataURI("fonts/sealstile.woff2"),
-    ExportKit.fetchDataURI("fonts/webfonts/ebgaramond-600.woff2"),
-    ExportKit.fetchDataURI("fonts/webfonts/ebgaramond-it500.woff2"),
+    ExportKit.fetchDataURI("fonts/sealstile.woff2?v=8128806d"),
+    ExportKit.fetchDataURI("fonts/webfonts/ebgaramond-600.woff2?v=b4aa08b7"),
+    ExportKit.fetchDataURI("fonts/webfonts/ebgaramond-it500.woff2?v=668ea527"),
     ExportKit.fetchDataURI(E.dir + E.art.plate),
     needsPlateTex ? ExportKit.fetchDataURI(E.dir + activeBacking.tex) : Promise.resolve(null),
     ...pieces.map(part => ExportKit.fetchDataURI(partArt(E, part))),

@@ -12,7 +12,7 @@
 <meta property="og:url" content="https://crimsontacit.github.io/BF-Seal-Builder/seal-tool.html">
 <meta name="twitter:card" content="summary">
 <title>Seal Builder</title>
-<link rel="stylesheet" href="shared/chrome.css">
+<link rel="stylesheet" href="shared/chrome.css?v=a84c7f43">
 <style>
   .microstyle{font-family:"Sealstile",ui-monospace,monospace}
   header .mark{
@@ -283,8 +283,8 @@
   </div>
 </main>
 
-<script src="shared/state.js"></script>
-<script src="shared/export.js"></script>
+<script src="shared/state.js?v=fa880068"></script>
+<script src="shared/export.js?v=07669e3b"></script>
 <script>
 "use strict";
 
@@ -296,7 +296,7 @@
    Loaded by URL for the page and the live preview. Export can't use a URL —
    the SVG goes into an <img> to be rasterised, and an <img>-hosted SVG may
    not fetch anything — so exportResources() inlines it as a data URI there. */
-const FONT_URL = "fonts/sealstile.woff2";
+const FONT_URL = "fonts/sealstile.woff2?v=8128806d";
 const FONT_CSS = `@font-face{font-family:'Sealstile';src:url(${FONT_URL}) format('woff2');}`;
 
 /* register for the page UI + live preview */
@@ -362,12 +362,12 @@ const TF_TEXT_PRESETS = [
 /* task-force emblem art, loaded by URL (files written by tools/embed_assets.py).
    Inlined as data URIs only at export time — see exportResources(). */
 /*CHARGES_START*/const CHARGES = {
-  "tf17b": {name:"Task Force 17", w:362, h:362, url:"assets/emblems/tf17b.png"},
-  "tf21b": {name:"Task Force 21", w:362, h:362, url:"assets/emblems/tf21b.png"},
-  "tf47b": {name:"Task Force 47", w:362, h:362, url:"assets/emblems/tf47b.png"},
-  "tf72b": {name:"Task Force 72", w:362, h:362, url:"assets/emblems/tf72b.png"},
-  "tf86b": {name:"Task Force 86", w:362, h:362, url:"assets/emblems/tf86b.png"},
-  "tf93b": {name:"Task Force 93", w:362, h:362, url:"assets/emblems/tf93b.png"}
+  "tf17b": {name:"Task Force 17", w:362, h:362, url:"assets/emblems/tf17b.png?v=444bb0c6"},
+  "tf21b": {name:"Task Force 21", w:362, h:362, url:"assets/emblems/tf21b.png?v=ce55b01a"},
+  "tf47b": {name:"Task Force 47", w:362, h:362, url:"assets/emblems/tf47b.png?v=0f18192a"},
+  "tf72b": {name:"Task Force 72", w:362, h:362, url:"assets/emblems/tf72b.png?v=74ee1716"},
+  "tf86b": {name:"Task Force 86", w:362, h:362, url:"assets/emblems/tf86b.png?v=9431a1bc"},
+  "tf93b": {name:"Task Force 93", w:362, h:362, url:"assets/emblems/tf93b.png?v=6758739f"}
 };/*CHARGES_END*/
 
 /* ================= geometry / render ================= */

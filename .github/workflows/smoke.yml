@@ -1,0 +1,85 @@
+# Runs tests/smoke.html against a real headless Chrome on every push and PR.
+#
+# The suite catches the failure this project is most exposed to: a broken asset
+# path. Every tool loads its fonts and artwork by URL and inlines them at export
+# time, so a renamed or dropped file breaks exports while the page still looks
+# fine — and a browser with the old file cached will not even show you that much.
+#
+# No npm install and no package.json: the runner drives Chrome over the DevTools
+# Protocol using Node's built-in fetch and WebSocket. ubuntu-latest ships Chrome
+# already, so this needs nothing fetched at all.
+
+name: Smoke test
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"   # first release with WebSocket unflagged
+
+      - name: Locate Chrome
+        id: chrome
+        run: |
+          for p in /usr/bin/google-chrome-stable /usr/bin/google-chrome \
+                   /usr/bin/chromium-browser /usr/bin/chromium; do
+            if [ -x "$p" ]; then echo "bin=$p" >> "$GITHUB_OUTPUT"; break; fi
+          done
+          if ! grep -q '^bin=' "$GITHUB_OUTPUT" 2>/dev/null; then
+            echo "No preinstalled Chrome on this runner image; installing chromium."
+            sudo apt-get update -qq && sudo apt-get install -y -qq chromium-browser
+            echo "bin=/usr/bin/chromium-browser" >> "$GITHUB_OUTPUT"
+          fi
+          "$(grep '^bin=' "$GITHUB_OUTPUT" | cut -d= -f2-)" --version
+
+      - name: Serve the site
+        run: |
+          python3 -m http.server 8517 --bind 127.0.0.1 &
+          for i in $(seq 1 30); do
+            curl -sf -o /dev/null http://127.0.0.1:8517/index.html && break
+            sleep 0.5
+          done
+          curl -sf -o /dev/null http://127.0.0.1:8517/index.html
+
+      - name: Run smoke test
+        env:
+          CHROME_BIN: ${{ steps.chrome.outputs.bin }}
+        run: node tools/run_smoke.mjs --url http://127.0.0.1:8517
+
+      - name: Check asset stamps are current
+        # a changed asset must carry a new ?v= hash, or returning browsers keep
+        # the old bytes; --check fails rather than rewriting anything in CI
+        run: python3 tools/stamp_assets.py --check
+
+      - name: Check the build scripts are idempotent
+        run: |
+          # a re-run must leave the HTML byte-identical; if not, a registry has
+          # drifted from the assets on disk and someone forgot to commit it
+          python3 tools/embed_assets.py
+          python3 tools/embed_header_assets.py
+          python3 tools/stamp_assets.py   # embed_* write unstamped URLs; restamp before diffing
+          # scope this to the files those scripts actually write, so an
+          # unrelated change in the tree can't masquerade as registry drift
+          if ! git diff --quiet -- seal-tool.html header-tool.html; then
+            echo "::error::Asset registries are stale — run tools/embed_assets.py and tools/embed_header_assets.py, then commit."
+            git --no-pager diff -- seal-tool.html header-tool.html
+            exit 1
+          fi
