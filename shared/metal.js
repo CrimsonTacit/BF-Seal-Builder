@@ -106,8 +106,39 @@ const Metal = (() => {
     </filter>`;
   }
 
+  /* Inset edge chisel: a thin bright ring right at a shape's alpha boundary,
+     immediately followed by a narrower dark ring, fading to nothing past
+     that — the double-ring "inner bevel" look Photoshop's Bevel & Emboss
+     draws with a Ring gloss contour. psd-tools doesn't render Bevel/Emboss
+     or Satin at all, so PSD-extracted art (the plaque's plate.png) comes
+     out flat; this reproduces the ring by eroding SourceAlpha at two radii
+     (measured off PallasPlaque.png's own pixels: an ~18px bright band then
+     an ~10px dark dip at 2350px width) rather than simulating the effect's
+     lighting math. Returns filter-primitive XML to splice into an existing
+     <filter>, not a standalone one — `in` is the piece to ring (already
+     colour-mapped), `out` names the result.
+     opts: hiR/loR (ring radii, px), hiOp/loOp (ring opacity 0..1), shapeIn
+     (alpha source to ring — defaults to the filtered element's own alpha;
+     pass a feImage result name when colourizing a plain rectangular photo
+     that has no alpha of its own, so the ring still follows the plate's
+     real silhouette). */
+  function chiselRing(opts){
+    const o = Object.assign({in:"mapped", out:"chiseled", hiR:18, loR:28, hiOp:.4, loOp:.32, shapeIn:"SourceAlpha"}, opts);
+    const shape = o.shapeIn;
+    return `<feMorphology in="${shape}" operator="erode" radius="${o.hiR}" result="cr_ero1"/>
+<feMorphology in="${shape}" operator="erode" radius="${o.loR}" result="cr_ero2"/>
+<feComposite in="${shape}" in2="cr_ero1" operator="out" result="cr_ringHi"/>
+<feComposite in="cr_ero1" in2="cr_ero2" operator="out" result="cr_ringLo"/>
+<feFlood flood-color="#ffffff" flood-opacity="${o.hiOp}" result="cr_hiColor"/>
+<feComposite in="cr_hiColor" in2="cr_ringHi" operator="in" result="cr_hiTint"/>
+<feFlood flood-color="#000000" flood-opacity="${o.loOp}" result="cr_loColor"/>
+<feComposite in="cr_loColor" in2="cr_ringLo" operator="in" result="cr_loTint"/>
+<feBlend in="${o.in}" in2="cr_hiTint" mode="screen" result="cr_withHi"/>
+<feBlend in="cr_withHi" in2="cr_loTint" mode="multiply" result="${o.out}"/>`;
+  }
+
   function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 
   return { MATERIALS, hexRgb, rgbHex, mix, ltn, dkn, rampFor, matInfo,
-           gradientDef, bevelFilter, engraveFilter, esc };
+           gradientDef, bevelFilter, engraveFilter, chiselRing, esc };
 })();
