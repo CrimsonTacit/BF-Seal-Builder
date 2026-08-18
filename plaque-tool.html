@@ -208,14 +208,18 @@
     <details class="acc" open>
       <summary>Relief</summary>
       <div class="acc-body">
-        <div class="toggle" id="reliefToggle">
-          <button data-relief="emboss">Raised</button>
-          <button data-relief="inlay">Inlaid</button>
-          <button data-relief="engrave">Engraved</button>
+        <div class="row"><label>Match all parts</label><input type="checkbox" data-k="linkRelief"></div>
+        <div id="reliefMaster">
+          <div class="toggle" data-prelief-row="">
+            <button data-relief="emboss">Raised</button>
+            <button data-relief="inlay">Inlaid</button>
+            <button data-relief="engrave">Engraved</button>
+          </div>
         </div>
+        <div id="reliefParts"></div>
         <div class="row"><label>Depth</label><input type="range" min="1" max="9" step="0.5" data-k="depth"><span class="val" data-val="depth"></span></div>
         <div class="row"><label>Shine</label><input type="range" min="0" max="1.6" step="0.05" data-k="shine"><span class="val" data-val="shine"></span></div>
-        <div class="hint">Raised lettering is cast proud of the plate. Inlaid lettering is routed into it but stays metal, with just a thin seam at the letters' edge. Engraved cuts the lettering <i>and</i> the trim and badge into the plate, flattened to the plate's own tone.</div>
+        <div class="hint">Raised sits proud of the plate. Inlaid is routed into it but stays its own metal, with just a thin seam at the edge. Engraved cuts in and flattens to the plate's own tone. Unmatch to set the lettering, frame rails, corner bolts and badge pieces each on their own — a raised badge over inlaid lettering, say.</div>
       </div>
     </details>
 
@@ -224,7 +228,11 @@
       <div class="acc-body">
         <label class="fld" id="backLabel">Backing</label>
         <div id="backSwatches"></div>
-        <div class="hint">The last swatch in the Metal row is the colour selector itself — click it to pick a custom colour (or, with Powder Coat's smooth finish active, to retint it).</div>
+        <div class="swgroup">
+          <div class="swgroup-label">Custom Colour</div>
+          <div class="swatches" id="backCustomRow"></div>
+        </div>
+        <div class="hint">The custom colour sits outside the finish groups because it applies to <i>any</i> of them: metal and powder coat take it directly, and the wood and stone photos are remapped onto it so their grain survives the recolour. Clear it to put the finish back on its own colours.</div>
       </div>
     </details>
 
@@ -236,7 +244,7 @@
           <div class="swatches" id="trimSwatches"></div>
         </div>
         <div id="partList"></div>
-        <div class="hint">Unmatch to colour the lettering, frame rails, corner bolts and the badge&#39;s delta and bars separately — the original artwork carries each in its own colourway. These colours apply to raised and inlaid relief; engraved relief cuts every part into the plate and flattens them all to its own tone instead.</div>
+        <div class="hint">Unmatch to colour the lettering, frame rails, corner bolts and the badge&#39;s delta and bars separately — the original artwork carries each in its own colourway. A part set to engraved relief ignores its colour — an engraved cut is filled with the plate&#39;s own tone.</div>
       </div>
     </details>
 
@@ -379,6 +387,11 @@ const PARTS = [
   { id:"bars",  name:"Badge bars" },
 ];
 const DRAW = { frame:["bolts","frame"], badge:["bars","delta"] };
+const RELIEFS = [
+  { id:"emboss",  name:"Raised" },
+  { id:"inlay",   name:"Inlaid" },
+  { id:"engrave", name:"Engraved" },
+];
 
 /* material keys shared by the art pieces and the lettering */
 const TRIMS = [
@@ -398,28 +411,28 @@ const BACKINGS = [
   { id:"cyan",     name:"Green-Cyan", kind:"metal", group:"Metal" },     { id:"cobalt",   name:"Cobalt", kind:"metal", group:"Metal" },
   { id:"amethyst", name:"Amethyst", kind:"metal", group:"Metal" },       { id:"black",    name:"Black", kind:"metal", group:"Metal" },
   /* real photo textures (CC0, ambientCG — see tools/fetch_plate_textures.py),
-     not in the PSD. Each is a fixed swatch with its own baked-in colour —
-     unlike the metal backings there's no colour-ramp to recustomize, they're
-     clipped to the plate's silhouette at render time via plate.png's alpha
-     rather than carrying their own. */
-  { id:"woodWalnut",   name:"Walnut",         kind:"photoTex", tex:"tex-wood-walnut.jpg", group:"Wood" },
-  { id:"woodOak",       name:"Oak",            kind:"photoTex", tex:"tex-wood-oak.jpg", group:"Wood" },
-  { id:"marbleGray",    name:"Veined — Gray",  kind:"photoTex", tex:"tex-marble-gray.jpg", group:"Stone" },
-  { id:"marbleCream",   name:"Veined — Cream", kind:"photoTex", tex:"tex-marble-cream.jpg", group:"Stone" },
-  { id:"graniteGray",   name:"Plain — Gray",   kind:"photoTex", tex:"tex-granite-gray.jpg", group:"Stone" },
-  { id:"graniteBrown",  name:"Plain — Brown",  kind:"photoTex", tex:"tex-granite-brown.jpg", group:"Stone" },
+     not in the PSD. Each carries its own baked-in colour and is clipped to
+     the plate's silhouette at render time via plate.png's alpha rather than
+     an alpha channel of its own. `lum` is the photo's measured 2–98 %
+     luminance window: these span only a sliver of 0..1 (the walnut is all
+     between .16 and .26), so the custom-colour path stretches that window
+     across the full ramp before mapping, or the grain would come out flat. */
+  { id:"woodWalnut",   name:"Walnut",         kind:"photoTex", tex:"tex-wood-walnut.jpg", group:"Wood", lum:[.16,.26] },
+  { id:"woodOak",       name:"Oak",            kind:"photoTex", tex:"tex-wood-oak.jpg", group:"Wood", lum:[.58,.69] },
+  { id:"marbleGray",    name:"Veined — Gray",  kind:"photoTex", tex:"tex-marble-gray.jpg", group:"Stone", lum:[.52,.76] },
+  { id:"marbleCream",   name:"Veined — Cream", kind:"photoTex", tex:"tex-marble-cream.jpg", group:"Stone", lum:[.57,.68] },
+  { id:"graniteGray",   name:"Plain — Gray",   kind:"photoTex", tex:"tex-granite-gray.jpg", group:"Stone", lum:[.42,.91] },
+  { id:"graniteBrown",  name:"Plain — Brown",  kind:"photoTex", tex:"tex-granite-brown.jpg", group:"Stone", lum:[.32,.76] },
   /* the one procedural finish (feTurbulence, no photo) — kept because a flat
-     matte custom colour is exactly what powder coat is, so it's genuinely
-     recolourable in a way a photo can't be; "Textured" below is the photo
-     alternative for when the fine grain matters more than tint. */
+     matte custom colour is exactly what powder coat is, so its grain can be
+     synthesized rather than photographed; "Textured" below is the photo
+     alternative for when a real fine grain matters more. */
   { id:"powder",        name:"Smooth",   kind:"powder",   tint:"#3f4b58", group:"Powder Coat" },
-  { id:"powderTex",     name:"Textured", kind:"photoTex", tex:"tex-powder-navy.jpg", group:"Powder Coat" },
+  { id:"powderTex",     name:"Textured", kind:"photoTex", tex:"tex-powder-navy.jpg", group:"Powder Coat", lum:[.15,.20] },
 ];
 const BACKING_GROUPS = ["Metal", "Wood", "Stone", "Powder Coat"];
-const PROCEDURAL_KINDS = ["powder"];
 function backingOf(id){ return BACKINGS.find(b=>b.id===id); }
 function backKind(id){ return (backingOf(id)||{}).kind || "metal"; }
-function isProceduralBack(id){ return PROCEDURAL_KINDS.includes(backKind(id)); }
 
 let RAMPS = null; // assets/plaque/ramps.json
 
@@ -430,17 +443,23 @@ const DEFAULTS = {
   registry: "STARFLEET REGISTRY NUMBER NCC-83723",
   authority: "UNITED FEDERATION OF PLANETS",
   cls: "VESTA CLASS STARSHIP",
-  relief: "emboss",
+  /* `relief` is the master every part follows while linkRelief is on;
+     `reliefs` holds each part's own once it is off (seeded from the master
+     at the moment it is unlinked), exactly as trim/trims do below. */
+  relief: "emboss", linkRelief: true,
+  reliefs: { text:"emboss", frame:"emboss", bolts:"emboss", delta:"emboss", bars:"emboss" },
   depth: 4, shine: 0.8,
-  back: "blue", c_back: "#44525f",
-  /* base tint per procedural finish, independent of c_back (which belongs to
-     the metal "custom" colourway) — see isProceduralBack() */
-  backTints: { powder:"#3f4b58" },
+  /* the finish and the custom colour are independent: `back` picks the
+     finish (metal colourway, photo texture or powder coat), `backCustom`
+     says the plate wears `c_back` in place of that finish's own colours */
+  back: "bronze", backCustom: false, c_back: "#44525f",
   /* `trim`/`c_trim` are the master colourway every part follows while
      linkTrim is on; `trims`/`customs` hold each part's own choice for when
      it is off (seeded from the master at the moment it is unlinked). */
-  trim: "gold", c_trim: "#c9992e", linkTrim: true,
-  trims:   { text:"gold", frame:"gold", bolts:"gold", delta:"gold", bars:"gold" },
+  /* the show's own plaque runs silver rails, bolts and delta against gold
+     lettering and gold badge bars on bronze, so the parts ship unlinked */
+  trim: "gold", c_trim: "#c9992e", linkTrim: false,
+  trims:   { text:"gold", frame:"silver", bolts:"silver", delta:"silver", bars:"gold" },
   customs: { text:"#c9992e", frame:"#c9992e", bolts:"#c9992e", delta:"#c9992e", bars:"#c9992e" },
   colsOn: true,
   quoteOn: true, quoteMarks: true,
@@ -537,12 +556,19 @@ function customRamp(hex, spread){
   }
   return rows;
 }
-function backTint(id){
-  return (S.backTints && S.backTints[id]) || (backingOf(id)||{}).tint || "#888888";
-}
+function backTint(id){ return (backingOf(id)||{}).tint || "#888888"; }
+/* One custom colour, orthogonal to the finish. `S.backCustom` says the plate
+   wears `S.c_back` instead of whatever colours its finish came with — metal
+   and powder coat ride the generated ramp straight, and a photo finish is
+   desaturated to its own luminance first (see plateColorize) so its grain
+   survives and rides the same ramp. Spread is per kind: a photo already
+   spans a wide range of its own, the flat powder texture needs more. */
+const BACK_SPREAD = { metal:.5, photoTex:.4, powder:.58 };
 function plateRamp(){
-  if(isProceduralBack(S.back)) return customRamp(backTint(S.back), .58);
-  if(S.back === "custom" || !RAMPS) return customRamp(S.c_back, .5);
+  const kind = backKind(S.back);
+  if(S.backCustom) return customRamp(S.c_back, BACK_SPREAD[kind] || .5);
+  if(kind === "powder") return customRamp(backTint(S.back), .58);
+  if(!RAMPS) return customRamp(S.c_back, .5);
   return RAMPS.plate[S.back] || RAMPS.plate.blue;
 }
 
@@ -552,9 +578,8 @@ function plateRamp(){
    the exact same feComponentTransfer ramp table the metal backings use
    (built from plateRamp() above), so custom colours and the metal path
    share one colourization mechanism. Wood/stone are real ambientCG photos
-   instead (see PHOTO_TEX / tools/fetch_plate_textures.py) — a flat matte
-   custom colour is genuinely what powder coat is, so it's worth keeping
-   recolourable rather than a fixed photo. */
+   instead (see tools/fetch_plate_textures.py); those ride the same ramp too
+   when a custom colour is set, by way of their own luminance. */
 const PLATE_TEX = {
   powder(){
     return `<feTurbulence type="fractalNoise" baseFrequency="0.35" numOctaves="2" seed="5" result="pt_pn"/>
@@ -567,7 +592,9 @@ const PLATE_TEX = {
   },
 };
 /* Which colourway a part is wearing — the master while parts are linked,
-   the part's own once they are not. */
+   the part's own once they are not. Relief works the same way, on its own
+   link: a part can be raised while its neighbour is inlaid. */
+function reliefOf(part){ return (S.linkRelief ? S.relief : S.reliefs[part]) || S.relief; }
 function trimOf(part){ return (S.linkTrim ? S.trim : S.trims[part]) || S.trim; }
 function customOf(part){ return (S.linkTrim ? S.c_trim : S.customs[part]) || S.c_trim; }
 function trimIsMatte(id){
@@ -621,19 +648,17 @@ function buildSVG(res){
   res = res || {};
   const E = ERAS[S.era] || ERAS["2399"];
   const R = E.rows;
-  /* Engraved cuts everything — trim and badge included — into the plate and
-     flattens it all to one tone. Inlaid only touches the lettering: it's
-     still routed into the plate, but keeps its own metal colour instead of
-     flattening, while the frame/bolts/badge stay raised. */
-  const engraved = S.relief === "engrave";
-  const inlaid = S.relief === "inlay";
+  /* Relief is per part. Raised leaves the piece proud of the plate, inlaid
+     routes it in but keeps its own metal, and engraved is the one mode that
+     gives up the part's colour — it flattens to the plate's own tone, so an
+     engraved part ignores its colourway (and skips its gradient map). */
+  const textRelief = reliefOf("text");
   const href = k => (res.art && res.art[k]) || (E.dir + E.art[k]);
 
   const ink = inkBase();
   const cut = Metal.dkn(plateMid(), .52);   /* engraved recesses read as shadowed plate */
-  const inkFill = engraved ? cut : `url(#gradInk)`;
-  const fxText = engraved ? "url(#fxEngrave)" : inlaid ? "url(#fxInlay)" : "url(#fxEmboss)";
-  const fxArt  = engraved ? "url(#fxEngraveArt)" : "url(#fxEmbossArt)";
+  const inkFill = textRelief === "engrave" ? cut : `url(#gradInk)`;
+  const fxText = `url(#fxTxt_${textRelief})`;
 
   const fontCSS = res.fontCSS || `
     @font-face{font-family:"Sealstile";src:url(fonts/sealstile.woff2) format("woff2");}
@@ -771,6 +796,11 @@ function buildSVG(res){
      outline rather than one physical edge, so this is just the recessed
      shadow half — flush to the plate's true boundary, no separate highlight
      line competing with the frame. */
+  /* stretch of a photo's measured luminance window onto the full ramp — see
+     `lum` in BACKINGS; only the custom-colour path uses it */
+  const texLum = (activeBacking && activeBacking.lum) || [.2, .8];
+  const texGain = (1/Math.max(.02, texLum[1]-texLum[0])).toFixed(3);
+  const texBias = (-texLum[0]/Math.max(.02, texLum[1]-texLum[0])).toFixed(3);
   const plateSrc = plateKind === "photoTex"
     ? ((res.art && res.art.plateTex) || (E.dir + activeBacking.tex))
     : href("plate");
@@ -782,7 +812,18 @@ function buildSVG(res){
   </feComponentTransfer>`
     : plateKind === "photoTex"
     ? `<feImage href="${href("plate")}" x="0" y="0" width="${W}" height="${H}" result="pt_shape"/>
-  <feComposite in="SourceGraphic" in2="pt_shape" operator="in" result="pt_mapped"/>`
+  ${S.backCustom ? `<feColorMatrix in="SourceGraphic" type="matrix" result="pt_gray" values="0.2126 0.7152 0.0722 0 0  0.2126 0.7152 0.0722 0 0  0.2126 0.7152 0.0722 0 0  0 0 0 1 0"/>
+  <feComponentTransfer in="pt_gray" result="pt_norm">
+    <feFuncR type="linear" slope="${texGain}" intercept="${texBias}"/>
+    <feFuncG type="linear" slope="${texGain}" intercept="${texBias}"/>
+    <feFuncB type="linear" slope="${texGain}" intercept="${texBias}"/>
+  </feComponentTransfer>
+  <feComponentTransfer in="pt_norm" result="pt_tex">
+    <feFuncR type="table" tableValues="${pr.r}"/>
+    <feFuncG type="table" tableValues="${pr.g}"/>
+    <feFuncB type="table" tableValues="${pr.b}"/>
+  </feComponentTransfer>` : `<feOffset in="SourceGraphic" dx="0" dy="0" result="pt_tex"/>`}
+  <feComposite in="pt_tex" in2="pt_shape" operator="in" result="pt_mapped"/>`
     : `${PLATE_TEX[plateKind]()}
   <feComponentTransfer in="texRaw" result="pt_texMapped">
     <feFuncR type="table" tableValues="${pr.r}"/>
@@ -806,12 +847,45 @@ function buildSVG(res){
   }).join("\n");
 
   /* Pieces that stack (bolts under rails, bars under delta) share one relief
-     group, so the pair casts a single shadow the way the flattened art did. */
+     group, so the pair casts a single shadow the way the flattened art did —
+     but only while they are in the same relief. Give them different ones and
+     the run splits, in drawing order, so each gets its own treatment. */
   function artPiece(part){
     const src = (res.art && res.art[part]) || partArt(E, part);
-    return `<image href="${src}" x="0" y="0" width="${W}" height="${H}"${engraved ? "" : ` filter="url(#map_${part})"`}/>`;
+    const eng = reliefOf(part) === "engrave";
+    return `<image href="${src}" x="0" y="0" width="${W}" height="${H}"${eng ? "" : ` filter="url(#map_${part})"`}/>`;
   }
-  const artGroup = parts => `<g filter="${fxArt}">${parts.map(artPiece).join("")}</g>`;
+  function artGroup(parts){
+    const runs = [];
+    parts.forEach(part => {
+      const r = reliefOf(part), last = runs[runs.length-1];
+      if(last && last.r === r) last.parts.push(part);
+      else runs.push({ r, parts:[part] });
+    });
+    return runs.map(run =>
+      `<g filter="url(#fxArt_${run.r})">${run.parts.map(artPiece).join("")}</g>`).join("\n");
+  }
+
+  /* One filter per relief mode actually in use, for text and for art. The
+     extracted art already carries the PSD's own bevel, so its raised filter
+     is a drop shadow and nothing more, and its inlaid one adds only the
+     routed seam — a second convex specular on top would fog the art it
+     already has. */
+  const TXT_FX = {
+    emboss: () => Metal.bevelFilter("fxTxt_emboss", {bevel:depth, shine:shine, se:20, shadow:.55, shadowDy:Math.max(2,depth*.9), shadowBlur:Math.max(2,depth*1.2)}),
+    inlay:  () => Metal.inlayFilter("fxTxt_inlay", {depth:depth*.55, blur:depth*.4, dark:.55, bevel:Math.max(1.5,depth*.85), shine:shine*1.05, se:22}),
+    engrave:() => Metal.engraveFilter("fxTxt_engrave", {depth:depth*1.2, blur:depth*.8, dark:.82, shine:shine*.65, se:14}),
+  };
+  const ART_FX = {
+    emboss: () => `<filter id="fxArt_emboss" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
+  <feDropShadow dx="0" dy="${Math.max(2,depth*.8).toFixed(1)}" stdDeviation="${Math.max(2,depth).toFixed(1)}" flood-color="#000" flood-opacity=".5"/>
+</filter>`,
+    inlay:  () => Metal.inlayFilter("fxArt_inlay", {depth:depth*.55, blur:depth*.4, dark:.6, bevel:Math.max(1.5,depth*.5), shine:shine*.3, se:24}),
+    engrave:() => Metal.engraveFilter("fxArt_engrave", {depth:depth*1.2, blur:depth*.8, dark:.82, shine:shine*.65, se:14, flatten:cut}),
+  };
+  const fxDefs = [TXT_FX[textRelief]()]
+    .concat([...new Set(artParts.map(reliefOf))].map(m => ART_FX[m]()))
+    .join("\n");
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
 <defs>
@@ -827,13 +901,7 @@ function buildSVG(res){
   <feDropShadow in="pt_chiseled" dx="0" dy="10" stdDeviation="14" flood-color="#000" flood-opacity=".55"/>
 </filter>
 ${mapDefs}
-${Metal.bevelFilter("fxEmboss", {bevel:depth, shine:shine, se:20, shadow:.55, shadowDy:Math.max(2,depth*.9), shadowBlur:Math.max(2,depth*1.2)})}
-${Metal.engraveFilter("fxEngrave", {depth:depth*1.2, blur:depth*.8, dark:.82, shine:shine*.65, se:14})}
-${Metal.inlayFilter("fxInlay", {depth:depth*.55, blur:depth*.4, dark:.55, bevel:Math.max(1.5,depth*.85), shine:shine*1.05, se:22})}
-<filter id="fxEmbossArt" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
-  <feDropShadow dx="0" dy="${Math.max(2,depth*.8).toFixed(1)}" stdDeviation="${Math.max(2,depth).toFixed(1)}" flood-color="#000" flood-opacity=".5"/>
-</filter>
-${Metal.engraveFilter("fxEngraveArt", {depth:depth*1.2, blur:depth*.8, dark:.82, shine:shine*.65, se:14, flatten:cut})}
+${fxDefs}
 </defs>
 
 <image href="${plateSrc}" x="0" y="0" width="${W}" height="${H}" filter="url(#mapPlate)"/>
@@ -904,7 +972,6 @@ $("exportSvg").addEventListener("click", async ()=>{
    sized and bordered like the other swatches, so its own face always shows
    the colour it's set to (no separate colour-picker row, no stale gray icon). */
 function customSw(attr, part){
-  if(attr === "back") return `<input type="color" class="sw" data-back="custom" value="${esc(S.c_back)}" title="Custom colour">`;
   if(part) return `<input type="color" class="sw" data-ptrim="custom" data-part="${part}" data-pc="${part}" value="${esc(S.customs[part]||S.c_trim)}" title="Custom colour">`;
   return `<input type="color" class="sw" data-trim="custom" value="${esc(S.c_trim)}" title="Custom colour">`;
 }
@@ -932,18 +999,24 @@ function backSwatch(b, E){
 function buildSwatches(){
   const E = ERAS[S.era] || ERAS["2399"];
   $("backSwatches").innerHTML = BACKING_GROUPS.map(group => {
-    const swatches = BACKINGS.filter(b => b.group === group).map(b => backSwatch(b, E)).join("")
-      + (group === "Metal" ? customSw("back") : "");
+    const swatches = BACKINGS.filter(b => b.group === group).map(b => backSwatch(b, E)).join("");
     return `<div class="swgroup"><div class="swgroup-label">${group}</div><div class="swatches">${swatches}</div></div>`;
   }).join("");
+  /* The plate's custom colour is not a finish of its own — it rides whichever
+     finish is selected — so it sits in its own row below every group rather
+     than as the last tile of one of them. The swatch *is* the picker; the
+     button beside it hands the finish back its own colours. */
+  $("backCustomRow").innerHTML =
+    `<input type="color" class="sw" data-back-custom="on" value="${esc(S.c_back)}" title="Custom colour">`
+    + `<button class="btn mini" id="backCustomOff">Clear</button>`;
   $("trimSwatches").innerHTML = trimRow("trim");
   buildParts();
 }
 function backLabelName(){
-  if(S.back === "custom") return "Custom Colour";
   const b = backingOf(S.back);
   if(!b) return "Backing";
-  return b.group === "Metal" ? b.name : `${b.group} — ${b.name}`;
+  const name = b.group === "Metal" ? b.name : `${b.group} — ${b.name}`;
+  return S.backCustom ? `${name}, custom colour` : name;
 }
 /* the per-part rows, shown only while the parts are unlinked */
 function buildParts(){
@@ -956,16 +1029,19 @@ function buildParts(){
 }
 $("backSwatches").addEventListener("click", e => {
   const b = e.target.closest("[data-back]"); if(!b) return;
-  /* clicking the custom swatch while a procedural finish is already active
-     just opens the picker to retint that finish — it doesn't jump to the
-     metal "custom" colourway */
-  if(b.dataset.back === "custom" && isProceduralBack(S.back)) return;
   S.back = b.dataset.back; syncSwatches(); render(); persist();
 });
-$("backSwatches").addEventListener("input", e => {
-  const c = e.target.closest('input[data-back="custom"]'); if(!c) return;
-  if(isProceduralBack(S.back)) S.backTints[S.back] = c.value;
-  else { S.c_back = c.value; S.back = "custom"; }
+/* the custom colour applies over whatever finish is selected, so picking one
+   turns it on without disturbing S.back, and "Clear" only turns it back off */
+$("backCustomRow").addEventListener("input", e => {
+  if(!e.target.closest("[data-back-custom]")) return;
+  S.c_back = e.target.value; S.backCustom = true;
+  syncSwatches(); render(); persist();
+});
+$("backCustomRow").addEventListener("click", e => {
+  if(e.target.closest("[data-back-custom]")) { S.backCustom = true; }
+  else if(e.target.closest("#backCustomOff")) { S.backCustom = false; }
+  else return;
   syncSwatches(); render(); persist();
 });
 $("trimSwatches").addEventListener("click", e => {
@@ -985,9 +1061,29 @@ $("partList").addEventListener("input", e => {
   S.customs[c.dataset.pc] = c.value; S.trims[c.dataset.pc] = "custom";
   syncSwatches(); render(); persist();
 });
-$("reliefToggle").addEventListener("click", e => {
+$("reliefMaster").addEventListener("click", e => {
   const b = e.target.closest("[data-relief]"); if(!b) return;
   S.relief = b.dataset.relief; syncSwatches(); render(); persist();
+});
+/* the per-part relief rows, shown only while the parts are unlinked */
+function reliefToggle(part){
+  const at = part ? ` data-prelief="${part}"` : "";
+  return `<div class="toggle"${at}>` + RELIEFS.map(r =>
+    `<button data-relief="${r.id}">${r.name}</button>`).join("") + `</div>`;
+}
+function buildReliefParts(){
+  $("reliefParts").innerHTML = S.linkRelief ? "" : PARTS.map(pt => `
+    <div class="col">
+      <div class="chead"><span>${pt.name}</span></div>
+      ${reliefToggle(pt.id)}
+    </div>`).join("");
+  syncSwatches();
+}
+$("reliefParts").addEventListener("click", e => {
+  const b = e.target.closest("[data-relief]"), row = e.target.closest("[data-prelief]");
+  if(!b || !row) return;
+  S.reliefs[row.dataset.prelief] = b.dataset.relief;
+  syncSwatches(); render(); persist();
 });
 
 function buildColumns(){
@@ -1030,13 +1126,15 @@ function bindInputs(){
       if(inp.type === "checkbox") S[k] = inp.checked;
       else if(inp.type === "range") S[k] = parseFloat(inp.value);
       else S[k] = inp.value;
-      if(k === "c_back") S.back = "custom";
-      if(k === "c_trim") S.trim = "custom";
-      /* unlinking hands every part the master's colour, so the plaque does
+      /* unlinking hands every part the master's setting, so the plaque does
          not jump the moment the parts are set loose */
       if(k === "linkTrim"){
         if(!S.linkTrim) PARTS.forEach(pt => { S.trims[pt.id] = S.trim; S.customs[pt.id] = S.c_trim; });
         buildParts();
+      }
+      if(k === "linkRelief"){
+        if(!S.linkRelief) PARTS.forEach(pt => { S.reliefs[pt.id] = S.relief; });
+        buildReliefParts();
       }
       syncVals(); syncSwatches(); render(); persist();
     });
@@ -1048,11 +1146,18 @@ function syncVals(){
 function syncSwatches(){
   $("backLabel").textContent = backLabelName();
   document.querySelectorAll("[data-back]").forEach(b => b.classList.toggle("on", b.dataset.back === S.back));
+  document.querySelectorAll("[data-back-custom]").forEach(b => b.classList.toggle("on", !!S.backCustom));
+  if($("backCustomOff")) $("backCustomOff").style.display = S.backCustom ? "" : "none";
   document.querySelectorAll("[data-trim]").forEach(b => b.classList.toggle("on", b.dataset.trim === S.trim));
   document.querySelectorAll("[data-ptrim]").forEach(b =>
     b.classList.toggle("on", b.dataset.ptrim === S.trims[b.dataset.part]));
-  document.querySelectorAll("[data-relief]").forEach(b => b.classList.toggle("active", b.dataset.relief === S.relief));
+  document.querySelectorAll("[data-prelief-row] [data-relief]").forEach(b =>
+    b.classList.toggle("active", b.dataset.relief === S.relief));
+  document.querySelectorAll("[data-prelief]").forEach(row =>
+    row.querySelectorAll("[data-relief]").forEach(b =>
+      b.classList.toggle("active", b.dataset.relief === reliefOf(row.dataset.prelief))));
   $("trimMaster").style.display = S.linkTrim ? "" : "none";
+  $("reliefMaster").style.display = S.linkRelief ? "" : "none";
 }
 function syncUI(){
   document.querySelectorAll("[data-k]").forEach(inp=>{
@@ -1076,13 +1181,15 @@ $("quoteReset").addEventListener("click", ()=>{
 });
 $("resetBtn").addEventListener("click", ()=>{
   S = JSON.parse(JSON.stringify(DEFAULTS));
-  buildColumns(); buildSwatches(); syncUI(); render(); persist();
+  buildColumns(); buildSwatches(); buildReliefParts(); syncUI(); render(); persist();
 });
 
 /* ================= persistence ================= */
-/* v2 split the single trim colour into per-part colourways */
-const LS_KEY = "plaquebuilder-v2";
-const LS_OLD = ["plaquebuilder-v1"];
+/* v2 split the single trim colour into per-part colourways; v3 did the same
+   for relief, and lifted the plate's custom colour out of the metal
+   colourways so it applies over any finish */
+const LS_KEY = "plaquebuilder-v3";
+const LS_OLD = ["plaquebuilder-v2", "plaquebuilder-v1"];
 let persistT = null;
 function persist(){
   clearTimeout(persistT);
@@ -1098,13 +1205,23 @@ function persist(){
          existed still picks up that part's default */
       S.trims = Object.assign({}, DEFAULTS.trims, S.trims);
       S.customs = Object.assign({}, DEFAULTS.customs, S.customs);
-      S.backTints = Object.assign({}, DEFAULTS.backTints, S.backTints);
+      S.reliefs = Object.assign({}, DEFAULTS.reliefs, S.reliefs);
+      const raw = JSON.parse(saved);
       /* a v1 save has one trim for everything — which is exactly linkTrim on */
-      if(!("linkTrim" in JSON.parse(saved))) S.linkTrim = true;
+      if(!("linkTrim" in raw)) S.linkTrim = true;
+      /* v2 and older carried the custom plate colour as a colourway of its
+         own ("custom") and gave powder coat a separate tint; both are now the
+         one finish-independent custom colour */
+      if(raw.back === "custom"){ S.back = DEFAULTS.back; S.backCustom = true; }
+      const oldPowder = raw.backTints && raw.backTints.powder;
+      if(oldPowder && backKind(S.back) === "powder" && oldPowder !== backTint(S.back)){
+        S.c_back = oldPowder; S.backCustom = true;
+      }
+      delete S.backTints;
     }
   }catch(e){}
   $("copyYear").textContent = new Date().getFullYear();
-  buildColumns(); buildParts(); bindInputs(); syncUI(); render();
+  buildColumns(); buildParts(); buildReliefParts(); bindInputs(); syncUI(); render();
   try{
     RAMPS = await (await fetch((ERAS[S.era]||ERAS["2399"]).dir + "ramps.json")).json();
   }catch(e){ console.error("colour ramps failed to load", e); }
