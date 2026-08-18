@@ -106,6 +106,35 @@ const Metal = (() => {
     </filter>`;
   }
 
+  /* Inlaid relief: metal filling a routed channel, flush with the surface
+     around it rather than domed above it or dished into it. Unlike
+     engraveFilter (which darkens the whole shape into one flattened cut
+     colour and lights it as a concave dish), this keeps the shape's own
+     fill — SourceGraphic, typically a metal gradient — and only adds a
+     thin dark seam at its edge (the routed gap where the inlay meets the
+     surrounding surface) plus a normal convex specular so the metal itself
+     still reads as polished trim, not a shadowed hollow.
+     opts: depth/blur (seam offset+softness), dark (seam opacity),
+     bevel/shine/se (specular, as in bevelFilter). */
+  function inlayFilter(id, opts){
+    const o = Object.assign({depth:2, blur:1.6, dark:.55, bevel:2, shine:1.05, se:22}, opts);
+    return `<filter id="${id}" x="-20%" y="-50%" width="140%" height="200%" color-interpolation-filters="sRGB">
+      <feComponentTransfer in="SourceAlpha" result="inv"><feFuncA type="table" tableValues="1 0"/></feComponentTransfer>
+      <feOffset in="inv" dx="${o.depth}" dy="${o.depth}" result="invOff"/>
+      <feGaussianBlur in="invOff" stdDeviation="${o.blur}" result="invBlur"/>
+      <feFlood flood-color="#000" flood-opacity="${o.dark}" result="ink"/>
+      <feComposite in="ink" in2="invBlur" operator="in" result="rimRaw"/>
+      <feComposite in="rimRaw" in2="SourceAlpha" operator="in" result="rim"/>
+      <feGaussianBlur in="SourceAlpha" stdDeviation="${(o.bevel*.7).toFixed(1)}" result="blur"/>
+      <feSpecularLighting in="blur" surfaceScale="${(o.bevel*1.2).toFixed(1)}" specularConstant="${(+o.shine).toFixed(2)}" specularExponent="${o.se}" lighting-color="#ffffff" result="spec">
+        <feDistantLight azimuth="235" elevation="48"/>
+      </feSpecularLighting>
+      <feComposite in="spec" in2="SourceAlpha" operator="in" result="specM"/>
+      <feComposite in="SourceGraphic" in2="specM" operator="arithmetic" k1="0" k2="1" k3="0.85" k4="0" result="lit"/>
+      <feMerge><feMergeNode in="lit"/><feMergeNode in="rim"/></feMerge>
+    </filter>`;
+  }
+
   /* Inset edge chisel: a thin bright ring right at a shape's alpha boundary,
      immediately followed by a narrower dark ring, fading to nothing past
      that — the double-ring "inner bevel" look Photoshop's Bevel & Emboss
@@ -140,5 +169,5 @@ const Metal = (() => {
   function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 
   return { MATERIALS, hexRgb, rgbHex, mix, ltn, dkn, rampFor, matInfo,
-           gradientDef, bevelFilter, engraveFilter, chiselRing, esc };
+           gradientDef, bevelFilter, engraveFilter, inlayFilter, chiselRing, esc };
 })();

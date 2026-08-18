@@ -207,11 +207,12 @@
       <div class="acc-body">
         <div class="toggle" id="reliefToggle">
           <button data-relief="emboss">Raised</button>
+          <button data-relief="inlay">Inlaid</button>
           <button data-relief="engrave">Engraved</button>
         </div>
         <div class="row"><label>Depth</label><input type="range" min="1" max="9" step="0.5" data-k="depth"><span class="val" data-val="depth"></span></div>
         <div class="row"><label>Shine</label><input type="range" min="0" max="1.6" step="0.05" data-k="shine"><span class="val" data-val="shine"></span></div>
-        <div class="hint">Raised lettering is cast proud of the plate; engraved lettering is cut into it, so the trim and badge are cut in too.</div>
+        <div class="hint">Raised lettering is cast proud of the plate. Inlaid lettering is routed into it but stays metal, with just a thin seam at the letters' edge. Engraved cuts the lettering <i>and</i> the trim and badge into the plate, flattened to the plate's own tone.</div>
       </div>
     </details>
 
@@ -232,7 +233,7 @@
           <div class="swatches" id="trimSwatches"></div>
         </div>
         <div id="partList"></div>
-        <div class="hint">Unmatch to colour the lettering, frame rails, corner bolts and the badge&#39;s delta and bars separately — the original artwork carries each in its own colourway. Engraved relief cuts every part into the plate, so these colours apply to raised relief only.</div>
+        <div class="hint">Unmatch to colour the lettering, frame rails, corner bolts and the badge&#39;s delta and bars separately — the original artwork carries each in its own colourway. These colours apply to raised and inlaid relief; engraved relief cuts every part into the plate and flattens them all to its own tone instead.</div>
       </div>
     </details>
 
@@ -437,9 +438,9 @@ const DEFAULTS = {
   colsOn: true,
   quoteOn: true, quoteMarks: true,
   quote: "Astra inclinant, sed non obligant.",
-  quoteDy: 0, quoteScale: 1,
-  speaker: "The Homeric Hymns",
-  speakerDx: 0, speakerDy: 0, speakerScale: 1,
+  quoteDy: -145, quoteScale: 1.45,
+  speaker: "Latin Proverb",
+  speakerDx: 0, speakerDy: 105, speakerScale: 1,
   columns: [
     { h:"STARFLEET COMMAND", n:"Teylas Ramar\nElizabeth Wolf\nVictor Murdock\nRobert Chadwick\nValren Arelwynn\nAdrian Mormar\nLucas Duncan\nAubrey Seagraves\nLiam Dahlgren" },
     { h:"STARFLEET OPERATIONS", n:"Dan Taylor\nChristopher A. Pike\nThomas Wolfe\nBarak Aubrey\nReytan Grax\nOliver Tidwell\nPatrick Brice\nGene Han\nMichael Crow" },
@@ -578,11 +579,26 @@ function partArt(E, part){
   const id = trimOf(part);
   return E.dir + (id !== "custom" && trimIsMatte(id) ? E.art[part+"Matte"] : E.art[part]);
 }
-/* lettering colour: the PSD's text fills are near-flat, so a flat base plus
-   the bevel filter reproduces them; custom trims fall back to the picker. */
+/* lettering colour: anchored to the frame/bolts/badge's own mid tones for
+   whichever colourway is active, not RAMPS.text's own sampled tone. The
+   PSD's Text group runs a separately-tuned effect stack from the border and
+   badge, and for some colourways — polished gold worst of all — that lands
+   noticeably paler than the rest of the trim; averaging the art parts' real
+   extracted mid tones keeps the lettering reading as the same metal as
+   everything around it. Falls back to RAMPS.text (and, failing that, the
+   picker) for a colourway — like "custom" — the art parts don't carry. */
 function inkBase(){
   const id = trimOf("text");
   if(id === "custom" || !RAMPS) return customOf("text");
+  const matte = trimIsMatte(id);
+  const mids = ["frame","bolts","delta","bars"]
+    .map(p => (RAMPS[matte ? p+"Matte" : p] || {})[id])
+    .filter(Boolean)
+    .map(rows => rows[Math.floor(rows.length/2)]);
+  if(mids.length){
+    const avg = mids.reduce((a,c)=>[a[0]+c[0],a[1]+c[1],a[2]+c[2]], [0,0,0]).map(v=>v/mids.length);
+    return Metal.rgbHex(avg[0]*255, avg[1]*255, avg[2]*255);
+  }
   const stops = RAMPS.text[id] || RAMPS.text.gold;
   return stops[Math.floor(stops.length/2)][1];
 }
@@ -598,13 +614,18 @@ function buildSVG(res){
   res = res || {};
   const E = ERAS[S.era] || ERAS["2399"];
   const R = E.rows;
+  /* Engraved cuts everything — trim and badge included — into the plate and
+     flattens it all to one tone. Inlaid only touches the lettering: it's
+     still routed into the plate, but keeps its own metal colour instead of
+     flattening, while the frame/bolts/badge stay raised. */
   const engraved = S.relief === "engrave";
+  const inlaid = S.relief === "inlay";
   const href = k => (res.art && res.art[k]) || (E.dir + E.art[k]);
 
   const ink = inkBase();
   const cut = Metal.dkn(plateMid(), .52);   /* engraved recesses read as shadowed plate */
   const inkFill = engraved ? cut : `url(#gradInk)`;
-  const fxText = engraved ? "url(#fxEngrave)" : "url(#fxEmboss)";
+  const fxText = engraved ? "url(#fxEngrave)" : inlaid ? "url(#fxInlay)" : "url(#fxEmboss)";
   const fxArt  = engraved ? "url(#fxEngraveArt)" : "url(#fxEmbossArt)";
 
   const fontCSS = res.fontCSS || `
@@ -801,6 +822,7 @@ function buildSVG(res){
 ${mapDefs}
 ${Metal.bevelFilter("fxEmboss", {bevel:depth, shine:shine, se:20, shadow:.55, shadowDy:Math.max(2,depth*.9), shadowBlur:Math.max(2,depth*1.2)})}
 ${Metal.engraveFilter("fxEngrave", {depth:depth*1.2, blur:depth*.8, dark:.82, shine:shine*.65, se:14})}
+${Metal.inlayFilter("fxInlay", {depth:depth*.55, blur:depth*.4, dark:.55, bevel:Math.max(1.5,depth*.85), shine:shine*1.05, se:22})}
 <filter id="fxEmbossArt" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
   <feDropShadow dx="0" dy="${Math.max(2,depth*.8).toFixed(1)}" stdDeviation="${Math.max(2,depth).toFixed(1)}" flood-color="#000" flood-opacity=".5"/>
 </filter>
