@@ -218,11 +218,21 @@
         <label class="fld">Backing</label>
         <div class="swatches" id="backSwatches"></div>
         <div class="row"><label>Custom backing</label><input type="color" data-k="c_back"></div>
-        <label class="fld">Trim &amp; lettering</label>
-        <div class="swatches" id="trimSwatches"></div>
-        <div class="row"><label>Custom trim</label><input type="color" data-k="c_trim"></div>
         <div class="row"><label>Badge</label><input type="checkbox" data-k="badgeOn"></div>
         <div class="row"><label>Frame</label><input type="checkbox" data-k="frameOn"></div>
+      </div>
+    </details>
+
+    <details class="acc" open>
+      <summary>Trim &amp; Lettering</summary>
+      <div class="acc-body">
+        <div class="row"><label>Match all parts</label><input type="checkbox" data-k="linkTrim"></div>
+        <div id="trimMaster">
+          <div class="swatches" id="trimSwatches"></div>
+          <div class="row"><label>Custom trim</label><input type="color" data-k="c_trim"></div>
+        </div>
+        <div id="partList"></div>
+        <div class="hint">Unmatch to colour the lettering, frame rails, corner bolts and the badge&#39;s delta and bars separately — the original artwork carries each in its own colourway. Engraved relief cuts every part into the plate, so these colours apply to raised relief only.</div>
       </div>
     </details>
 
@@ -320,7 +330,17 @@ const ERAS = {
   "2399": {
     label: "2399 (Standard)",
     dir: "assets/plaque/",
-    art: { plate:"plate.png", frame:"border.png", frameMatte:"border-matte.png", badge:"badge.png" },
+    /* The metal is four separately colourable pieces, as in the PSD: the
+       bolts sit over the frame rails, the delta over the badge bars. Each
+       ships a polished and a matte grayscale master, because the two
+       finishes bevel in opposite directions. */
+    art: {
+      plate:"plate.png",
+      frame:"frame.png", frameMatte:"frame-matte.png",
+      bolts:"bolts.png", boltsMatte:"bolts-matte.png",
+      bars:"bars.png",   barsMatte:"bars-matte.png",
+      delta:"delta.png", deltaMatte:"delta-matte.png",
+    },
     /* Sealstile stands in for the original's Microstyle Bold Extended, which
        the PSD sets at 60% horizontal scale. Sealstile runs ~10% larger and
        wider at the same nominal size, so its sizes are the PSD's × 0.904 and
@@ -340,7 +360,19 @@ const ERAS = {
   },
 };
 
-/* material keys shared by the frame art and the lettering */
+/* The independently colourable parts. The lettering is drawn as type; the
+   rest are artwork pieces, which DRAW lists bottom-first inside the group
+   they belong to, following the PSD's own stacking. */
+const PARTS = [
+  { id:"text",  name:"Lettering" },
+  { id:"frame", name:"Frame rails" },
+  { id:"bolts", name:"Corner bolts" },
+  { id:"delta", name:"Badge delta" },
+  { id:"bars",  name:"Badge bars" },
+];
+const DRAW = { frame:["bolts","frame"], badge:["bars","delta"] };
+
+/* material keys shared by the art pieces and the lettering */
 const TRIMS = [
   { id:"gold",        name:"Polished Gold",   sw:"#e8c65a", matte:false },
   { id:"silver",      name:"Polished Silver", sw:"#d5dbe0", matte:false },
@@ -371,7 +403,12 @@ const DEFAULTS = {
   relief: "emboss",
   depth: 4, shine: 0.8,
   back: "blue", c_back: "#44525f",
-  trim: "gold", c_trim: "#c9992e",
+  /* `trim`/`c_trim` are the master colourway every part follows while
+     linkTrim is on; `trims`/`customs` hold each part's own choice for when
+     it is off (seeded from the master at the moment it is unlinked). */
+  trim: "gold", c_trim: "#c9992e", linkTrim: true,
+  trims:   { text:"gold", frame:"gold", bolts:"gold", delta:"gold", bars:"gold" },
+  customs: { text:"#c9992e", frame:"#c9992e", bolts:"#c9992e", delta:"#c9992e", bars:"#c9992e" },
   badgeOn: true, frameOn: true, colsOn: true,
   quoteOn: true, quoteMarks: true,
   quote: "Astra inclinant, sed non obligant.",
@@ -471,23 +508,32 @@ function plateRamp(){
   if(S.back === "custom" || !RAMPS) return customRamp(S.c_back, .5);
   return RAMPS.plate[S.back] || RAMPS.plate.blue;
 }
-function trimRamp(){
-  if(S.trim === "custom" || !RAMPS) return customRamp(S.c_trim, .72);
-  const set = trimIsMatte() ? RAMPS.borderMatte : RAMPS.border;
-  return set[S.trim] || RAMPS.border.gold;
-}
-function trimIsMatte(){
-  const t = TRIMS.find(t=>t.id===S.trim);
+/* Which colourway a part is wearing — the master while parts are linked,
+   the part's own once they are not. */
+function trimOf(part){ return (S.linkTrim ? S.trim : S.trims[part]) || S.trim; }
+function customOf(part){ return (S.linkTrim ? S.c_trim : S.customs[part]) || S.c_trim; }
+function trimIsMatte(id){
+  const t = TRIMS.find(t=>t.id===id);
   return !!(t && t.matte);
 }
-function trimArt(E){
-  return E.dir + (trimIsMatte() && !(S.trim === "custom") ? E.art.frameMatte : E.art.frame);
+/* A custom colour always rides the polished master: its ramp is generated
+   light-to-dark, which is the direction that base is bevelled in. */
+function partRamp(part){
+  const id = trimOf(part);
+  if(id === "custom" || !RAMPS) return customRamp(customOf(part), .72);
+  const set = RAMPS[trimIsMatte(id) ? part+"Matte" : part] || {};
+  return set[id] || (RAMPS[part] && RAMPS[part].gold) || customRamp(customOf(part), .72);
+}
+function partArt(E, part){
+  const id = trimOf(part);
+  return E.dir + (id !== "custom" && trimIsMatte(id) ? E.art[part+"Matte"] : E.art[part]);
 }
 /* lettering colour: the PSD's text fills are near-flat, so a flat base plus
    the bevel filter reproduces them; custom trims fall back to the picker. */
 function inkBase(){
-  if(S.trim === "custom" || !RAMPS) return S.c_trim;
-  const stops = RAMPS.text[S.trim] || RAMPS.text.gold;
+  const id = trimOf("text");
+  if(id === "custom" || !RAMPS) return customOf("text");
+  const stops = RAMPS.text[id] || RAMPS.text.gold;
   return stops[Math.floor(stops.length/2)][1];
 }
 /* the plate's own mid tone — what an engraved cut is filled with */
@@ -630,8 +676,29 @@ function buildSVG(res){
       font-family="EB Garamond" font-weight="500" font-style="italic" font-size="${sfs.toFixed(1)}">${esc(txt)}</text>`;
   }
 
-  const pr = rampTable(plateRamp()), tr = rampTable(trimRamp());
+  const pr = rampTable(plateRamp());
   const depth = S.depth, shine = S.shine;
+
+  /* one gradient-map filter per art piece, so each can wear its own metal */
+  const artParts = DRAW.frame.concat(DRAW.badge);
+  const mapDefs = artParts.map(part => {
+    const t = rampTable(partRamp(part));
+    return `<filter id="map_${part}" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
+  <feComponentTransfer>
+    <feFuncR type="table" tableValues="${t.r}"/>
+    <feFuncG type="table" tableValues="${t.g}"/>
+    <feFuncB type="table" tableValues="${t.b}"/>
+  </feComponentTransfer>
+</filter>`;
+  }).join("\n");
+
+  /* Pieces that stack (bolts under rails, bars under delta) share one relief
+     group, so the pair casts a single shadow the way the flattened art did. */
+  function artPiece(part){
+    const src = (res.art && res.art[part]) || partArt(E, part);
+    return `<image href="${src}" x="0" y="0" width="${W}" height="${H}"${engraved ? "" : ` filter="url(#map_${part})"`}/>`;
+  }
+  const artGroup = parts => `<g filter="${fxArt}">${parts.map(artPiece).join("")}</g>`;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
 <defs>
@@ -649,13 +716,7 @@ function buildSVG(res){
   </feComponentTransfer>
   <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#000" flood-opacity=".55"/>
 </filter>
-<filter id="mapTrim" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
-  <feComponentTransfer>
-    <feFuncR type="table" tableValues="${tr.r}"/>
-    <feFuncG type="table" tableValues="${tr.g}"/>
-    <feFuncB type="table" tableValues="${tr.b}"/>
-  </feComponentTransfer>
-</filter>
+${mapDefs}
 ${Metal.bevelFilter("fxEmboss", {bevel:depth, shine:shine, se:20, shadow:.55, shadowDy:Math.max(2,depth*.9), shadowBlur:Math.max(2,depth*1.2)})}
 ${Metal.engraveFilter("fxEngrave", {depth:depth*1.2, blur:depth*.8, dark:.82, shine:shine*.65, se:14})}
 <filter id="fxEmbossArt" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
@@ -666,8 +727,8 @@ ${Metal.engraveFilter("fxEngraveArt", {depth:depth*1.2, blur:depth*.8, dark:.82,
 
 <image href="${href("plate")}" x="0" y="0" width="${W}" height="${H}" filter="url(#mapPlate)"/>
 
-${S.frameOn ? `<g filter="${fxArt}"><image href="${res.art ? res.art.trim : trimArt(E)}" x="0" y="0" width="${W}" height="${H}" filter="${engraved ? "" : "url(#mapTrim)"}"/></g>` : ""}
-${S.badgeOn ? `<g filter="${fxArt}"><image href="${href("badge")}" x="0" y="0" width="${W}" height="${H}" filter="${engraved ? "" : "url(#mapTrim)"}"/></g>` : ""}
+${S.frameOn ? artGroup(DRAW.frame) : ""}
+${S.badgeOn ? artGroup(DRAW.badge) : ""}
 
 <g filter="${fxText}" fill="${inkFill}">
   ${corners}
@@ -684,20 +745,22 @@ function render(){ $("plqwrap").innerHTML = buildSVG(); }
 /* ================= export ================= */
 async function exportResources(){
   const E = ERAS[S.era] || ERAS["2399"];
-  const [sealF, g600, gIt, plate, trim, badge] = await Promise.all([
+  const pieces = DRAW.frame.concat(DRAW.badge);
+  const [sealF, g600, gIt, plate, ...artURIs] = await Promise.all([
     ExportKit.fetchDataURI("fonts/sealstile.woff2"),
     ExportKit.fetchDataURI("fonts/webfonts/ebgaramond-600.woff2"),
     ExportKit.fetchDataURI("fonts/webfonts/ebgaramond-it500.woff2"),
     ExportKit.fetchDataURI(E.dir + E.art.plate),
-    ExportKit.fetchDataURI(trimArt(E)),
-    ExportKit.fetchDataURI(E.dir + E.art.badge),
+    ...pieces.map(part => ExportKit.fetchDataURI(partArt(E, part))),
   ]);
+  const art = { plate };
+  pieces.forEach((part, i) => { art[part] = artURIs[i]; });
   return {
     fontCSS:
       ExportKit.fontFaceRule("Sealstile", 400, "normal", sealF) +
       ExportKit.fontFaceRule("EB Garamond", 600, "normal", g600) +
       ExportKit.fontFaceRule("EB Garamond", 500, "italic", gIt),
-    art: { plate, trim, badge },
+    art,
   };
 }
 function slug(){
@@ -722,16 +785,33 @@ $("exportSvg").addEventListener("click", async ()=>{
 });
 
 /* ================= panel wiring ================= */
+const customSw = (attr, part) =>
+  `<button class="sw" data-${attr}="custom"${part ? ` data-part="${part}"` : ""} title="Custom" style="background:linear-gradient(135deg,#666,#ccc)"></button>`;
+/* one strip of trim swatches — for the master row, or for a single part */
+function trimRow(attr, part){
+  const pa = part ? ` data-part="${part}"` : "";
+  return TRIMS.map(t =>
+    `<button class="sw" data-${attr}="${t.id}"${pa} title="${t.name}" style="background:${t.sw}"></button>`).join("")
+    + customSw(attr, part);
+}
 function buildSwatches(){
   $("backSwatches").innerHTML = BACKINGS.map(b => {
     const rows = (RAMPS && RAMPS.plate[b.id]) || null;
     const mid = rows ? rows[Math.floor(rows.length*.65)] : [.3,.35,.4];
     const c = Metal.rgbHex(mid[0]*255, mid[1]*255, mid[2]*255);
     return `<button class="sw" data-back="${b.id}" title="${b.name}" style="background:${c}"></button>`;
-  }).join("") + `<button class="sw" data-back="custom" title="Custom" style="background:linear-gradient(135deg,#666,#ccc)"></button>`;
-  $("trimSwatches").innerHTML = TRIMS.map(t =>
-    `<button class="sw" data-trim="${t.id}" title="${t.name}" style="background:${t.sw}"></button>`).join("")
-    + `<button class="sw" data-trim="custom" title="Custom" style="background:linear-gradient(135deg,#666,#ccc)"></button>`;
+  }).join("") + customSw("back");
+  $("trimSwatches").innerHTML = trimRow("trim");
+  buildParts();
+}
+/* the per-part rows, shown only while the parts are unlinked */
+function buildParts(){
+  $("partList").innerHTML = S.linkTrim ? "" : PARTS.map(pt => `
+    <div class="col">
+      <div class="chead"><span>${pt.name}</span></div>
+      <div class="swatches">${trimRow("ptrim", pt.id)}</div>
+      <div class="row"><label>Custom</label><input type="color" data-pc="${pt.id}" value="${esc(S.customs[pt.id]||S.c_trim)}"></div>
+    </div>`).join("");
   syncSwatches();
 }
 $("backSwatches").addEventListener("click", e => {
@@ -741,6 +821,15 @@ $("backSwatches").addEventListener("click", e => {
 $("trimSwatches").addEventListener("click", e => {
   const b = e.target.closest("[data-trim]"); if(!b) return;
   S.trim = b.dataset.trim; syncSwatches(); render(); persist();
+});
+$("partList").addEventListener("click", e => {
+  const b = e.target.closest("[data-ptrim]"); if(!b) return;
+  S.trims[b.dataset.part] = b.dataset.ptrim; syncSwatches(); render(); persist();
+});
+$("partList").addEventListener("input", e => {
+  const c = e.target.closest("[data-pc]"); if(!c) return;
+  S.customs[c.dataset.pc] = c.value; S.trims[c.dataset.pc] = "custom";
+  syncSwatches(); render(); persist();
 });
 $("reliefToggle").addEventListener("click", e => {
   const b = e.target.closest("[data-relief]"); if(!b) return;
@@ -789,6 +878,12 @@ function bindInputs(){
       else S[k] = inp.value;
       if(k === "c_back") S.back = "custom";
       if(k === "c_trim") S.trim = "custom";
+      /* unlinking hands every part the master's colour, so the plaque does
+         not jump the moment the parts are set loose */
+      if(k === "linkTrim"){
+        if(!S.linkTrim) PARTS.forEach(pt => { S.trims[pt.id] = S.trim; S.customs[pt.id] = S.c_trim; });
+        buildParts();
+      }
       syncVals(); syncSwatches(); render(); persist();
     });
   });
@@ -799,7 +894,10 @@ function syncVals(){
 function syncSwatches(){
   document.querySelectorAll("[data-back]").forEach(b => b.classList.toggle("on", b.dataset.back === S.back));
   document.querySelectorAll("[data-trim]").forEach(b => b.classList.toggle("on", b.dataset.trim === S.trim));
+  document.querySelectorAll("[data-ptrim]").forEach(b =>
+    b.classList.toggle("on", b.dataset.ptrim === S.trims[b.dataset.part]));
   document.querySelectorAll("[data-relief]").forEach(b => b.classList.toggle("active", b.dataset.relief === S.relief));
+  $("trimMaster").style.display = S.linkTrim ? "" : "none";
 }
 function syncUI(){
   document.querySelectorAll("[data-k]").forEach(inp=>{
@@ -823,11 +921,13 @@ $("quoteReset").addEventListener("click", ()=>{
 });
 $("resetBtn").addEventListener("click", ()=>{
   S = JSON.parse(JSON.stringify(DEFAULTS));
-  buildColumns(); syncUI(); render(); persist();
+  buildColumns(); buildParts(); syncUI(); render(); persist();
 });
 
 /* ================= persistence ================= */
-const LS_KEY = "plaquebuilder-v1";
+/* v2 split the single trim colour into per-part colourways */
+const LS_KEY = "plaquebuilder-v2";
+const LS_OLD = ["plaquebuilder-v1"];
 let persistT = null;
 function persist(){
   clearTimeout(persistT);
@@ -835,11 +935,20 @@ function persist(){
 }
 (async function boot(){
   try{
-    const saved = localStorage.getItem(LS_KEY);
-    if(saved) S = Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), JSON.parse(saved));
+    let saved = localStorage.getItem(LS_KEY);
+    for(const k of LS_OLD){ if(!saved) saved = localStorage.getItem(k); }
+    if(saved){
+      S = Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), JSON.parse(saved));
+      /* the part maps merge field-by-field, so a save written before a part
+         existed still picks up that part's default */
+      S.trims = Object.assign({}, DEFAULTS.trims, S.trims);
+      S.customs = Object.assign({}, DEFAULTS.customs, S.customs);
+      /* a v1 save has one trim for everything — which is exactly linkTrim on */
+      if(!("linkTrim" in JSON.parse(saved))) S.linkTrim = true;
+    }
   }catch(e){}
   $("copyYear").textContent = new Date().getFullYear();
-  buildColumns(); bindInputs(); syncUI(); render();
+  buildColumns(); buildParts(); bindInputs(); syncUI(); render();
   try{
     RAMPS = await (await fetch((ERAS[S.era]||ERAS["2399"]).dir + "ramps.json")).json();
   }catch(e){ console.error("colour ramps failed to load", e); }
