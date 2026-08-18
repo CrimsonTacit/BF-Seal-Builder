@@ -118,6 +118,9 @@
   .hint{color:var(--ink-dim);font-size:11px;margin-top:6px;line-height:1.45}
   .btnrow{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
   .swatches{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px}
+  .swgroup{margin-bottom:10px}
+  .swgroup:last-child{margin-bottom:0}
+  .swgroup-label{color:var(--ink-dim);font-size:10px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px}
   .sw{width:30px;height:24px;border-radius:2px;border:1px solid var(--line-bright);cursor:pointer;padding:0}
   .sw:hover{border-color:var(--bolt-gold)}
   .sw.on{border-color:var(--bolt-gold);box-shadow:0 0 0 1px var(--bolt-gold)}
@@ -215,9 +218,9 @@
     <details class="acc" open>
       <summary>Plate</summary>
       <div class="acc-body">
-        <label class="fld">Backing</label>
-        <div class="swatches" id="backSwatches"></div>
-        <div class="hint">The last swatch is the colour selector itself — click it to pick (or repick) a custom colour.</div>
+        <label class="fld" id="backLabel">Backing</label>
+        <div id="backSwatches"></div>
+        <div class="hint">The last swatch in the Metal row is the colour selector itself — click it to pick a custom colour (or, with Powder Coat's smooth finish active, to retint it).</div>
       </div>
     </details>
 
@@ -380,30 +383,31 @@ const TRIMS = [
   { id:"black",       name:"Black",           sw:"#33373c", matte:true  },
 ];
 const BACKINGS = [
-  { id:"blue",     name:"Starfleet Blue", kind:"metal" }, { id:"steel",    name:"Steel", kind:"metal" },
-  { id:"silver",   name:"Silver", kind:"metal" },         { id:"gold",     name:"Gold", kind:"metal" },
-  { id:"bronze",   name:"Bronze", kind:"metal" },         { id:"copper",   name:"Copper", kind:"metal" },
-  { id:"emerald",  name:"Emerald", kind:"metal" },        { id:"ruby",     name:"Ruby", kind:"metal" },
-  { id:"cyan",     name:"Green-Cyan", kind:"metal" },     { id:"cobalt",   name:"Cobalt", kind:"metal" },
-  { id:"amethyst", name:"Amethyst", kind:"metal" },       { id:"black",    name:"Black", kind:"metal" },
+  { id:"blue",     name:"Starfleet Blue", kind:"metal", group:"Metal" }, { id:"steel",    name:"Steel", kind:"metal", group:"Metal" },
+  { id:"silver",   name:"Silver", kind:"metal", group:"Metal" },         { id:"gold",     name:"Gold", kind:"metal", group:"Metal" },
+  { id:"bronze",   name:"Bronze", kind:"metal", group:"Metal" },         { id:"copper",   name:"Copper", kind:"metal", group:"Metal" },
+  { id:"emerald",  name:"Emerald", kind:"metal", group:"Metal" },        { id:"ruby",     name:"Ruby", kind:"metal", group:"Metal" },
+  { id:"cyan",     name:"Green-Cyan", kind:"metal", group:"Metal" },     { id:"cobalt",   name:"Cobalt", kind:"metal", group:"Metal" },
+  { id:"amethyst", name:"Amethyst", kind:"metal", group:"Metal" },       { id:"black",    name:"Black", kind:"metal", group:"Metal" },
   /* real photo textures (CC0, ambientCG — see tools/fetch_plate_textures.py),
      not in the PSD. Each is a fixed swatch with its own baked-in colour —
      unlike the metal backings there's no colour-ramp to recustomize, they're
      clipped to the plate's silhouette at render time via plate.png's alpha
      rather than carrying their own. */
-  { id:"woodWalnut",   name:"Wood — Walnut",         kind:"photoTex", tex:"tex-wood-walnut.jpg" },
-  { id:"woodOak",       name:"Wood — Oak",            kind:"photoTex", tex:"tex-wood-oak.jpg" },
-  { id:"marbleGray",    name:"Stone (Veined) — Gray",  kind:"photoTex", tex:"tex-marble-gray.jpg" },
-  { id:"marbleCream",   name:"Stone (Veined) — Cream", kind:"photoTex", tex:"tex-marble-cream.jpg" },
-  { id:"graniteGray",   name:"Stone (Plain) — Gray",   kind:"photoTex", tex:"tex-granite-gray.jpg" },
-  { id:"graniteBrown",  name:"Stone (Plain) — Brown",  kind:"photoTex", tex:"tex-granite-brown.jpg" },
+  { id:"woodWalnut",   name:"Walnut",         kind:"photoTex", tex:"tex-wood-walnut.jpg", group:"Wood" },
+  { id:"woodOak",       name:"Oak",            kind:"photoTex", tex:"tex-wood-oak.jpg", group:"Wood" },
+  { id:"marbleGray",    name:"Veined — Gray",  kind:"photoTex", tex:"tex-marble-gray.jpg", group:"Stone" },
+  { id:"marbleCream",   name:"Veined — Cream", kind:"photoTex", tex:"tex-marble-cream.jpg", group:"Stone" },
+  { id:"graniteGray",   name:"Plain — Gray",   kind:"photoTex", tex:"tex-granite-gray.jpg", group:"Stone" },
+  { id:"graniteBrown",  name:"Plain — Brown",  kind:"photoTex", tex:"tex-granite-brown.jpg", group:"Stone" },
   /* the one procedural finish (feTurbulence, no photo) — kept because a flat
      matte custom colour is exactly what powder coat is, so it's genuinely
-     recolourable in a way a photo can't be; "Powder Coat — Textured" below
-     is the photo alternative for when the fine grain matters more than tint. */
-  { id:"powder",        name:"Powder Coat",            kind:"powder",   tint:"#3f4b58" },
-  { id:"powderTex",     name:"Powder Coat — Textured", kind:"photoTex", tex:"tex-powder-navy.jpg" },
+     recolourable in a way a photo can't be; "Textured" below is the photo
+     alternative for when the fine grain matters more than tint. */
+  { id:"powder",        name:"Smooth",   kind:"powder",   tint:"#3f4b58", group:"Powder Coat" },
+  { id:"powderTex",     name:"Textured", kind:"photoTex", tex:"tex-powder-navy.jpg", group:"Powder Coat" },
 ];
+const BACKING_GROUPS = ["Metal", "Wood", "Stone", "Powder Coat"];
 const PROCEDURAL_KINDS = ["powder"];
 function backingOf(id){ return BACKINGS.find(b=>b.id===id); }
 function backKind(id){ return (backingOf(id)||{}).kind || "metal"; }
@@ -882,24 +886,35 @@ function trimRow(attr, part){
     `<button class="sw" data-${attr}="${t.id}"${pa} title="${t.name}" style="background:${t.sw}"></button>`).join("")
     + customSw(attr, part);
 }
+function backSwatch(b, E){
+  if(b.kind === "photoTex"){
+    return `<button class="sw" data-back="${b.id}" title="${b.name}" style="background-image:url(${E.dir}${b.tex});background-size:cover;background-position:center"></button>`;
+  }
+  let c;
+  if(b.kind === "metal"){
+    const rows = (RAMPS && RAMPS.plate[b.id]) || null;
+    const mid = rows ? rows[Math.floor(rows.length*.65)] : [.3,.35,.4];
+    c = Metal.rgbHex(mid[0]*255, mid[1]*255, mid[2]*255);
+  }else{
+    c = backTint(b.id);
+  }
+  return `<button class="sw" data-back="${b.id}" title="${b.name}" style="background:${c}"></button>`;
+}
 function buildSwatches(){
   const E = ERAS[S.era] || ERAS["2399"];
-  $("backSwatches").innerHTML = BACKINGS.map(b => {
-    if(b.kind === "photoTex"){
-      return `<button class="sw" data-back="${b.id}" title="${b.name}" style="background-image:url(${E.dir}${b.tex});background-size:cover;background-position:center"></button>`;
-    }
-    let c;
-    if(b.kind === "metal"){
-      const rows = (RAMPS && RAMPS.plate[b.id]) || null;
-      const mid = rows ? rows[Math.floor(rows.length*.65)] : [.3,.35,.4];
-      c = Metal.rgbHex(mid[0]*255, mid[1]*255, mid[2]*255);
-    }else{
-      c = backTint(b.id);
-    }
-    return `<button class="sw" data-back="${b.id}" title="${b.name}" style="background:${c}"></button>`;
-  }).join("") + customSw("back");
+  $("backSwatches").innerHTML = BACKING_GROUPS.map(group => {
+    const swatches = BACKINGS.filter(b => b.group === group).map(b => backSwatch(b, E)).join("")
+      + (group === "Metal" ? customSw("back") : "");
+    return `<div class="swgroup"><div class="swgroup-label">${group}</div><div class="swatches">${swatches}</div></div>`;
+  }).join("");
   $("trimSwatches").innerHTML = trimRow("trim");
   buildParts();
+}
+function backLabelName(){
+  if(S.back === "custom") return "Custom Colour";
+  const b = backingOf(S.back);
+  if(!b) return "Backing";
+  return b.group === "Metal" ? b.name : `${b.group} — ${b.name}`;
 }
 /* the per-part rows, shown only while the parts are unlinked */
 function buildParts(){
@@ -1002,6 +1017,7 @@ function syncVals(){
   document.querySelectorAll("[data-val]").forEach(sp=>{ sp.textContent = S[sp.dataset.val]; });
 }
 function syncSwatches(){
+  $("backLabel").textContent = backLabelName();
   document.querySelectorAll("[data-back]").forEach(b => b.classList.toggle("on", b.dataset.back === S.back));
   document.querySelectorAll("[data-trim]").forEach(b => b.classList.toggle("on", b.dataset.trim === S.trim));
   document.querySelectorAll("[data-ptrim]").forEach(b =>
