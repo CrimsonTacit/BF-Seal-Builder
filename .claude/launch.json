@@ -14,6 +14,16 @@
       "port": 8517
     },
     {
+      "name": "seal-builder-auto",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "exec python3 -m http.server \"$PORT\" --bind 127.0.0.1"
+      ],
+      "autoPort": true,
+      "port": 8519
+    },
+    {
       "name": "seal-builder-alt",
       "runtimeExecutable": "python3",
       "runtimeArgs": [

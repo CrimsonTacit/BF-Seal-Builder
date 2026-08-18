@@ -36,10 +36,10 @@
     color:var(--ink-dim);letter-spacing:.18em;font-size:11px;text-transform:uppercase;
     text-align:center;margin-top:8px;
   }
-  .cards{display:flex;gap:22px;flex-wrap:wrap;justify-content:center}
+  .cards{display:flex;gap:22px;flex-wrap:wrap;justify-content:center;max-width:1320px}
   a.card{
     display:flex;flex-direction:column;align-items:center;gap:16px;
-    width:300px;padding:30px 26px 26px;text-decoration:none;color:var(--ink);
+    width:290px;padding:30px 26px 26px;text-decoration:none;color:var(--ink);
     background:var(--panel);border:1px solid var(--line-bright);border-radius:4px;
     transition:border-color .15s ease, transform .15s ease;
   }
@@ -81,6 +81,28 @@
     width:58px;height:22px;
     background:linear-gradient(180deg,#ffffff,#a6b0bc 48%,#79828e 52%,#d4dae1);
   }
+  /* banner mark: gold delta beside a framed panel */
+  .mark-bnr{
+    width:72px;height:72px;flex:none;display:flex;align-items:center;gap:5px;
+  }
+  .mark-bnr i{
+    display:block;width:20px;height:52px;flex:none;
+    background:linear-gradient(160deg,#fdf6bd,#c9992e 45%,#8a6410 55%,#e8c14a);
+    clip-path:polygon(50% 0,100% 100%,50% 74%,0 100%);
+  }
+  .mark-bnr b{
+    display:block;flex:1;height:38px;border-radius:6px;
+    border:3px solid #c9992e;background:#0f1a30;
+  }
+  /* plaque mark: bordered slate plate */
+  .mark-plq{
+    width:72px;height:72px;flex:none;display:flex;align-items:center;justify-content:center;
+    border-radius:7px;background:linear-gradient(150deg,#55636f,#333d47);
+    box-shadow:0 2px 5px rgba(0,0,0,.5);
+  }
+  .mark-plq i{
+    display:block;width:48px;height:44px;border-radius:3px;border:3px solid #c9a541;
+  }
   footer{
     color:var(--ink-dim);font-size:10px;letter-spacing:.08em;line-height:1.8;
     text-transform:uppercase;text-align:center;
@@ -108,11 +130,24 @@
     <p>Metallic wordmark headers for BFMS command pages — gold and brushed-steel type, divider rules, emblems, transparent PNG output.</p>
     <div class="go">Open →</div>
   </a>
+  <a class="card" href="banner-tool.html">
+    <div class="mark-bnr"><i></i><b></b></div>
+    <h2>Banner Builder</h2>
+    <p>Ship and station banners — the fixed gold frame with your art, name, registry and class, and a task-force delta in place of the BF one.</p>
+    <div class="go">Open →</div>
+  </a>
+  <a class="card" href="plaque-tool.html">
+    <div class="mark-plq"><i></i></div>
+    <h2>Plaque Builder</h2>
+    <p>Dedication plaques from the original 2399 artwork — twelve backings, seven trims, editable rosters, raised or engraved lettering.</p>
+    <div class="go">Open →</div>
+  </a>
 </div>
 
 <footer>
   © Bravo Fleet 1997–<span id="copyYear"></span><br>
-  Seal design by <b>CrimsonTacit</b> · original Columbia header by <b>JustSlide</b>
+  Seal design by <b>CrimsonTacit</b> · original Columbia header by <b>JustSlide</b><br>
+  Banner and plaque artwork © <b>Bravo Fleet</b>
 </footer>
 
 <script>
