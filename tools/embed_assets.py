@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Re-embed binary assets into seal-tool.html (the Seal Builder).
 
-Run after changing the font or any emblem in TFEmblems/:
+Run after changing the font or any emblem in assets/emblems/:
 
     python3 tools/embed_assets.py            # emblems only (stdlib)
     python3 tools/embed_assets.py --font     # also rebuild the embedded font (needs fontTools+brotli)
@@ -19,7 +19,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 INDEX = ROOT / "seal-tool.html"
-EMBLEM_DIR = ROOT / "TFEmblems"
+EMBLEM_DIR = ROOT / "assets" / "emblems"
 FONT_SRC = ROOT / "fonts/LibrestileExtBold.ttf"
 
 EMBLEM_NAMES = {
@@ -118,6 +118,10 @@ def main():
         html, n = re.subn(r'const FONT_B64 = "[^"]*";', f'const FONT_B64 = "{b64}";', html)
         assert n == 1, "FONT_B64 not found"
         print(f"embedded font ({len(b64)} chars)")
+        # banner/plaque tools load the font as a file instead of embedding it
+        loose = INDEX.parent / "fonts" / "sealstile.woff2"
+        loose.write_bytes(base64.b64decode(b64))
+        print("wrote", loose)
 
     INDEX.write_text(html)
     print("wrote", INDEX)

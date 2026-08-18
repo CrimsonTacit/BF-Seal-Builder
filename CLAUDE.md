@@ -1,12 +1,25 @@
 # Bravo Fleet Graphics Tools
 
-Single-file HTML apps for the user's Bravo Fleet continuity (Star Trek fan fleet), replacing Photoshop workflows. No build step, no dependencies — serve the folder (`.claude/launch.json` runs `python3 -m http.server 8517`). Three pages:
+Browser apps for the user's Bravo Fleet continuity (Star Trek fan fleet), replacing Photoshop workflows. No build step and no dependencies — serve the folder (`.claude/launch.json` runs `python3 -m http.server`; the `seal-builder-auto` entry takes any free port when 8517/8518 are busy). **Deployed on GitHub Pages**, so relative-URL assets are fine. Five pages:
 
-- [index.html](index.html) — static landing page linking to the two tools (plain CSS, no embedded assets; card "marks" mimic each tool's look).
+- [index.html](index.html) — static landing page linking to the four tools (plain CSS, no embedded assets; card "marks" mimic each tool's look).
 - [seal-tool.html](seal-tool.html) — **Seal Builder**: round vessel/station/org seals.
 - [header-tool.html](header-tool.html) — **Header Builder**: metallic wordmark overlays for BFMS command pages.
+- [banner-tool.html](banner-tool.html) — **Banner Builder**: ship/station banners (fixed design, swappable TF delta).
+- [plaque-tool.html](plaque-tool.html) — **Plaque Builder**: dedication plaques, built from the original PSD artwork.
 
-Reference seals the design replicates live in `examples/` (`*Seal.png`, `USS*.png`), plus `Examples/Headers/ColumbiaTitle.png` for the header look. Both tools carry a `© Bravo Fleet` credit footer (seal design by CrimsonTacit, original Columbia header by JustSlide) and cross-link to each other and the landing page.
+Reference art lives in `examples/`: seals (`*Seal.png`, `USS*.png`), `Examples/Headers/ColumbiaTitle.png`, `examples/Banners/` (+ `BF-banners copy.psd`), `examples/Plaques/PallasPlaque.png` (+ `NewPlaqueDesign copy.psd`). **`examples/` is gitignored** — the source PSDs are local-only, so anything derived from them (the plaque artwork below) must be committed as the derived asset. Every tool carries a `© Bravo Fleet` credit footer (seal design by CrimsonTacit, original Columbia header by JustSlide) and cross-links to the others and the landing page.
+
+## Single-file vs. multi-file
+
+The seal and header tools stay **single-file** (fonts and emblems embedded as base64) — they work from `file://` and are easy to hand around. The banner and plaque tools **load assets by relative URL** instead, because their artwork (logo PNGs, the 2350×1700 plaque masters) would bloat a single file for no gain now that the suite is hosted. Both are legitimate; pick per tool, and prefer single-file only when it costs nothing.
+
+**PNG export is the product**; SVG export is a nice-to-have. An SVG loaded into an `<img>` for canvas rasterizing cannot fetch external resources, so the export path inlines every font and image as a data URI first — see `buildSVG(res)` in the banner/plaque tools, fed by `exportResources()`.
+
+## Shared code (`shared/`, used only by the banner and plaque tools)
+
+- [shared/metal.js](shared/metal.js) — `Metal.*`: the `MATERIALS` ramps, colour math (`hexRgb`/`mix`/`ltn`/`dkn`/`rampFor`/`matInfo`), `gradientDef`, and the two relief filters — `bevelFilter` (raised: blur of SourceAlpha → `feSpecularLighting` → drop shadow) and `engraveFilter` (recessed: inverted offset alpha as an inner shadow + negative-surfaceScale specular; pass `flatten` to recolour artwork to the cut colour first). A hand-kept copy of header-tool.html's recipe, not a refactor of it.
+- [shared/export.js](shared/export.js) — `ExportKit.*`: memoized `fetchDataURI`, `fontFaceRule`, `svgToCanvas`, and the download helpers.
 
 ## Seal Builder architecture (all inside seal-tool.html)
 
@@ -25,12 +38,14 @@ Reference seals the design replicates live in `examples/` (`*Seal.png`, `USS*.pn
 
 ## Embedded assets
 
-`FONT_B64` ("Sealstile" WOFF2) and `CHARGES` (TF emblem PNGs from `TFEmblems/`) are base64 constants. Regenerate with:
+`FONT_B64` ("Sealstile" WOFF2) and `CHARGES` (TF emblem PNGs from `assets/emblems/`) are base64 constants. Regenerate with:
 
 ```bash
 python3 tools/embed_assets.py          # emblems (stdlib only)
 python3 tools/embed_assets.py --font   # + font (needs a venv with fonttools & brotli)
 ```
+
+`--font` also drops a loose copy at `fonts/sealstile.woff2` for the banner/plaque tools. `tools/fetch_shared_fonts.py` (stdlib) re-extracts that loose copy from the embedded constant and downloads the EB Garamond faces into `fonts/webfonts/`.
 
 **Font**: "Sealstile" is `fonts/LibrestileExtBold.ttf` (Librestile by ocelothe2k1, SIL OFL 1.1 — `fonts/OFL-Librestile.txt`), patched by `embed_assets.py --font`: adds a bullet glyph (Librestile has no U+2022, and "•" is the seal separator convention; circle sized to match the original Microstyle bullet — 0.84×cap diameter, center 0.60×cap up), aliases en dash→hyphen and U+2019→apostrophe, and renames the family ("Librestile" is an OFL Reserved Font Name, so the modified font can't keep it). It replaced the original Microstyle Bold Extended (1991 Agfa, copyrighted — undistributable) in the v5 storage bump; Sealstile runs ~13% wider at equal size, so the boot migration from v4-and-older keys scales `fontSize` ×46/52 and `letterSpacing` ×5/8, and `DEFAULTS` moved from 52/8 to 46/5. Old designs re-exported from a v5 build may still need a nudge if their text was near-overflow.
 
@@ -50,8 +65,30 @@ Parallel single-file app for BFMS page-header wordmarks (reference: `Examples/He
 - **Embedded fonts**: `FONTS` array = Sealstile (copied from seal-tool.html) + four OFL Google Fonts (Tenor Sans — closest to the Optima-style reference, Cinzel 600, Michroma, Orbitron 600), latin subsets only. Regenerate with `python3 tools/embed_header_assets.py` (stdlib; downloads are cached in `fonts/webfonts/` so it's offline after first run). Run it after `embed_assets.py` if the seal font or emblems changed. `CAP` holds per-font cap-height ratios used by row layout.
 - **Stage**: checker / dark / light / user-uploaded image backgrounds (preview only, never exported).
 
+## Banner Builder (banner-tool.html)
+
+Fixed-design ship/station banners (reference: `examples/Banners/*.png`, source `BF-banners copy.psd`, 1400×503 transparent). State `S` in localStorage `bannerbuilder-v1`.
+
+- **No colour customisation by design** — the only art choice is which delta sits at the left: `LOGOS` maps to the delta-only logos in `assets/logos/` (`bf-delta.png` + `tf##a.png`; the wide `tf##.png` variants with the big numeral don't fit this layout). Natural sizes are re-read on load so the slot's aspect is right.
+- **Geometry** is a set of module constants (`FRAME`, `DELTA`, type metrics) drawn as vectors, with gold from `Metal.MATERIALS.gold` and `Metal.bevelFilter`. Type is unplated — the class/registry line sits just above the frame's top rail (`SMALL_BASE`) and the ship name just below it, with name + registry flush to the frame's right edge (`TEXT_RIGHT`). `DELTA` gives the band the *artwork* must fill (`artTop`/`artBot`), not the image box: the logo files pad the art by different amounts, so the loader measures each one's opaque bounds and `deltaBox()` fits the slot to them, keeping every delta's apex at the same height (a couple of px above the cap line). The slot is sized so the delta hides the frame's left rail and both left corners. `DELTA_EDGE` is the delta silhouette's right edge sampled as height→width fractions (measured off the logo art, which all share one silhouette); the class line hangs `CLEAR` (24 = ~0.25in at 96dpi) off it, and the ship name auto-shrinks to the run left between it and `TEXT_RIGHT`.
+- **Ship image**: uploaded into the module-level `IMG` (never persisted, like the seal tool's), cover-fitted into the frame with zoom/x/y; a seeded starfield stands in until one is added.
+- **Frame gold** is `FRAME_GOLD`, local to this tool, not `Metal.MATERIALS.gold`. The shared ramp is built for solid glyphs — bright top, dark horizon at the middle, bright bottom — and a hollow frame only ever shows its two ends, so the rails came out pale cream. `FRAME_GOLD` puts a bevel cycle inside each rail band instead. It is tuned against the PSD's own output: `AscensionOdyssey.png` renders its rails at `#e3d386` (top) and `#e3cd5f` (bottom) at x=700, and the ramp plus `fxFrame`'s specular lands within a few counts of both. Re-tune by sampling those rows, not by eye — the specular adds ~10 counts per channel and is what washed the gold out before.
+- **What the PSD does** (`BF-banners copy.psd`, layer `Layer 5` for the border, `Class`/`Registry`/`Name` for the type — `psd_tools` reads the effects): one custom gradient shared by frame and type, applied as *hardLight at 59 %* over the base art, plus colorDodge white 5 %, a colorDodge inner shadow, an inner bevel (highlight colorDodge white 83 %, shadow multiply `#7d2f0f` 56 %, size 3, soften 1, angle 138°, altitude 26°, depth 80 %, gloss contour "Ring - Double") and an inverted overlay satin. SVG filters can't stack that, which is why the tool matches the *rendered* colours rather than the recipe.
+
+## Plaque Builder (plaque-tool.html)
+
+Dedication plaques, 2350×1700 (reference: `examples/Plaques/PallasPlaque.png`, source `NewPlaqueDesign copy.psd`). State `S` in localStorage `plaquebuilder-v1`.
+
+- **The artwork is the PSD's, not a redraw.** `tools/extract_plaque_assets.py` (needs `pip install 'psd-tools[composite]'`, so it is *not* part of the normal build — run it only when the PSD changes and commit the output) writes `assets/plaque/`: `plate.png`, `border.png`, `border-matte.png`, `badge.png` — each a **grayscale + alpha** master — plus `ramps.json`.
+- **Colourways are gradient maps.** Every colourway of a part turned out to be the same grayscale art under a different colour ramp (the extractor asserts this by correlating luminance and warns when it fails), so `ramps.json` holds a 33-row colour table per variant and the tool re-applies it with `<feComponentTransfer type="table">` — reproducing the PSD's own pixels (the gold rail exports as `#c9a544` against the reference's `#caa541`) while letting a custom colour build the same kind of table on the fly. The border ships **two** grayscale bases because its polished and matte finishes bevel in opposite directions; one table cannot serve both.
+- **Relief toggle**: raised uses the art as-is over a drop shadow; engraved swaps in `Metal.engraveFilter` and flattens art and lettering to a darkened plate tone (`plateMid()`), so the trim and badge are cut in along with the type.
+- **Type**: the original sets Microstyle Bold Extended at **60 % horizontal scale** (read straight out of the PSD's engine data — this is why matched-cap-height Sealstile first came out ~1.7× too wide). Sealstile runs ~10 % larger and wider at the same nominal size, so `ERAS["2399"]` uses sizes of the PSD's × 0.904 and `squeeze: 0.55`, applied via `transform="translate(cx,base) scale(0.55,1)"`. Ship name and quote are EB Garamond (600 / italic 500) standing in for AGaramondPro, unsqueezed — that one matches on cap height alone. Row coordinates come from the PSD's own type-layer bounds; the result tracks `PallasPlaque.png` to within a couple of pixels.
+- **Era registry**: `ERAS` holds each era's artwork paths, `squeeze`, and `rows` metrics; `S.era` selects one and the dropdown is already wired, so a new era is a new entry plus its extracted art.
+- **Roster columns**: `S.columns` is an editable array of `{h, n}` (heading + one name per line); columns spread evenly across `colLeft…colRight` and shrink their type to fit. A name line starting with `##` renders as a second heading partway down a column (that is how the reference stacks "Admiralty Board" under "Chiefs of Staff").
+
 ## Testing notes
 
-- Use the launch.json server (`http://localhost:8517`) — the browser pane renders `file://` pages as `data:` snapshots where data-URI font loads fail with NetworkError, which looks like a font bug but isn't.
-- Verify PNG export by calling `renderToCanvas(1000)` in the console and sampling pixels rather than downloading.
+- Use the launch.json server — the browser pane renders `file://` pages as `data:` snapshots where data-URI font loads fail with NetworkError, which looks like a font bug but isn't. (The banner and plaque tools can't work from `file://` at all: they fetch their assets.) If 8517/8518 are taken by another session, start `seal-builder-auto`.
+- Verify PNG export by calling `renderToCanvas(…)` in the console and sampling pixels rather than downloading.
+- To check a tool against its reference art, draw the reference into a canvas and scan for glyph bands/extents (that is how the plaque's row metrics were derived) — eyeballing scaled screenshots hides pixel-level offsets.
 - User's UI font conventions: app chrome uses the embedded seal font (Sealstile) for headings; keep the dark console aesthetic.

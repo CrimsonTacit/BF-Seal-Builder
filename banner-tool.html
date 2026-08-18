@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Banner Builder</title>
+<style>
+  :root{
+    --bg:#070b12;
+    --panel:#0d1420;
+    --panel2:#111a29;
+    --line:#1f2a3a;
+    --line-bright:#2c3b52;
+    --ink:#c7d3e0;
+    --ink-dim:#6d7d92;
+    --bolt-gold:#d3a92c;
+    --bf-blue:#2864a8;
+    --danger:#b8503f;
+  }
+  @font-face{
+    font-family:"Sealstile";font-weight:400;
+    src:url(fonts/sealstile.woff2) format("woff2");
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:
+      radial-gradient(1200px 700px at 75% -10%, rgba(59,152,168,.07), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, rgba(216,166,58,.05), transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    font:13px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+
+  header{
+    display:flex;align-items:center;gap:16px;
+    padding:10px 18px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, #0c1320, #0a101b);
+    flex:none;
+  }
+  header .mark{
+    width:26px;height:14px;border-radius:2px;flex:none;
+    background:linear-gradient(180deg,#fdf6b8,#c9992e 48%,#8a6410 52%,#e8c14a);
+    box-shadow:0 0 0 2px var(--bg), 0 0 0 3px var(--line-bright);
+  }
+  header h1{
+    font-family:"Sealstile",ui-monospace,monospace;
+    font-size:17px;letter-spacing:.28em;color:var(--bolt-gold);
+    font-weight:normal;text-transform:uppercase;white-space:nowrap;
+  }
+  header .sub{color:var(--ink-dim);letter-spacing:.12em;font-size:11px;text-transform:uppercase}
+  header .spacer{flex:1}
+  header a.navlink{
+    color:var(--ink-dim);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    text-decoration:none;border:1px solid var(--line-bright);border-radius:2px;padding:7px 14px;
+    background:var(--panel2);white-space:nowrap;
+  }
+  header a.navlink:hover{border-color:var(--bolt-gold);color:var(--bolt-gold)}
+  .btn{
+    background:var(--panel2);border:1px solid var(--line-bright);color:var(--ink);
+    padding:7px 14px;cursor:pointer;font:inherit;letter-spacing:.08em;text-transform:uppercase;
+    font-size:11px; border-radius:2px; white-space:nowrap;
+  }
+  .btn:hover{border-color:var(--bolt-gold);color:var(--bolt-gold)}
+  .btn.primary{border-color:var(--bolt-gold);color:var(--bolt-gold)}
+  .btn.primary:hover{background:var(--bolt-gold);color:#14100a}
+  .btn.danger{border-color:var(--danger);color:var(--danger)}
+  .btn.danger:hover{background:var(--danger);color:#fff}
+  select{
+    background:var(--panel2);border:1px solid var(--line-bright);color:var(--ink);
+    font:inherit;font-size:11px;padding:6px 8px;border-radius:2px;max-width:100%;
+  }
+
+  main{flex:1;display:flex;min-height:0}
+
+  #panel{
+    width:330px;flex:none;overflow-y:auto;
+    background:var(--panel);border-right:1px solid var(--line);
+    scrollbar-width:thin; scrollbar-color:var(--line-bright) transparent;
+  }
+  details.acc{border-bottom:1px solid var(--line)}
+  details.acc > summary{
+    cursor:pointer;user-select:none;list-style:none;
+    padding:14px 16px 14px;
+    font-family:"Sealstile",ui-monospace,monospace;font-weight:normal;
+    font-size:11px;letter-spacing:.3em;color:var(--bf-blue);text-transform:uppercase;
+    display:flex;align-items:center;gap:8px;
+  }
+  details.acc > summary::-webkit-details-marker{display:none}
+  details.acc > summary::before{
+    content:"▸";flex:none;font-size:9px;color:var(--ink-dim);letter-spacing:0;
+    display:inline-block;transition:transform .15s ease;
+  }
+  details.acc[open] > summary::before{transform:rotate(90deg)}
+  details.acc > summary::after{content:"";flex:1;height:1px;background:var(--line-bright)}
+  details.acc > .acc-body{padding:0 16px 16px}
+  section.plain{border-bottom:1px solid var(--line);padding:14px 16px 16px}
+  .row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .row label{flex:1;color:var(--ink-dim);letter-spacing:.05em;font-size:12px}
+  .row .val{width:44px;text-align:right;color:var(--ink);font-size:11px}
+  input[type=text]{
+    width:100%;background:#0a111c;border:1px solid var(--line-bright);color:var(--ink);
+    font:inherit;padding:7px 9px;letter-spacing:.05em;border-radius:2px;margin-bottom:8px;
+  }
+  input[type=text]:focus{outline:none;border-color:var(--bf-blue)}
+  input[type=range]{
+    flex:1.4;appearance:none;height:2px;background:var(--line-bright);border-radius:1px;outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    appearance:none;width:12px;height:12px;border-radius:50%;
+    background:var(--bolt-gold);border:2px solid #0a0f18;cursor:pointer;
+  }
+  input[type=checkbox]{accent-color:var(--bolt-gold);width:14px;height:14px;cursor:pointer}
+  .hint{color:var(--ink-dim);font-size:11px;margin-top:6px;line-height:1.45}
+  .filebox{
+    border:1px dashed var(--line-bright);border-radius:2px;padding:14px 10px;
+    text-align:center;color:var(--ink-dim);font-size:11px;cursor:pointer;margin-bottom:8px;
+    line-height:1.5;word-break:break-all;
+  }
+  .filebox:hover,.filebox.drag{border-color:var(--bolt-gold);color:var(--bolt-gold)}
+  .credit{
+    padding:14px 16px 18px;text-align:center;color:var(--ink-dim);
+    font-size:10px;letter-spacing:.08em;line-height:1.8;text-transform:uppercase;
+  }
+  .credit b{color:var(--ink);font-weight:normal}
+  .btnrow{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+
+  #stage{
+    flex:1;display:flex;align-items:center;justify-content:center;position:relative;
+    min-width:0;background-color:#10151d;
+  }
+  #stage.checker{
+    background-color:#a9adb4;
+    background-image:repeating-conic-gradient(#8d929a 0% 25%, #a9adb4 0% 50%);
+    background-size:28px 28px;
+  }
+  #stage.dark{
+    background-color:#10151d;
+    background-image:
+      radial-gradient(1000px 500px at 50% 0%, rgba(40,100,168,.18), transparent 70%),
+      linear-gradient(180deg,#131a26,#0a0e15);
+  }
+  #stage.light{
+    background-color:#eceef1;
+    background-image:linear-gradient(180deg,#f6f7f9,#dfe2e7);
+  }
+  #bnrwrap{position:relative;z-index:1;width:min(94%, 1300px)}
+  #bnrwrap svg{width:100%;height:auto;display:block}
+  .stagehint{
+    position:absolute;bottom:14px;left:0;right:0;text-align:center;z-index:1;
+    color:rgba(140,155,175,.7);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    pointer-events:none;
+  }
+  #stage.light .stagehint,#stage.checker .stagehint{color:rgba(20,25,35,.45)}
+  .stagebg{
+    position:absolute;top:14px;right:14px;z-index:2;
+    display:flex;background:var(--panel2);border:1px solid var(--line-bright);
+    border-radius:2px;overflow:hidden;
+  }
+  .stagebg button{
+    background:none;border:none;color:var(--ink-dim);cursor:pointer;
+    font:inherit;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    padding:7px 14px;
+  }
+  .stagebg button + button{border-left:1px solid var(--line-bright)}
+  .stagebg button:hover{color:var(--ink)}
+  .stagebg button.active{background:var(--bolt-gold);color:#14100a}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="mark"></div>
+  <h1>Banner Builder</h1>
+  <div class="sub">Bravo Fleet · Ship &amp; Station Banners</div>
+  <div class="spacer"></div>
+  <a class="navlink" href="index.html">⌂</a>
+  <a class="navlink" href="seal-tool.html">Seal →</a>
+  <a class="navlink" href="header-tool.html">Header →</a>
+  <a class="navlink" href="plaque-tool.html">Plaque →</a>
+</header>
+
+<main>
+  <div id="panel">
+
+    <details class="acc" open>
+      <summary>Text</summary>
+      <div class="acc-body">
+        <label class="hint" style="margin:0 0 3px">Ship / station name</label>
+        <input type="text" data-k="name" maxlength="40" spellcheck="false">
+        <label class="hint" style="margin:0 0 3px">Registry</label>
+        <input type="text" data-k="registry" maxlength="20" spellcheck="false">
+        <label class="hint" style="margin:0 0 3px">Class</label>
+        <input type="text" data-k="cls" maxlength="30" spellcheck="false">
+        <div class="hint">The banner design is fixed — gold on transparency, the classic look. Only the logo swaps.</div>
+      </div>
+    </details>
+
+    <details class="acc" open>
+      <summary>Logo</summary>
+      <div class="acc-body">
+        <div class="row"><label>Fleet / task force</label><select data-k="logo" id="logoSel"></select></div>
+        <div class="hint">Task force deltas swap in for the Bravo Fleet delta, straight from the official logo art.</div>
+      </div>
+    </details>
+
+    <details class="acc" open>
+      <summary>Ship Image</summary>
+      <div class="acc-body">
+        <div class="filebox" id="filebox">Drop an image here or click to choose</div>
+        <input type="file" id="fileInput" accept="image/*" style="display:none">
+        <div class="row"><label>Zoom</label><input type="range" min="0.3" max="4" step="0.01" data-k="imgZoom"><span class="val" data-val="imgZoom"></span></div>
+        <div class="row"><label>Horizontal</label><input type="range" min="-600" max="600" step="2" data-k="imgX"><span class="val" data-val="imgX"></span></div>
+        <div class="row"><label>Vertical</label><input type="range" min="-400" max="400" step="2" data-k="imgY"><span class="val" data-val="imgY"></span></div>
+        <div class="btnrow">
+          <button class="btn" id="imgCenter">Center</button>
+          <button class="btn danger" id="imgRemove">Remove image</button>
+        </div>
+        <div class="hint">Your ship art fills the frame (a starfield shows until you add one). Uploads stay in this tab — they aren't saved with the design.</div>
+      </div>
+    </details>
+
+    <details class="acc" open>
+      <summary>Export</summary>
+      <div class="acc-body">
+        <div class="row">
+          <label>PNG size</label>
+          <select id="exportSize">
+            <option value="1400" selected>1400 px (native)</option>
+            <option value="2800">2800 px (2×)</option>
+          </select>
+        </div>
+        <div class="btnrow">
+          <button class="btn primary" id="exportPng">Export PNG</button>
+          <button class="btn" id="exportSvg">Export SVG</button>
+        </div>
+        <div class="hint">PNG exports with a transparent background, sized for BFMS command pages.</div>
+      </div>
+    </details>
+
+    <section class="plain">
+      <button class="btn danger" id="resetBtn">Reset to defaults</button>
+    </section>
+
+    <div class="credit">
+      Font: <b>Sealstile</b> (Librestile, OFL)<br>
+      © Bravo Fleet 1997–<span id="copyYear"></span><br>
+      Original banner design &amp; logo art © Bravo Fleet
+    </div>
+  </div>
+
+  <div id="stage" class="dark">
+    <div class="stagebg" id="stageBg">
+      <button data-mode="checker">Checker</button>
+      <button data-mode="dark" class="active">Dark</button>
+      <button data-mode="light">Light</button>
+    </div>
+    <div id="bnrwrap"></div>
+    <div class="stagehint">Preview background is not exported — PNG output is transparent</div>
+  </div>
+</main>
+
+<script src="shared/metal.js"></script>
+<script src="shared/export.js"></script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+
+/* ================= logos ================= */
+const LOGOS = {  // top/bot = opaque bounds as a fraction of height, remeasured on load
+  bf:   { label:"Bravo Fleet",   url:"assets/logos/bf-delta.png", w:300, h:468, top:.010, bot:.988 },
+  tf17: { label:"Task Force 17", url:"assets/logos/tf17a.png",    w:516, h:804, top:.010, bot:.988 },
+  tf21: { label:"Task Force 21", url:"assets/logos/tf21a.png",    w:516, h:804, top:.010, bot:.988 },
+  tf47: { label:"Task Force 47", url:"assets/logos/tf47a.png",    w:516, h:804, top:.010, bot:.988 },
+  tf72: { label:"Task Force 72", url:"assets/logos/tf72a.png",    w:516, h:804, top:.010, bot:.988 },
+  tf86: { label:"Task Force 86", url:"assets/logos/tf86a.png",    w:516, h:804, top:.010, bot:.988 },
+  tf93: { label:"Task Force 93", url:"assets/logos/tf93a.png",    w:516, h:804, top:.010, bot:.988 },
+};
+/* True natural sizes load async; placeholders above keep first paint sane.
+   The files pad the artwork by different amounts (0.8%-1.6% of height), so the
+   opaque bounds are measured too and the delta slot is fitted to the art, not
+   to the file — otherwise the apex sits at a different height per logo. */
+Object.values(LOGOS).forEach(L => {
+  const im = new Image();
+  im.onload = () => {
+    L.w = im.naturalWidth; L.h = im.naturalHeight;
+    try{
+      const c = document.createElement("canvas");
+      c.width = L.w; c.height = L.h;
+      const g = c.getContext("2d"); g.drawImage(im, 0, 0);
+      const d = g.getImageData(0, 0, L.w, L.h).data;
+      let top = -1, bot = -1;
+      for(let y=0; y<L.h; y++){
+        let hit = false;
+        for(let x=0; x<L.w; x++){ if(d[(y*L.w+x)*4+3] > 25){ hit = true; break; } }
+        if(hit){ if(top < 0) top = y; bot = y; }
+      }
+      if(top >= 0){ L.top = top/L.h; L.bot = (bot+1)/L.h; }
+    }catch(e){ /* canvas read blocked (file://) — keep the defaults */ }
+    render();
+  };
+  im.src = L.url;
+});
+
+/* ================= state ================= */
+const DEFAULTS = {
+  name: "USS ASCENSION",
+  registry: "NCC-77138",
+  cls: "ODYSSEY-CLASS",
+  logo: "bf",
+  imgZoom: 1, imgX: 0, imgY: 0,
+};
+let S = Object.assign({}, DEFAULTS);
+let IMG = null; // {dataUrl, w, h} — deliberately not persisted
+
+/* ================= fixed geometry (logical canvas 1400x503) ================= */
+const W = 1400, H = 503;
+const FRAME = { x:170, y:36, w:1222, h:270, rx:34 };   // outer edge of frame
+const BORDER = 11;                                     // main gold border width
+const DELTA = { x:36, artTop:1, artBot:501 };          // logo slot: where the ART lands
+/* Right edge of the delta silhouette inside its box, as height fraction -> width
+   fraction, measured off assets/logos/*.png (they all share the one silhouette).
+   The box is sized so the delta hides the frame's left rail and corners; this
+   table keeps the type clear of the art without guessing. */
+const DELTA_EDGE = [[0,.50],[.05,.557],[.1,.603],[.15,.643],[.2,.68],[.25,.72],[.3,.753],
+                    [.35,.783],[.4,.813],[.45,.84],[.5,.867],[.55,.89],[.6,.91],[.65,.93],
+                    [.7,.947],[.75,.96],[.8,.973],[.85,.98],[.9,.99],[1,.99]];
+const CLEAR = 24;                                      // ~0.25in at 96dpi: type-to-delta gap
+const CAP = .772;                                      // Sealstile cap height / font size
+const SMALL_FS = 30, SMALL_TRACK = 5;
+const SMALL_BASE = 27;                                 // top line rests just above the frame
+const NAME_FS = 70, NAME_BASE = 380;
+const TEXT_RIGHT = FRAME.x + FRAME.w;                  // name + registry flush to the frame
+
+const esc = Metal.esc;
+const GOLD = Metal.MATERIALS.gold;
+/* The shared gold ramp is built for solid glyphs: bright top, dark horizon in
+   the middle, bright bottom. A hollow frame only ever shows the two ends of it,
+   so its rails came out pale cream instead of gold. This ramp puts a full
+   bevel cycle inside each rail band (top 0-.07, bottom .93-1) and lands, once
+   fxFrame's specular is added on top, within a few counts of the colours the
+   PSD renders its own rails at: #e3d386 up top, #e3cd5f along the bottom. */
+const FRAME_GOLD = [[0,"#e0d089"],[.018,"#ddca7e"],[.04,"#d3bd68"],[.07,"#bd9a3c"],
+                    [.5,"#ab8428"],[.93,"#bd9a3c"],[.962,"#e2ca4c"],[.99,"#e6d16a"],[1,"#c9a845"]];
+
+const measCtx = document.createElement("canvas").getContext("2d");
+function measure(text, fs, track){
+  measCtx.font = `400 ${fs}px "Sealstile"`;
+  return measCtx.measureText(text).width + Math.max(0, text.length-1)*track;
+}
+
+/* image box that puts logo L's artwork between DELTA.artTop and DELTA.artBot */
+function deltaBox(L){
+  const h = (DELTA.artBot - DELTA.artTop) / (L.bot - L.top);
+  return { x:DELTA.x, y:DELTA.artTop - L.top*h, w:h*(L.w/L.h), h };
+}
+/* x of the delta silhouette's right edge at canvas y */
+function deltaRightAt(y, box){
+  const f = (y - box.y) / box.h;
+  let i = 1; while(i < DELTA_EDGE.length-1 && DELTA_EDGE[i][0] < f) i++;
+  const [f0,r0] = DELTA_EDGE[i-1], [f1,r1] = DELTA_EDGE[i];
+  const t = Math.min(1, Math.max(0, (f-f0)/(f1-f0)));
+  return box.x + box.w * (r0 + (r1-r0)*t);
+}
+
+/* seeded starfield fallback for the frame interior */
+function starfieldRect(x, y, w, h){
+  const rnd = (a => () => {a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296})(1701);
+  let out = `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#starBg)"/><g fill="#cfe0f4">`;
+  for(let i=0;i<170;i++){
+    const sx = x + rnd()*w, sy = y + rnd()*h, r = .6 + rnd()*rnd()*2.4;
+    out += `<circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="${r.toFixed(1)}" opacity="${(.35+rnd()*.65).toFixed(2)}"/>`;
+  }
+  for(let i=0;i<3;i++){
+    const sx = x + (0.15+rnd()*0.7)*w, sy = y + (0.2+rnd()*0.6)*h, s = 14 + rnd()*18, ww = s*0.16;
+    out += `<path d="M ${sx} ${sy-s} Q ${sx+ww*0.35} ${sy-ww} ${sx+s} ${sy} Q ${sx+ww*0.35} ${sy+ww} ${sx} ${sy+s} Q ${sx-ww*0.35} ${sy+ww} ${sx-s} ${sy} Q ${sx-ww*0.35} ${sy-ww} ${sx} ${sy-s} Z" opacity=".9"/>`;
+  }
+  return out + "</g>";
+}
+
+/* ================= render ================= */
+function goldGrad(id, y1, y2){ return Metal.gradientDef(id, GOLD.stops, y1, y2); }
+
+function buildSVG(res){
+  /* res: {fontCSS, logoHref, imgHref} — preview passes file URLs, export passes data URIs */
+  res = res || {};
+  const L = LOGOS[S.logo] || LOGOS.bf;
+  const logoHref = res.logoHref || L.url;
+  const box = deltaBox(L);
+
+  const name = (S.name||"").toUpperCase();
+  const reg  = (S.registry||"").toUpperCase();
+  const cls  = (S.cls||"").toUpperCase();
+
+  /* class hangs off the delta, name + registry hang off the frame's right edge */
+  const clsX = deltaRightAt(SMALL_BASE, box) + CLEAR;
+
+  /* name auto-shrink to the run between the delta and the frame edge */
+  const nameMaxW = TEXT_RIGHT - CLEAR - deltaRightAt(NAME_BASE, box);
+  let nameFs = NAME_FS;
+  const nw = measure(name, NAME_FS, 2);
+  if(nw > nameMaxW) nameFs = Math.max(30, NAME_FS * nameMaxW / nw);
+
+  /* top line shrinks only if class and registry would run into each other */
+  let smallFs = SMALL_FS, smallTrack = SMALL_TRACK;
+  const topAvail = TEXT_RIGHT - clsX - CLEAR;
+  const topW = measure(cls, SMALL_FS, SMALL_TRACK) + measure(reg, SMALL_FS, SMALL_TRACK);
+  if(topW > topAvail){ const k = Math.max(.6, topAvail / topW); smallFs = SMALL_FS*k; smallTrack = SMALL_TRACK*k; }
+
+  /* frame rects */
+  const F = FRAME;
+  const inEdge = { x:F.x+7, y:F.y+7, w:F.w-14, h:F.h-14, rx:F.rx-6 };            // main border centerline inset
+  /* Art area runs to the border's inner edge (its centerline inset half its
+     width), then 1px further so it tucks under the gold instead of leaving a
+     transparent seam — the frame is drawn over it. */
+  const IN = BORDER/2 - 1;
+  const inner  = { x:inEdge.x+IN, y:inEdge.y+IN, w:inEdge.w-IN*2, h:inEdge.h-IN*2, rx:Math.max(10,inEdge.rx-IN) };
+
+  /* ship image cover-fit into inner rect */
+  let imgSVG = "";
+  if(IMG){
+    const href = res.imgHref || IMG.dataUrl;
+    const cover = Math.max(inner.w/IMG.w, inner.h/IMG.h) * S.imgZoom;
+    const iw = IMG.w*cover, ih = IMG.h*cover;
+    const ix = inner.x + inner.w/2 - iw/2 + S.imgX;
+    const iy = inner.y + inner.h/2 - ih/2 + S.imgY;
+    imgSVG = `<image href="${href}" x="${ix.toFixed(1)}" y="${iy.toFixed(1)}" width="${iw.toFixed(1)}" height="${ih.toFixed(1)}" preserveAspectRatio="none"/>`;
+  }else{
+    imgSVG = starfieldRect(inner.x, inner.y, inner.w, inner.h);
+  }
+
+  const fontCSS = res.fontCSS || `@font-face{font-family:"Sealstile";src:url(fonts/sealstile.woff2) format("woff2");}`;
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
+<defs>
+<style>${fontCSS} text{font-family:"Sealstile";}</style>
+${Metal.gradientDef("gradFrame", FRAME_GOLD, F.y, F.y+F.h)}
+${goldGrad("gradTab", SMALL_BASE - smallFs*CAP, SMALL_BASE)}
+${goldGrad("gradName", NAME_BASE-nameFs*.78, NAME_BASE+nameFs*.1)}
+<linearGradient id="starBg" x1="0" y1="${inner.y}" x2="0" y2="${inner.y+inner.h}" gradientUnits="userSpaceOnUse">
+  <stop offset="0" stop-color="#101b38"/><stop offset=".6" stop-color="#0a1226"/><stop offset="1" stop-color="#060a16"/>
+</linearGradient>
+${Metal.bevelFilter("fxFrame",{bevel:1.6,shine:.18,se:26,shadow:.3,shadowDy:2,shadowBlur:3})}
+${Metal.bevelFilter("fxSmall",{bevel:1.4,shine:.8,se:20,shadow:.4,shadowDy:2,shadowBlur:2})}
+${Metal.bevelFilter("fxName",{bevel:3,shine:.85,se:22,shadow:.45,shadowDy:4,shadowBlur:5})}
+<filter id="fxLogo" x="-15%" y="-10%" width="130%" height="125%">
+  <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#000" flood-opacity=".55"/>
+</filter>
+<clipPath id="frameClip"><rect x="${inner.x}" y="${inner.y}" width="${inner.w}" height="${inner.h}" rx="${inner.rx}"/></clipPath>
+</defs>
+
+<g clip-path="url(#frameClip)">${imgSVG}</g>
+
+<g filter="url(#fxFrame)">
+  <rect x="${F.x}" y="${F.y}" width="${F.w}" height="${F.h}" rx="${F.rx}" fill="none" stroke="url(#gradFrame)" stroke-width="3.5"/>
+  <rect x="${inEdge.x}" y="${inEdge.y}" width="${inEdge.w}" height="${inEdge.h}" rx="${inEdge.rx}" fill="none" stroke="url(#gradFrame)" stroke-width="${BORDER}"/>
+  <rect x="${inEdge.x}" y="${inEdge.y}" width="${inEdge.w}" height="${inEdge.h}" rx="${inEdge.rx}" fill="none" stroke="#241a06" stroke-width="1.6" opacity=".8"/>
+</g>
+
+<g filter="url(#fxSmall)">
+  <text x="${clsX.toFixed(1)}" y="${SMALL_BASE}" font-size="${smallFs.toFixed(1)}" letter-spacing="${smallTrack.toFixed(2)}" fill="url(#gradTab)" stroke="${GOLD.edge}" stroke-width=".9" paint-order="stroke">${esc(cls)}</text>
+  <text x="${(TEXT_RIGHT+smallTrack).toFixed(1)}" y="${SMALL_BASE}" text-anchor="end" font-size="${smallFs.toFixed(1)}" letter-spacing="${smallTrack.toFixed(2)}" fill="url(#gradTab)" stroke="${GOLD.edge}" stroke-width=".9" paint-order="stroke">${esc(reg)}</text>
+</g>
+
+<g filter="url(#fxLogo)"><image href="${logoHref}" x="${box.x}" y="${box.y.toFixed(1)}" width="${box.w.toFixed(1)}" height="${box.h.toFixed(1)}"/></g>
+
+<g filter="url(#fxName)">
+  <text x="${TEXT_RIGHT+2}" y="${NAME_BASE}" text-anchor="end" font-size="${nameFs.toFixed(1)}" letter-spacing="2" fill="url(#gradName)" stroke="${GOLD.edge}" stroke-width="${(nameFs*.02).toFixed(1)}" paint-order="stroke" stroke-linejoin="round">${esc(name)}</text>
+</g>
+</svg>`;
+}
+
+function render(){ $("bnrwrap").innerHTML = buildSVG(); }
+
+/* ================= export ================= */
+async function exportResources(){
+  const L = LOGOS[S.logo] || LOGOS.bf;
+  const [font, logoHref] = await Promise.all([
+    ExportKit.fetchDataURI("fonts/sealstile.woff2"),
+    ExportKit.fetchDataURI(L.url),
+  ]);
+  return { fontCSS: ExportKit.fontFaceRule("Sealstile", 400, "normal", font), logoHref };
+}
+function slug(){
+  return (S.name || "banner").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || "banner";
+}
+async function renderToCanvas(widthPx){
+  const svg = buildSVG(await exportResources());
+  return ExportKit.svgToCanvas(svg, widthPx, Math.round(widthPx*H/W));
+}
+$("exportPng").addEventListener("click", async ()=>{
+  const size = parseInt($("exportSize").value, 10);
+  const btn = $("exportPng"); const old = btn.textContent;
+  btn.textContent = "Rendering…"; btn.disabled = true;
+  try{
+    const cv = await renderToCanvas(size);
+    await ExportKit.downloadCanvasPNG(cv, slug()+"-banner-"+size+".png");
+  }catch(err){ console.error(err); btn.textContent = "Failed"; }
+  setTimeout(()=>{ btn.textContent = old; btn.disabled = false; }, 400);
+});
+$("exportSvg").addEventListener("click", async ()=>{
+  ExportKit.downloadSVG(buildSVG(await exportResources()), slug()+"-banner.svg");
+});
+
+/* ================= image upload ================= */
+const filebox = $("filebox"), fileInput = $("fileInput");
+filebox.addEventListener("click", ()=>fileInput.click());
+fileInput.addEventListener("change", e => { if(e.target.files[0]) loadImageFile(e.target.files[0]); });
+["dragover","dragenter"].forEach(ev => {
+  filebox.addEventListener(ev, e=>{e.preventDefault();filebox.classList.add("drag");});
+  document.body.addEventListener(ev, e=>e.preventDefault());
+});
+["dragleave","drop"].forEach(ev => filebox.addEventListener(ev, e=>{e.preventDefault();filebox.classList.remove("drag");}));
+filebox.addEventListener("drop", e => { if(e.dataTransfer.files[0]) loadImageFile(e.dataTransfer.files[0]); });
+document.body.addEventListener("drop", e => { e.preventDefault(); if(e.dataTransfer.files[0]) loadImageFile(e.dataTransfer.files[0]); });
+function loadImageFile(file){
+  const rd = new FileReader();
+  rd.onload = () => {
+    const im = new Image();
+    im.onload = () => {
+      IMG = { dataUrl: rd.result, w: im.naturalWidth, h: im.naturalHeight };
+      S.imgZoom = 1; S.imgX = 0; S.imgY = 0;
+      filebox.textContent = file.name + " · " + im.naturalWidth + "×" + im.naturalHeight;
+      syncUI(); render(); persist();
+    };
+    im.src = rd.result;
+  };
+  rd.readAsDataURL(file);
+}
+$("imgRemove").addEventListener("click", ()=>{
+  IMG = null; filebox.textContent = "Drop an image here or click to choose"; render();
+});
+$("imgCenter").addEventListener("click", ()=>{ S.imgX=0; S.imgY=0; syncUI(); render(); persist(); });
+
+/* ================= UI wiring ================= */
+function bindInputs(){
+  document.querySelectorAll("[data-k]").forEach(inp=>{
+    const k = inp.dataset.k;
+    const ev = (inp.type === "text" || inp.type === "range") ? "input" : "change";
+    inp.addEventListener(ev, ()=>{
+      if(inp.type === "range") S[k] = parseFloat(inp.value);
+      else S[k] = inp.value;
+      syncVals(); render(); persist();
+    });
+  });
+}
+function syncVals(){
+  document.querySelectorAll("[data-val]").forEach(sp=>{ sp.textContent = S[sp.dataset.val]; });
+}
+function syncUI(){
+  document.querySelectorAll("[data-k]").forEach(inp=>{
+    const k = inp.dataset.k;
+    if(k in S) inp.value = S[k];
+  });
+  syncVals();
+}
+
+$("logoSel").innerHTML = Object.entries(LOGOS)
+  .map(([k,L])=>`<option value="${k}">${L.label}</option>`).join("");
+
+$("stageBg").addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  $("stage").className = b.dataset.mode;
+  document.querySelectorAll("#stageBg button").forEach(x=>x.classList.toggle("active", x===b));
+});
+
+$("resetBtn").addEventListener("click", ()=>{
+  S = Object.assign({}, DEFAULTS);
+  syncUI(); render(); persist();
+});
+
+/* ================= persistence ================= */
+const LS_KEY = "bannerbuilder-v1";
+let persistT = null;
+function persist(){
+  clearTimeout(persistT);
+  persistT = setTimeout(()=>{
+    try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }catch(e){}
+  }, 150);
+}
+(function boot(){
+  try{
+    const saved = localStorage.getItem(LS_KEY);
+    if(saved) S = Object.assign({}, DEFAULTS, JSON.parse(saved));
+  }catch(e){}
+  $("copyYear").textContent = new Date().getFullYear();
+  bindInputs(); syncUI(); render();
+})();
+</script>
+</body>
+</html>

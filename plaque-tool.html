@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plaque Builder</title>
+<style>
+  :root{
+    --bg:#070b12;
+    --panel:#0d1420;
+    --panel2:#111a29;
+    --line:#1f2a3a;
+    --line-bright:#2c3b52;
+    --ink:#c7d3e0;
+    --ink-dim:#6d7d92;
+    --bolt-gold:#d3a92c;
+    --bf-blue:#2864a8;
+    --danger:#b8503f;
+  }
+  @font-face{font-family:"Sealstile";font-weight:400;src:url(fonts/sealstile.woff2) format("woff2");}
+  @font-face{font-family:"EB Garamond";font-weight:500;font-style:normal;src:url(fonts/webfonts/ebgaramond-500.woff2) format("woff2");}
+  @font-face{font-family:"EB Garamond";font-weight:600;font-style:normal;src:url(fonts/webfonts/ebgaramond-600.woff2) format("woff2");}
+  @font-face{font-family:"EB Garamond";font-weight:500;font-style:italic;src:url(fonts/webfonts/ebgaramond-it500.woff2) format("woff2");}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:
+      radial-gradient(1200px 700px at 75% -10%, rgba(59,152,168,.07), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, rgba(216,166,58,.05), transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    font:13px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  header{
+    display:flex;align-items:center;gap:16px;
+    padding:10px 18px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, #0c1320, #0a101b);
+    flex:none;
+  }
+  header .mark{
+    width:26px;height:18px;border-radius:3px;flex:none;
+    background:linear-gradient(150deg,#4c5f70,#2f3d4a);
+    box-shadow:inset 0 0 0 2px #c9992e, 0 0 0 2px var(--bg), 0 0 0 3px var(--line-bright);
+  }
+  header h1{
+    font-family:"Sealstile",ui-monospace,monospace;
+    font-size:17px;letter-spacing:.28em;color:var(--bolt-gold);
+    font-weight:normal;text-transform:uppercase;white-space:nowrap;
+  }
+  header .sub{color:var(--ink-dim);letter-spacing:.12em;font-size:11px;text-transform:uppercase}
+  header .spacer{flex:1}
+  header a.navlink{
+    color:var(--ink-dim);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    text-decoration:none;border:1px solid var(--line-bright);border-radius:2px;padding:7px 14px;
+    background:var(--panel2);white-space:nowrap;
+  }
+  header a.navlink:hover{border-color:var(--bolt-gold);color:var(--bolt-gold)}
+  .btn{
+    background:var(--panel2);border:1px solid var(--line-bright);color:var(--ink);
+    padding:7px 14px;cursor:pointer;font:inherit;letter-spacing:.08em;text-transform:uppercase;
+    font-size:11px; border-radius:2px; white-space:nowrap;
+  }
+  .btn:hover{border-color:var(--bolt-gold);color:var(--bolt-gold)}
+  .btn.primary{border-color:var(--bolt-gold);color:var(--bolt-gold)}
+  .btn.primary:hover{background:var(--bolt-gold);color:#14100a}
+  .btn.danger{border-color:var(--danger);color:var(--danger)}
+  .btn.danger:hover{background:var(--danger);color:#fff}
+  .btn.mini{padding:3px 8px;font-size:10px}
+  select{
+    background:var(--panel2);border:1px solid var(--line-bright);color:var(--ink);
+    font:inherit;font-size:11px;padding:6px 8px;border-radius:2px;max-width:100%;
+  }
+  main{flex:1;display:flex;min-height:0}
+  #panel{
+    width:340px;flex:none;overflow-y:auto;
+    background:var(--panel);border-right:1px solid var(--line);
+    scrollbar-width:thin; scrollbar-color:var(--line-bright) transparent;
+  }
+  details.acc{border-bottom:1px solid var(--line)}
+  details.acc > summary{
+    cursor:pointer;user-select:none;list-style:none;padding:14px 16px;
+    font-family:"Sealstile",ui-monospace,monospace;font-weight:normal;
+    font-size:11px;letter-spacing:.3em;color:var(--bf-blue);text-transform:uppercase;
+    display:flex;align-items:center;gap:8px;
+  }
+  details.acc > summary::-webkit-details-marker{display:none}
+  details.acc > summary::before{
+    content:"▸";flex:none;font-size:9px;color:var(--ink-dim);letter-spacing:0;
+    display:inline-block;transition:transform .15s ease;
+  }
+  details.acc[open] > summary::before{transform:rotate(90deg)}
+  details.acc > summary::after{content:"";flex:1;height:1px;background:var(--line-bright)}
+  details.acc > .acc-body{padding:0 16px 16px}
+  section.plain{border-bottom:1px solid var(--line);padding:14px 16px 16px}
+  .row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .row label{flex:1;color:var(--ink-dim);letter-spacing:.05em;font-size:12px}
+  .row .val{width:44px;text-align:right;color:var(--ink);font-size:11px}
+  label.fld{display:block;color:var(--ink-dim);font-size:11px;margin-bottom:3px;letter-spacing:.05em}
+  input[type=text],textarea{
+    width:100%;background:#0a111c;border:1px solid var(--line-bright);color:var(--ink);
+    font:inherit;padding:7px 9px;letter-spacing:.05em;border-radius:2px;margin-bottom:8px;
+  }
+  textarea{resize:vertical;min-height:64px;line-height:1.6}
+  input[type=text]:focus,textarea:focus{outline:none;border-color:var(--bf-blue)}
+  input[type=range]{flex:1.4;appearance:none;height:2px;background:var(--line-bright);border-radius:1px;outline:none}
+  input[type=range]::-webkit-slider-thumb{
+    appearance:none;width:12px;height:12px;border-radius:50%;
+    background:var(--bolt-gold);border:2px solid #0a0f18;cursor:pointer;
+  }
+  input[type=color]{
+    appearance:none;-webkit-appearance:none;width:30px;height:22px;border:1px solid var(--line-bright);
+    background:none;padding:0;cursor:pointer;border-radius:2px;flex:none;
+  }
+  input[type=color]::-webkit-color-swatch-wrapper{padding:2px}
+  input[type=color]::-webkit-color-swatch{border:none;border-radius:1px}
+  input[type=checkbox]{accent-color:var(--bolt-gold);width:14px;height:14px;cursor:pointer}
+  .hint{color:var(--ink-dim);font-size:11px;margin-top:6px;line-height:1.45}
+  .btnrow{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .swatches{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px}
+  .sw{width:30px;height:24px;border-radius:2px;border:1px solid var(--line-bright);cursor:pointer;padding:0}
+  .sw:hover{border-color:var(--bolt-gold)}
+  .sw.on{border-color:var(--bolt-gold);box-shadow:0 0 0 1px var(--bolt-gold)}
+  .col{border:1px solid var(--line);border-radius:2px;padding:9px 9px 2px;margin-bottom:9px;background:#0a111c}
+  .col .chead{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+  .col .chead span{flex:1;color:var(--ink-dim);font-size:10px;letter-spacing:.14em;text-transform:uppercase}
+  .toggle{display:flex;background:var(--panel2);border:1px solid var(--line-bright);border-radius:2px;overflow:hidden;margin-bottom:8px}
+  .toggle button{
+    flex:1;background:none;border:none;color:var(--ink-dim);cursor:pointer;font:inherit;
+    font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:8px 6px;
+  }
+  .toggle button + button{border-left:1px solid var(--line-bright)}
+  .toggle button.active{background:var(--bolt-gold);color:#14100a}
+  .credit{
+    padding:14px 16px 18px;text-align:center;color:var(--ink-dim);
+    font-size:10px;letter-spacing:.08em;line-height:1.8;text-transform:uppercase;
+  }
+  .credit b{color:var(--ink);font-weight:normal}
+  #stage{
+    flex:1;display:flex;align-items:center;justify-content:center;position:relative;
+    min-width:0;background-color:#10151d;padding:26px;
+  }
+  #stage.checker{
+    background-color:#a9adb4;
+    background-image:repeating-conic-gradient(#8d929a 0% 25%, #a9adb4 0% 50%);
+    background-size:28px 28px;
+  }
+  #stage.dark{
+    background-color:#10151d;
+    background-image:
+      radial-gradient(1000px 500px at 50% 0%, rgba(40,100,168,.18), transparent 70%),
+      linear-gradient(180deg,#131a26,#0a0e15);
+  }
+  #stage.light{background-color:#eceef1;background-image:linear-gradient(180deg,#f6f7f9,#dfe2e7)}
+  #plqwrap{position:relative;z-index:1;width:min(96%,1180px)}
+  #plqwrap svg{width:100%;height:auto;display:block}
+  .stagebg{
+    position:absolute;top:14px;right:14px;z-index:2;
+    display:flex;background:var(--panel2);border:1px solid var(--line-bright);
+    border-radius:2px;overflow:hidden;
+  }
+  .stagebg button{
+    background:none;border:none;color:var(--ink-dim);cursor:pointer;
+    font:inherit;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:7px 14px;
+  }
+  .stagebg button + button{border-left:1px solid var(--line-bright)}
+  .stagebg button:hover{color:var(--ink)}
+  .stagebg button.active{background:var(--bolt-gold);color:#14100a}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="mark"></div>
+  <h1>Plaque Builder</h1>
+  <div class="sub">Bravo Fleet · Dedication Plaques</div>
+  <div class="spacer"></div>
+  <a class="navlink" href="index.html">⌂</a>
+  <a class="navlink" href="seal-tool.html">Seal →</a>
+  <a class="navlink" href="header-tool.html">Header →</a>
+  <a class="navlink" href="banner-tool.html">Banner →</a>
+</header>
+
+<main>
+  <div id="panel">
+
+    <details class="acc" open>
+      <summary>Ship</summary>
+      <div class="acc-body">
+        <label class="fld">Ship / station name</label>
+        <input type="text" data-k="name" maxlength="46" spellcheck="false">
+        <label class="fld">Registry line</label>
+        <input type="text" data-k="registry" maxlength="60" spellcheck="false">
+        <label class="fld">Authority (upper left)</label>
+        <input type="text" data-k="authority" maxlength="60" spellcheck="false">
+        <label class="fld">Class (upper right)</label>
+        <input type="text" data-k="cls" maxlength="60" spellcheck="false">
+        <div class="hint">Upper corner blocks split onto two lines on their own — or use " / " to choose the break.</div>
+      </div>
+    </details>
+
+    <details class="acc" open>
+      <summary>Relief</summary>
+      <div class="acc-body">
+        <div class="toggle" id="reliefToggle">
+          <button data-relief="emboss">Raised</button>
+          <button data-relief="engrave">Engraved</button>
+        </div>
+        <div class="row"><label>Depth</label><input type="range" min="1" max="9" step="0.5" data-k="depth"><span class="val" data-val="depth"></span></div>
+        <div class="row"><label>Shine</label><input type="range" min="0" max="1.6" step="0.05" data-k="shine"><span class="val" data-val="shine"></span></div>
+        <div class="hint">Raised lettering is cast proud of the plate; engraved lettering is cut into it, so the trim and badge are cut in too.</div>
+      </div>
+    </details>
+
+    <details class="acc" open>
+      <summary>Plate</summary>
+      <div class="acc-body">
+        <label class="fld">Backing</label>
+        <div class="swatches" id="backSwatches"></div>
+        <div class="row"><label>Custom backing</label><input type="color" data-k="c_back"></div>
+        <label class="fld">Trim &amp; lettering</label>
+        <div class="swatches" id="trimSwatches"></div>
+        <div class="row"><label>Custom trim</label><input type="color" data-k="c_trim"></div>
+        <div class="row"><label>Badge</label><input type="checkbox" data-k="badgeOn"></div>
+        <div class="row"><label>Frame</label><input type="checkbox" data-k="frameOn"></div>
+      </div>
+    </details>
+
+    <details class="acc" open>
+      <summary>Roster Columns</summary>
+      <div class="acc-body">
+        <div class="row"><label>Show roster</label><input type="checkbox" data-k="colsOn"></div>
+        <div id="colList"></div>
+        <div class="btnrow"><button class="btn" id="addCol">+ Add column</button></div>
+        <div class="hint">One name per line. Start a line with <b>##</b> to run a second heading partway down a column.</div>
+      </div>
+    </details>
+
+    <details class="acc" open>
+      <summary>Dedication Quote</summary>
+      <div class="acc-body">
+        <div class="row"><label>Show quote</label><input type="checkbox" data-k="quoteOn"></div>
+        <label class="fld">Quote (line breaks respected)</label>
+        <textarea data-k="quote" rows="3" spellcheck="false"></textarea>
+        <label class="fld">Attribution</label>
+        <input type="text" data-k="speaker" maxlength="60" spellcheck="false">
+        <div class="row"><label>Add quote marks</label><input type="checkbox" data-k="quoteMarks"></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>Era</summary>
+      <div class="acc-body">
+        <div class="row"><label>Design era</label><select data-k="era" id="eraSel"></select></div>
+        <div class="hint">2399 is the current Starfleet plaque standard, built from the original artwork. More eras drop in as their art arrives.</div>
+      </div>
+    </details>
+
+    <details class="acc" open>
+      <summary>Export</summary>
+      <div class="acc-body">
+        <div class="row">
+          <label>PNG width</label>
+          <select id="exportSize">
+            <option value="1175">1175 px</option>
+            <option value="2350" selected>2350 px (native)</option>
+            <option value="4700">4700 px (2×)</option>
+          </select>
+        </div>
+        <div class="btnrow">
+          <button class="btn primary" id="exportPng">Export PNG</button>
+          <button class="btn" id="exportSvg">Export SVG</button>
+        </div>
+      </div>
+    </details>
+
+    <section class="plain">
+      <button class="btn danger" id="resetBtn">Reset to defaults</button>
+    </section>
+
+    <div class="credit">
+      Fonts: <b>Sealstile</b> (Librestile, OFL) · <b>EB Garamond</b> (OFL)<br>
+      © Bravo Fleet 1997–<span id="copyYear"></span><br>
+      Plaque artwork © Bravo Fleet
+    </div>
+  </div>
+
+  <div id="stage" class="dark">
+    <div class="stagebg" id="stageBg">
+      <button data-mode="checker">Checker</button>
+      <button data-mode="dark" class="active">Dark</button>
+      <button data-mode="light">Light</button>
+    </div>
+    <div id="plqwrap"></div>
+  </div>
+</main>
+
+<script src="shared/metal.js"></script>
+<script src="shared/export.js"></script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const esc = Metal.esc;
+
+/* ================= era registry =================
+   Each era supplies its own artwork (grayscale masters extracted from the
+   source PSD by tools/extract_plaque_assets.py) plus the row rhythm laid out
+   around it. Row coordinates come from the PSD's own type-layer bounds, so
+   the lettering lands exactly where the original design put it. */
+const W = 2350, H = 1700;
+
+const ERAS = {
+  "2399": {
+    label: "2399 (Standard)",
+    dir: "assets/plaque/",
+    art: { plate:"plate.png", frame:"border.png", frameMatte:"border-matte.png", badge:"badge.png" },
+    /* Sealstile stands in for the original's Microstyle Bold Extended, which
+       the PSD sets at 60% horizontal scale. Sealstile runs ~10% larger and
+       wider at the same nominal size, so its sizes are the PSD's × 0.904 and
+       its squeeze is 0.55 — calibrated against PallasPlaque.png, whose cap
+       heights and line widths this reproduces to within a couple of pixels. */
+    squeeze: 0.55,
+    rows: {
+      cornerLeftCX: 650, cornerRightCX: 1709,
+      cornerSize: 80, cornerBase1: 338, cornerBase2: 416, cornerMaxW: 700,
+      nameCX: 1174, nameBase: 709, nameSize: 193, nameMaxW: 1560,
+      regCX: 1152, regBase: 819, regSize: 80, regMaxW: 1500,
+      colTop: 891, colHeadSize: 30, colNameSize: 25, colLead: 41, colPitch: 31.5,
+      colGap: 30, colLeft: 300, colRight: 2050,
+      quoteLast: 1503, quoteSize: 61, quoteLead: 43, quoteMaxW: 1400,
+      speakerRight: 2057,
+    },
+  },
+};
+
+/* material keys shared by the frame art and the lettering */
+const TRIMS = [
+  { id:"gold",        name:"Polished Gold",   sw:"#e8c65a", matte:false },
+  { id:"silver",      name:"Polished Silver", sw:"#d5dbe0", matte:false },
+  { id:"blue",        name:"Blue",            sw:"#5f86bd", matte:false },
+  { id:"goldMatte",   name:"Matte Gold",      sw:"#b8912f", matte:true  },
+  { id:"silverMatte", name:"Matte Silver",    sw:"#aab2b9", matte:true  },
+  { id:"steel",       name:"Steel",           sw:"#8b939b", matte:true  },
+  { id:"black",       name:"Black",           sw:"#33373c", matte:true  },
+];
+const BACKINGS = [
+  { id:"blue",     name:"Starfleet Blue" }, { id:"steel",    name:"Steel" },
+  { id:"silver",   name:"Silver" },         { id:"gold",     name:"Gold" },
+  { id:"bronze",   name:"Bronze" },         { id:"copper",   name:"Copper" },
+  { id:"emerald",  name:"Emerald" },        { id:"ruby",     name:"Ruby" },
+  { id:"cyan",     name:"Green-Cyan" },     { id:"cobalt",   name:"Cobalt" },
+  { id:"amethyst", name:"Amethyst" },       { id:"black",    name:"Black" },
+];
+
+let RAMPS = null; // assets/plaque/ramps.json
+
+/* ================= state ================= */
+const DEFAULTS = {
+  era: "2399",
+  name: "U. S. S. PALLAS",
+  registry: "STARFLEET REGISTRY NUMBER NCC-83723",
+  authority: "UNITED FEDERATION OF PLANETS",
+  cls: "VESTA CLASS STARSHIP",
+  relief: "emboss",
+  depth: 4, shine: 0.8,
+  back: "blue", c_back: "#44525f",
+  trim: "gold", c_trim: "#c9992e",
+  badgeOn: true, frameOn: true, colsOn: true,
+  quoteOn: true, quoteMarks: true,
+  quote: "Astra inclinant, sed non obligant.",
+  speaker: "The Homeric Hymns",
+  columns: [
+    { h:"STARFLEET COMMAND", n:"Teylas Ramar\nElizabeth Wolf\nVictor Murdock\nRobert Chadwick\nValren Arelwynn\nAdrian Mormar\nLucas Duncan\nAubrey Seagraves\nLiam Dahlgren" },
+    { h:"STARFLEET OPERATIONS", n:"Dan Taylor\nChristopher A. Pike\nThomas Wolfe\nBarak Aubrey\nReytan Grax\nOliver Tidwell\nPatrick Brice\nGene Han\nMichael Crow" },
+    { h:"RESEARCH & DEVELOPMENT", n:"Michael Jarovik\nDon Leadon\nHars Darax\nSorac Dunar\nWilliam Coast-Endas\nMarcus Shepherd\nBob Martens\nIgor Knezevic\nSean Hargreaves" },
+    { h:"TECHNICAL OPERATIONS", n:"Christopher Johnson\nCabot Shaw\nAllison Reyes\nAnatole Lazarus\nAkintoye Okusanya\nFelix Kominek\nTodd Marks\nNeville Page\nJames Mackinnon" },
+    { h:"CHIEFS OF STAFF", n:"Kirsten Clancey\nGene Roddenberry\nAlex Kurtzman\nTrevor Roth\n\n## ADMIRALTY BOARD\nJonathan Knox\nWalter Jefferies\nAndrew Probert\nRich Sternbach" },
+  ],
+};
+let S = JSON.parse(JSON.stringify(DEFAULTS));
+
+/* ================= helpers ================= */
+const measCtx = document.createElement("canvas").getContext("2d");
+function measure(text, fs, family, weight, style, track){
+  measCtx.font = `${style||"normal"} ${weight||400} ${fs}px "${family}"`;
+  return measCtx.measureText(text).width + Math.max(0, text.length-1)*(track||0);
+}
+const seal = (t,fs,track) => measure(t, fs, "Sealstile", 400, "normal", track);
+
+function twoLines(text){
+  const t = (text||"").trim();
+  if(!t) return [];
+  if(t.includes("/")) return t.split("/").map(s=>s.trim()).filter(Boolean).slice(0,2);
+  const words = t.split(/\s+/);
+  if(words.length < 3) return [t];
+  let best = null;
+  for(let i=1;i<words.length;i++){
+    const a = words.slice(0,i).join(" "), b = words.slice(i).join(" ");
+    const score = Math.abs(a.length - b.length);
+    if(!best || score < best.score) best = { score, lines:[a,b] };
+  }
+  return best.lines;
+}
+
+/* ---- colour ramps ----
+   The artwork ships as grayscale; a table per colourway maps it back to the
+   PSD's own pixels via <feComponentTransfer>. A custom colour builds the same
+   kind of table on the fly, so user colours behave like built-in ones. */
+function rampTable(rows){
+  return {
+    r: rows.map(c=>c[0].toFixed(4)).join(" "),
+    g: rows.map(c=>c[1].toFixed(4)).join(" "),
+    b: rows.map(c=>c[2].toFixed(4)).join(" "),
+  };
+}
+function customRamp(hex, spread){
+  const sp = spread === undefined ? .55 : spread;
+  const rows = [];
+  for(let i=0;i<=16;i++){
+    const t = i/16;
+    const c = t < .5 ? Metal.dkn(hex, (0.5-t)*2*sp) : Metal.ltn(hex, (t-0.5)*2*sp);
+    const [r,g,b] = Metal.hexRgb(c);
+    rows.push([r/255, g/255, b/255]);
+  }
+  return rows;
+}
+function plateRamp(){
+  if(S.back === "custom" || !RAMPS) return customRamp(S.c_back, .5);
+  return RAMPS.plate[S.back] || RAMPS.plate.blue;
+}
+function trimRamp(){
+  if(S.trim === "custom" || !RAMPS) return customRamp(S.c_trim, .72);
+  const set = trimIsMatte() ? RAMPS.borderMatte : RAMPS.border;
+  return set[S.trim] || RAMPS.border.gold;
+}
+function trimIsMatte(){
+  const t = TRIMS.find(t=>t.id===S.trim);
+  return !!(t && t.matte);
+}
+function trimArt(E){
+  return E.dir + (trimIsMatte() && !(S.trim === "custom") ? E.art.frameMatte : E.art.frame);
+}
+/* lettering colour: the PSD's text fills are near-flat, so a flat base plus
+   the bevel filter reproduces them; custom trims fall back to the picker. */
+function inkBase(){
+  if(S.trim === "custom" || !RAMPS) return S.c_trim;
+  const stops = RAMPS.text[S.trim] || RAMPS.text.gold;
+  return stops[Math.floor(stops.length/2)][1];
+}
+/* the plate's own mid tone — what an engraved cut is filled with */
+function plateMid(){
+  const rows = plateRamp();
+  const c = rows[Math.floor(rows.length/2)];
+  return Metal.rgbHex(c[0]*255, c[1]*255, c[2]*255);
+}
+
+/* ================= render ================= */
+function buildSVG(res){
+  res = res || {};
+  const E = ERAS[S.era] || ERAS["2399"];
+  const R = E.rows;
+  const engraved = S.relief === "engrave";
+  const href = k => (res.art && res.art[k]) || (E.dir + E.art[k]);
+
+  const ink = inkBase();
+  const cut = Metal.dkn(plateMid(), .52);   /* engraved recesses read as shadowed plate */
+  const inkFill = engraved ? cut : `url(#gradInk)`;
+  const fxText = engraved ? "url(#fxEngrave)" : "url(#fxEmboss)";
+  const fxArt  = engraved ? "url(#fxEngraveArt)" : "url(#fxEmbossArt)";
+
+  const fontCSS = res.fontCSS || `
+    @font-face{font-family:"Sealstile";src:url(fonts/sealstile.woff2) format("woff2");}
+    @font-face{font-family:"EB Garamond";font-weight:600;src:url(fonts/webfonts/ebgaramond-600.woff2) format("woff2");}
+    @font-face{font-family:"EB Garamond";font-weight:500;font-style:italic;src:url(fonts/webfonts/ebgaramond-it500.woff2) format("woff2");}`;
+
+  /* Sealstile lines draw inside a horizontally squeezed frame, the way the
+     original sets its Microstyle; widths below are measured pre-squeeze. */
+  const HS = E.squeeze;
+  function sealText(str, cx, base, fs, maxW, anchor){
+    if(!str) return "";
+    const w = seal(str, fs, 0) * HS;
+    if(maxW && w > maxW) fs *= maxW/w;
+    return `<text transform="translate(${cx} ${base}) scale(${HS} 1)" x="0" y="0"
+      text-anchor="${anchor||"middle"}" font-family="Sealstile" font-size="${fs.toFixed(2)}">${esc(str)}</text>`;
+  }
+
+  /* ---------- corner blocks ---------- */
+  function cornerBlock(lines, cx){
+    if(!lines.length) return "";
+    let fs = R.cornerSize;
+    const widest = Math.max(...lines.map(l => seal(l.toUpperCase(), fs, 0) * HS));
+    if(widest > R.cornerMaxW) fs *= R.cornerMaxW/widest;
+    const bases = lines.length === 1 ? [R.cornerBase2] : [R.cornerBase1, R.cornerBase2];
+    return lines.map((l,i) => sealText(l.toUpperCase(), cx, bases[i], fs)).join("");
+  }
+  const corners = cornerBlock(twoLines(S.authority), R.cornerLeftCX)
+                + cornerBlock(twoLines(S.cls), R.cornerRightCX);
+
+  /* ---------- ship name (serif, unsqueezed like the original) ---------- */
+  const nm = (S.name||"").toUpperCase();
+  let nameFs = R.nameSize;
+  const nameW = measure(nm, nameFs, "EB Garamond", 600, "normal", 0);
+  if(nameW > R.nameMaxW) nameFs *= R.nameMaxW/nameW;
+  const nameSVG = nm ? `<text x="${R.nameCX}" y="${R.nameBase}" text-anchor="middle"
+      font-family="EB Garamond" font-weight="600" font-size="${nameFs.toFixed(1)}">${esc(nm)}</text>` : "";
+
+  /* ---------- registry ---------- */
+  const regSVG = sealText((S.registry||"").toUpperCase(), R.regCX, R.regBase, R.regSize, R.regMaxW);
+
+  /* ---------- roster columns ---------- */
+  let colsSVG = "", colsBottom = R.colTop;
+  if(S.colsOn && S.columns.length){
+    const n = S.columns.length;
+    const cw = (R.colRight - R.colLeft) / n;
+    const avail = cw - R.colGap;
+    let headFs = R.colHeadSize, nameFs2 = R.colNameSize;
+    let wHead = 0, wName = 0;
+    S.columns.forEach(c => {
+      wHead = Math.max(wHead, seal((c.h||"").toUpperCase(), headFs, 0) * HS);
+      (c.n||"").split("\n").forEach(line => {
+        const t = line.trim();
+        if(!t) return;
+        if(t.startsWith("##")) wHead = Math.max(wHead, seal(t.slice(2).trim().toUpperCase(), headFs, 0) * HS);
+        else wName = Math.max(wName, seal(t, nameFs2, 0) * HS);
+      });
+    });
+    if(wHead > avail) headFs *= avail/wHead;
+    if(wName > avail) nameFs2 *= avail/wName;
+    S.columns.forEach((c, i) => {
+      const cx = R.colLeft + cw*i + cw/2;
+      let y = R.colTop, afterHead = false;
+      if(c.h){ colsSVG += sealText(c.h.toUpperCase(), cx, y, headFs); afterHead = true; }
+      (c.n||"").split("\n").forEach(line => {
+        const t = line.trim();
+        if(!t){ y += R.colPitch*.5; return; }
+        if(t.startsWith("##")){
+          /* a second heading partway down the column gets the header's air */
+          y += R.colPitch + R.colLead*.6;
+          colsSVG += sealText(t.slice(2).trim().toUpperCase(), cx, y, headFs);
+          afterHead = true;
+        }else{
+          y += afterHead ? R.colLead : R.colPitch;
+          colsSVG += sealText(t, cx, y, nameFs2);
+          afterHead = false;
+        }
+        colsBottom = Math.max(colsBottom, y);
+      });
+    });
+  }
+
+  /* ---------- quote ---------- */
+  let quoteSVG = "";
+  if(S.quoteOn && (S.quote||"").trim()){
+    const lines = S.quote.split("\n").map(s=>s.trim()).filter(Boolean);
+    let qfs = R.quoteSize;
+    const widest = Math.max(...lines.map(l => measure(l, qfs, "EB Garamond", 500, "italic", 0)));
+    if(widest > R.quoteMaxW) qfs *= R.quoteMaxW/widest;
+    const lead = R.quoteLead * (qfs/R.quoteSize);
+    /* bottom-anchored on the original's last-line baseline, so the block
+       grows upward and long rosters push it no further down */
+    const last = R.quoteLast;
+    const top = last - (lines.length-1)*lead;
+    lines.forEach((l, i) => {
+      const t = S.quoteMarks ? (i===0 ? "“"+l : l) + (i===lines.length-1 ? "”" : "") : l;
+      quoteSVG += `<text x="${R.nameCX}" y="${(top + i*lead).toFixed(1)}" text-anchor="middle"
+        font-family="EB Garamond" font-weight="500" font-style="italic" font-size="${qfs.toFixed(1)}">${esc(t)}</text>`;
+    });
+    /* the attribution shares the last line's baseline, as on the original */
+    if((S.speaker||"").trim()){
+      quoteSVG += `<text x="${R.speakerRight}" y="${last}" text-anchor="end"
+        font-family="EB Garamond" font-weight="500" font-style="italic" font-size="${(qfs*.92).toFixed(1)}">${esc("— "+S.speaker)}</text>`;
+    }
+  }
+
+  const pr = rampTable(plateRamp()), tr = rampTable(trimRamp());
+  const depth = S.depth, shine = S.shine;
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
+<defs>
+<style>${fontCSS}</style>
+<linearGradient id="gradInk" x1="0" y1="${R.cornerBase1-90}" x2="0" y2="${R.quoteLast}" gradientUnits="userSpaceOnUse">
+  <stop offset="0" stop-color="${Metal.ltn(ink,.16)}"/>
+  <stop offset=".5" stop-color="${ink}"/>
+  <stop offset="1" stop-color="${Metal.dkn(ink,.12)}"/>
+</linearGradient>
+<filter id="mapPlate" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
+  <feComponentTransfer>
+    <feFuncR type="table" tableValues="${pr.r}"/>
+    <feFuncG type="table" tableValues="${pr.g}"/>
+    <feFuncB type="table" tableValues="${pr.b}"/>
+  </feComponentTransfer>
+  <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#000" flood-opacity=".55"/>
+</filter>
+<filter id="mapTrim" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
+  <feComponentTransfer>
+    <feFuncR type="table" tableValues="${tr.r}"/>
+    <feFuncG type="table" tableValues="${tr.g}"/>
+    <feFuncB type="table" tableValues="${tr.b}"/>
+  </feComponentTransfer>
+</filter>
+${Metal.bevelFilter("fxEmboss", {bevel:depth, shine:shine, se:20, shadow:.55, shadowDy:Math.max(2,depth*.9), shadowBlur:Math.max(2,depth*1.2)})}
+${Metal.engraveFilter("fxEngrave", {depth:depth*1.2, blur:depth*.8, dark:.82, shine:shine*.65, se:14})}
+<filter id="fxEmbossArt" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
+  <feDropShadow dx="0" dy="${Math.max(2,depth*.8).toFixed(1)}" stdDeviation="${Math.max(2,depth).toFixed(1)}" flood-color="#000" flood-opacity=".5"/>
+</filter>
+${Metal.engraveFilter("fxEngraveArt", {depth:depth*1.2, blur:depth*.8, dark:.82, shine:shine*.65, se:14, flatten:cut})}
+</defs>
+
+<image href="${href("plate")}" x="0" y="0" width="${W}" height="${H}" filter="url(#mapPlate)"/>
+
+${S.frameOn ? `<g filter="${fxArt}"><image href="${res.art ? res.art.trim : trimArt(E)}" x="0" y="0" width="${W}" height="${H}" filter="${engraved ? "" : "url(#mapTrim)"}"/></g>` : ""}
+${S.badgeOn ? `<g filter="${fxArt}"><image href="${href("badge")}" x="0" y="0" width="${W}" height="${H}" filter="${engraved ? "" : "url(#mapTrim)"}"/></g>` : ""}
+
+<g filter="${fxText}" fill="${inkFill}">
+  ${corners}
+  ${nameSVG}
+  ${regSVG}
+  ${colsSVG}
+  ${quoteSVG}
+</g>
+</svg>`;
+}
+
+function render(){ $("plqwrap").innerHTML = buildSVG(); }
+
+/* ================= export ================= */
+async function exportResources(){
+  const E = ERAS[S.era] || ERAS["2399"];
+  const [sealF, g600, gIt, plate, trim, badge] = await Promise.all([
+    ExportKit.fetchDataURI("fonts/sealstile.woff2"),
+    ExportKit.fetchDataURI("fonts/webfonts/ebgaramond-600.woff2"),
+    ExportKit.fetchDataURI("fonts/webfonts/ebgaramond-it500.woff2"),
+    ExportKit.fetchDataURI(E.dir + E.art.plate),
+    ExportKit.fetchDataURI(trimArt(E)),
+    ExportKit.fetchDataURI(E.dir + E.art.badge),
+  ]);
+  return {
+    fontCSS:
+      ExportKit.fontFaceRule("Sealstile", 400, "normal", sealF) +
+      ExportKit.fontFaceRule("EB Garamond", 600, "normal", g600) +
+      ExportKit.fontFaceRule("EB Garamond", 500, "italic", gIt),
+    art: { plate, trim, badge },
+  };
+}
+function slug(){
+  return (S.name||"plaque").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || "plaque";
+}
+async function renderToCanvas(widthPx){
+  const svg = buildSVG(await exportResources());
+  return ExportKit.svgToCanvas(svg, widthPx, Math.round(widthPx*H/W));
+}
+$("exportPng").addEventListener("click", async ()=>{
+  const size = parseInt($("exportSize").value, 10);
+  const btn = $("exportPng"), old = btn.textContent;
+  btn.textContent = "Rendering…"; btn.disabled = true;
+  try{
+    const cv = await renderToCanvas(size);
+    await ExportKit.downloadCanvasPNG(cv, slug()+"-plaque-"+size+".png");
+  }catch(err){ console.error(err); btn.textContent = "Failed"; }
+  setTimeout(()=>{ btn.textContent = old; btn.disabled = false; }, 400);
+});
+$("exportSvg").addEventListener("click", async ()=>{
+  ExportKit.downloadSVG(buildSVG(await exportResources()), slug()+"-plaque.svg");
+});
+
+/* ================= panel wiring ================= */
+function buildSwatches(){
+  $("backSwatches").innerHTML = BACKINGS.map(b => {
+    const rows = (RAMPS && RAMPS.plate[b.id]) || null;
+    const mid = rows ? rows[Math.floor(rows.length*.65)] : [.3,.35,.4];
+    const c = Metal.rgbHex(mid[0]*255, mid[1]*255, mid[2]*255);
+    return `<button class="sw" data-back="${b.id}" title="${b.name}" style="background:${c}"></button>`;
+  }).join("") + `<button class="sw" data-back="custom" title="Custom" style="background:linear-gradient(135deg,#666,#ccc)"></button>`;
+  $("trimSwatches").innerHTML = TRIMS.map(t =>
+    `<button class="sw" data-trim="${t.id}" title="${t.name}" style="background:${t.sw}"></button>`).join("")
+    + `<button class="sw" data-trim="custom" title="Custom" style="background:linear-gradient(135deg,#666,#ccc)"></button>`;
+  syncSwatches();
+}
+$("backSwatches").addEventListener("click", e => {
+  const b = e.target.closest("[data-back]"); if(!b) return;
+  S.back = b.dataset.back; syncSwatches(); render(); persist();
+});
+$("trimSwatches").addEventListener("click", e => {
+  const b = e.target.closest("[data-trim]"); if(!b) return;
+  S.trim = b.dataset.trim; syncSwatches(); render(); persist();
+});
+$("reliefToggle").addEventListener("click", e => {
+  const b = e.target.closest("[data-relief]"); if(!b) return;
+  S.relief = b.dataset.relief; syncSwatches(); render(); persist();
+});
+
+function buildColumns(){
+  $("colList").innerHTML = S.columns.map((c,i) => `
+    <div class="col">
+      <div class="chead"><span>Column ${i+1}</span>
+        <button class="btn mini" data-move="${i}" title="Move left">←</button>
+        <button class="btn mini danger" data-del="${i}" title="Remove">✕</button>
+      </div>
+      <input type="text" data-ch="${i}" value="${esc(c.h||"")}" placeholder="Department" spellcheck="false">
+      <textarea data-cn="${i}" rows="6" placeholder="One name per line" spellcheck="false">${esc(c.n||"")}</textarea>
+    </div>`).join("");
+}
+$("colList").addEventListener("input", e => {
+  const t = e.target;
+  if(t.dataset.ch !== undefined) S.columns[+t.dataset.ch].h = t.value;
+  else if(t.dataset.cn !== undefined) S.columns[+t.dataset.cn].n = t.value;
+  else return;
+  render(); persist();
+});
+$("colList").addEventListener("click", e => {
+  const del = e.target.closest("[data-del]"), mv = e.target.closest("[data-move]");
+  if(del) S.columns.splice(+del.dataset.del, 1);
+  else if(mv){
+    const i = +mv.dataset.move;
+    if(i > 0){ const t = S.columns[i-1]; S.columns[i-1] = S.columns[i]; S.columns[i] = t; }
+  }else return;
+  buildColumns(); render(); persist();
+});
+$("addCol").addEventListener("click", ()=>{
+  S.columns.push({ h:"DEPARTMENT", n:"" });
+  buildColumns(); render(); persist();
+});
+
+function bindInputs(){
+  document.querySelectorAll("[data-k]").forEach(inp=>{
+    const k = inp.dataset.k;
+    const ev = (inp.type === "text" || inp.type === "range" || inp.type === "color" || inp.tagName === "TEXTAREA") ? "input" : "change";
+    inp.addEventListener(ev, ()=>{
+      if(inp.type === "checkbox") S[k] = inp.checked;
+      else if(inp.type === "range") S[k] = parseFloat(inp.value);
+      else S[k] = inp.value;
+      if(k === "c_back") S.back = "custom";
+      if(k === "c_trim") S.trim = "custom";
+      syncVals(); syncSwatches(); render(); persist();
+    });
+  });
+}
+function syncVals(){
+  document.querySelectorAll("[data-val]").forEach(sp=>{ sp.textContent = S[sp.dataset.val]; });
+}
+function syncSwatches(){
+  document.querySelectorAll("[data-back]").forEach(b => b.classList.toggle("on", b.dataset.back === S.back));
+  document.querySelectorAll("[data-trim]").forEach(b => b.classList.toggle("on", b.dataset.trim === S.trim));
+  document.querySelectorAll("[data-relief]").forEach(b => b.classList.toggle("active", b.dataset.relief === S.relief));
+}
+function syncUI(){
+  document.querySelectorAll("[data-k]").forEach(inp=>{
+    const k = inp.dataset.k;
+    if(!(k in S)) return;
+    if(inp.type === "checkbox") inp.checked = !!S[k];
+    else inp.value = S[k];
+  });
+  syncVals(); syncSwatches();
+}
+
+$("eraSel").innerHTML = Object.entries(ERAS).map(([k,e])=>`<option value="${k}">${e.label}</option>`).join("");
+$("stageBg").addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  $("stage").className = b.dataset.mode;
+  document.querySelectorAll("#stageBg button").forEach(x=>x.classList.toggle("active", x===b));
+});
+$("resetBtn").addEventListener("click", ()=>{
+  S = JSON.parse(JSON.stringify(DEFAULTS));
+  buildColumns(); syncUI(); render(); persist();
+});
+
+/* ================= persistence ================= */
+const LS_KEY = "plaquebuilder-v1";
+let persistT = null;
+function persist(){
+  clearTimeout(persistT);
+  persistT = setTimeout(()=>{ try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }catch(e){} }, 150);
+}
+(async function boot(){
+  try{
+    const saved = localStorage.getItem(LS_KEY);
+    if(saved) S = Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), JSON.parse(saved));
+  }catch(e){}
+  $("copyYear").textContent = new Date().getFullYear();
+  buildColumns(); bindInputs(); syncUI(); render();
+  try{
+    RAMPS = await (await fetch((ERAS[S.era]||ERAS["2399"]).dir + "ramps.json")).json();
+  }catch(e){ console.error("colour ramps failed to load", e); }
+  buildSwatches(); render();
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(render);
+})();
+</script>
+</body>
+</html>
