@@ -161,6 +161,15 @@ This is how the banner's hardLight/colorDodge/bevel recipe above was confirmed, 
 
 ## Testing notes
 
+**CI runs the smoke test on every push** (`.github/workflows/smoke.yml`), plus a check that the build scripts are idempotent — that one catches an emblem added or changed without its registry regenerated and committed. Locally:
+
+```bash
+python3 -m http.server 8517            # then open tests/smoke.html
+node tools/run_smoke.mjs               # or headless, same checks, exits non-zero on failure
+```
+
+`tools/run_smoke.mjs` drives Chrome over the **DevTools Protocol using Node's built-in `fetch` and `WebSocket`** (Node 22+), rather than pulling in Playwright or Puppeteer — this project ships no build step and no npm footprint, and a CI harness is a poor reason to start one. It finds Chrome via `$CHROME_BIN` or the usual paths, and reads `window.__SMOKE_RESULT` rather than scraping the table.
+
 **Run `tests/smoke.html` before deploying.** Serve the repo and open it; no build step, no dependencies, matching the rest of the project. For every page it checks the page loads without JS errors, that **every relative path into `assets/`, `fonts/` or `shared/` actually resolves on the server**, that the favicon/description/`<noscript>` are present, and — for the six tools — that a PNG export renders non-blank and the export SVG is fully self-contained. That asset check exists because a broken path is the failure mode this suite is most exposed to now that everything loads by URL.
 
 Two traps that made the first version of that test useless, both worth knowing:

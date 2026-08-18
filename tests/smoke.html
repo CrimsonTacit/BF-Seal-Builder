@@ -161,7 +161,7 @@ async function runOne(page){
 
 $("run").addEventListener("click", async () => {
   $("run").disabled = true;
-  $("rows").innerHTML = ""; $("summary").textContent = "";
+  $("rows").innerHTML = ""; $("summary").textContent = ""; delete window.__SMOKE_RESULT;
   const map = {};
   for (const t of TOOLS){
     const tr = document.createElement("tr");
@@ -169,8 +169,10 @@ $("run").addEventListener("click", async () => {
     $("rows").appendChild(tr); map[t] = tr;
   }
   let pass = 0, fail = 0;
+  const results = {};
   for (const t of TOOLS){
     const checks = await runOne(t);
+    results[t] = checks;
     const bad = checks.filter(c => !c.ok);
     bad.length ? fail++ : pass++;
     const tr = map[t];
@@ -184,7 +186,25 @@ $("run").addEventListener("click", async () => {
     ? `<span class="fail">${fail} page(s) failed</span>, ${pass} passed.`
     : `<span class="pass">All ${pass} pages passed.</span>`;
   $("run").disabled = false;
+
+  /* Machine-readable result for the CI runner (tools/run_smoke.mjs), so it
+     reads a value rather than scraping the table. Notes are carried but never
+     counted as failures — see the cross-origin note in load(). */
+  window.__SMOKE_RESULT = {
+    pass, fail,
+    pages: Object.entries(results).map(([page, cs]) => ({
+      page,
+      ok: cs.every(c => c.ok),
+      failed: cs.filter(c => !c.ok).map(c => c.name + (c.why ? ` — ${c.why}` : "")),
+      notes:  cs.filter(c => c.note).map(c => c.name + (c.why ? ` — ${c.why}` : "")),
+    })),
+  };
 });
+
+/* ?auto=1 runs on load, for CI. */
+if (new URLSearchParams(location.search).has("auto")) {
+  addEventListener("load", () => $("run").click());
+}
 </script>
 </body>
 </html>
