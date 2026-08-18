@@ -12,7 +12,7 @@
 <meta property="og:url" content="https://crimsontacit.github.io/BF-Seal-Builder/banner-tool.html">
 <meta name="twitter:card" content="summary">
 <title>Banner Builder</title>
-<link rel="stylesheet" href="shared/chrome.css">
+<link rel="stylesheet" href="shared/chrome.css?v=a84c7f43">
 <style>
   @font-face{
     font-family:"Sealstile";font-weight:400;
@@ -154,23 +154,23 @@
   </div>
 </main>
 
-<script src="shared/state.js"></script>
-<script src="shared/text.js"></script>
-<script src="shared/metal.js"></script>
-<script src="shared/export.js"></script>
+<script src="shared/state.js?v=fa880068"></script>
+<script src="shared/text.js?v=127a04be"></script>
+<script src="shared/metal.js?v=8aa4ac74"></script>
+<script src="shared/export.js?v=07669e3b"></script>
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
 
 /* ================= logos ================= */
 const LOGOS = {  // top/bot = opaque bounds as a fraction of height, remeasured on load
-  bf:   { label:"Bravo Fleet",   url:"assets/logos/bf-delta.png", w:300, h:468, top:.010, bot:.988 },
-  tf17: { label:"Task Force 17", url:"assets/logos/tf17a.png",    w:516, h:804, top:.010, bot:.988 },
-  tf21: { label:"Task Force 21", url:"assets/logos/tf21a.png",    w:516, h:804, top:.010, bot:.988 },
-  tf47: { label:"Task Force 47", url:"assets/logos/tf47a.png",    w:516, h:804, top:.010, bot:.988 },
-  tf72: { label:"Task Force 72", url:"assets/logos/tf72a.png",    w:516, h:804, top:.010, bot:.988 },
-  tf86: { label:"Task Force 86", url:"assets/logos/tf86a.png",    w:516, h:804, top:.010, bot:.988 },
-  tf93: { label:"Task Force 93", url:"assets/logos/tf93a.png",    w:516, h:804, top:.010, bot:.988 },
+  bf:   { label:"Bravo Fleet",   url:"assets/logos/bf-delta.png?v=322c9308", w:300, h:468, top:.010, bot:.988 },
+  tf17: { label:"Task Force 17", url:"assets/logos/tf17a.png?v=fd28fa0d",    w:516, h:804, top:.010, bot:.988 },
+  tf21: { label:"Task Force 21", url:"assets/logos/tf21a.png?v=99523466",    w:516, h:804, top:.010, bot:.988 },
+  tf47: { label:"Task Force 47", url:"assets/logos/tf47a.png?v=122d6dc8",    w:516, h:804, top:.010, bot:.988 },
+  tf72: { label:"Task Force 72", url:"assets/logos/tf72a.png?v=b0b4f39d",    w:516, h:804, top:.010, bot:.988 },
+  tf86: { label:"Task Force 86", url:"assets/logos/tf86a.png?v=8b341f9b",    w:516, h:804, top:.010, bot:.988 },
+  tf93: { label:"Task Force 93", url:"assets/logos/tf93a.png?v=941b6dec",    w:516, h:804, top:.010, bot:.988 },
 };
 /* True natural sizes load async; placeholders above keep first paint sane.
    The files pad the artwork by different amounts (0.8%-1.6% of height), so the
@@ -373,7 +373,7 @@ function render(){ $("bnrwrap").innerHTML = buildSVG(); }
 async function exportResources(){
   const L = LOGOS[S.logo] || LOGOS.bf;
   const [font, logoHref] = await Promise.all([
-    ExportKit.fetchDataURI("fonts/sealstile.woff2"),
+    ExportKit.fetchDataURI("fonts/sealstile.woff2?v=8128806d"),
     ExportKit.fetchDataURI(L.url),
   ]);
   return { fontCSS: ExportKit.fontFaceRule("Sealstile", 400, "normal", font), logoHref };

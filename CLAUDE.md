@@ -48,6 +48,16 @@ Every tool loads `shared/chrome.css` plus the scripts it needs; tool-specific CS
 - **Collapsible panel sections**: each `#panel` section (except the trailing Reset-to-defaults one) is a native `<details class="acc" open><summary>…</summary><div class="acc-body">…</div></details>`, not JS-driven — the browser handles open/close state. `summary::before`/`::after` draw the rotating chevron and trailing rule that used to live on `section h2`.
 - **UI accent colors**: `--bf-blue` (`#2864a8`, matches the Bravo Blue preset) and `--bolt-gold` (`#d3a92c`, matches Bolt Gold) are the app-chrome accent variables — chosen to match Bravo Fleet's actual brand colors rather than arbitrary teal/gold.
 
+## Asset cache-busting
+
+Every asset reference carries a content stamp — `assets/emblems/tf17b.png?v=444bb0c6`, the first 8 hex of the file's SHA-256 — written by `tools/stamp_assets.py` and enforced in CI with `--check`. Change a file in place and its URL changes with it, so a cached copy can never be reused.
+
+Measured before building it, because the severity is easy to overstate: **GitHub Pages sends `cache-control: max-age=600` with an ETag**, so on the real host a stale asset self-heals within ten minutes. The case that actually bites is local development — `python3 -m http.server` sends *no* cache headers, the browser then caches heuristically for far longer, and with `fonts/sealstile.woff2` deleted and the server returning 404 the tools kept exporting perfectly from cache. Treat this as belt-and-braces plus a real fix for local work, not as a production emergency.
+
+Run it **after** the embed scripts, which write unstamped registry URLs; the full `embed_assets` → `embed_header_assets` → `stamp_assets` sequence converges, which is what makes CI's diff check sound. Stamps appear only in the *preview* path — exports inline everything as data URIs, so no `?v=` ever reaches an exported SVG.
+
+One coupling to remember: **`tests/smoke.html`'s asset scanner must allow the `?v=` suffix.** A pattern anchored straight from the file extension to the closing quote matches none of the stamped references and silently checks nothing while still reporting pass.
+
 ## Asset registries
 
 `CHARGES` (seal + header) and `FONTS` (header) are **registries, not payloads** — name, pixel size and a relative path per entry, between `/*CHARGES_START*/…/*CHARGES_END*/` and `/*HDRFONTS_START*/…/*HDRFONTS_END*/` markers. Regenerate with:

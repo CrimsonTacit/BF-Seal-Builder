@@ -107,10 +107,14 @@ async function assetsResolve(page){
   const src = await (await fetch("../" + page + ".html?cb=" + Date.now(), {cache:"reload"})).text();
   /* Any quoted relative path into assets/, fonts/ or shared/ — markup src/href,
      registry entries (url:"..."), and bare constants alike (seal-tool holds its
-     font as `const FONT_URL = "fonts/sealstile.woff2"`, which a src|href-only
+     font as `const FONT_URL = "fonts/sealstile.woff2?v=8128806d"`, which a src|href-only
      scan walks straight past). */
   const paths = new Set();
-  const re = /["'](?:\.\/)?((?:assets|fonts|shared)\/[^"'?#]+\.[A-Za-z0-9]+)["']/g;
+  /* the trailing (\?v=…)? matters: references carry a content-hash stamp
+     (tools/stamp_assets.py), and a pattern anchored straight to the closing
+     quote would match none of them and silently check nothing. The stamped
+     URL is what users actually request, so that is what gets fetched. */
+  const re = /["'](?:\.\/)?((?:assets|fonts|shared)\/[^"'?#]+\.[A-Za-z0-9]+(?:\?v=[0-9a-f]+)?)["']/g;
   let m; while((m = re.exec(src))) paths.add(m[1]);
   const bad = [];
   for(const rel of paths){

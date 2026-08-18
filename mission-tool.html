@@ -12,7 +12,7 @@
 <meta property="og:url" content="https://crimsontacit.github.io/BF-Seal-Builder/mission-tool.html">
 <meta name="twitter:card" content="summary">
 <title>Mission Poster Builder</title>
-<link rel="stylesheet" href="shared/chrome.css">
+<link rel="stylesheet" href="shared/chrome.css?v=a84c7f43">
 <style>
   :root{--panel-w:352px}
   @font-face{font-family:"Sealstile";font-weight:400;src:url(fonts/sealstile.woff2) format("woff2")}
@@ -308,9 +308,9 @@
   </div>
 </main>
 
-<script src="shared/state.js"></script>
-<script src="shared/metal.js"></script>
-<script src="shared/export.js"></script>
+<script src="shared/state.js?v=fa880068"></script>
+<script src="shared/metal.js?v=8aa4ac74"></script>
+<script src="shared/export.js?v=07669e3b"></script>
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
@@ -341,19 +341,19 @@ const HH = () => RATIOS[S.ratio] ? RATIOS[S.ratio].h : 2400;
    one-sheet and billing block, Michroma/Orbitron for something more technical.
    Files come from tools/fetch_shared_fonts.py. */
 const FONTS = [
-  { k:"sealstile", label:"Sealstile",          fam:"Sealstile",          w:400, st:"normal", url:"fonts/sealstile.woff2" },
-  { k:"cinzel",    label:"Cinzel",             fam:"Cinzel",             w:600, st:"normal", url:"fonts/webfonts/cinzel.woff2" },
-  { k:"cinzeldec", label:"Cinzel Decorative",  fam:"Cinzel Decorative",  w:700, st:"normal", url:"fonts/webfonts/cinzeldecor-700.woff2" },
-  { k:"playfair",  label:"Playfair Display",   fam:"Playfair Display",   w:700, st:"normal", url:"fonts/webfonts/playfair-700.woff2" },
-  { k:"cormorant", label:"Cormorant Garamond", fam:"Cormorant Garamond", w:600, st:"normal", url:"fonts/webfonts/cormorant-600.woff2" },
-  { k:"garamond",  label:"EB Garamond",        fam:"EB Garamond",        w:600, st:"normal", url:"fonts/webfonts/ebgaramond-600.woff2" },
-  { k:"garamondit",label:"EB Garamond Italic", fam:"EB Garamond",        w:500, st:"italic", url:"fonts/webfonts/ebgaramond-it500.woff2" },
-  { k:"tenor",     label:"Tenor Sans",         fam:"Tenor Sans",         w:400, st:"normal", url:"fonts/webfonts/tenor.woff2" },
-  { k:"bebas",     label:"Bebas Neue",         fam:"Bebas Neue",         w:400, st:"normal", url:"fonts/webfonts/bebas.woff2" },
-  { k:"oswald",    label:"Oswald",             fam:"Oswald",             w:500, st:"normal", url:"fonts/webfonts/oswald-500.woff2" },
-  { k:"anton",     label:"Anton",              fam:"Anton",              w:400, st:"normal", url:"fonts/webfonts/anton.woff2" },
-  { k:"michroma",  label:"Michroma",           fam:"Michroma",           w:400, st:"normal", url:"fonts/webfonts/michroma.woff2" },
-  { k:"orbitron",  label:"Orbitron",           fam:"Orbitron",           w:600, st:"normal", url:"fonts/webfonts/orbitron.woff2" },
+  { k:"sealstile", label:"Sealstile",          fam:"Sealstile",          w:400, st:"normal", url:"fonts/sealstile.woff2?v=8128806d" },
+  { k:"cinzel",    label:"Cinzel",             fam:"Cinzel",             w:600, st:"normal", url:"fonts/webfonts/cinzel.woff2?v=37543dc7" },
+  { k:"cinzeldec", label:"Cinzel Decorative",  fam:"Cinzel Decorative",  w:700, st:"normal", url:"fonts/webfonts/cinzeldecor-700.woff2?v=9f36288a" },
+  { k:"playfair",  label:"Playfair Display",   fam:"Playfair Display",   w:700, st:"normal", url:"fonts/webfonts/playfair-700.woff2?v=02af2688" },
+  { k:"cormorant", label:"Cormorant Garamond", fam:"Cormorant Garamond", w:600, st:"normal", url:"fonts/webfonts/cormorant-600.woff2?v=53205cf8" },
+  { k:"garamond",  label:"EB Garamond",        fam:"EB Garamond",        w:600, st:"normal", url:"fonts/webfonts/ebgaramond-600.woff2?v=b4aa08b7" },
+  { k:"garamondit",label:"EB Garamond Italic", fam:"EB Garamond",        w:500, st:"italic", url:"fonts/webfonts/ebgaramond-it500.woff2?v=668ea527" },
+  { k:"tenor",     label:"Tenor Sans",         fam:"Tenor Sans",         w:400, st:"normal", url:"fonts/webfonts/tenor.woff2?v=b124d5a7" },
+  { k:"bebas",     label:"Bebas Neue",         fam:"Bebas Neue",         w:400, st:"normal", url:"fonts/webfonts/bebas.woff2?v=441b026d" },
+  { k:"oswald",    label:"Oswald",             fam:"Oswald",             w:500, st:"normal", url:"fonts/webfonts/oswald-500.woff2?v=5e619e5c" },
+  { k:"anton",     label:"Anton",              fam:"Anton",              w:400, st:"normal", url:"fonts/webfonts/anton.woff2?v=23aab0b2" },
+  { k:"michroma",  label:"Michroma",           fam:"Michroma",           w:400, st:"normal", url:"fonts/webfonts/michroma.woff2?v=b1209818" },
+  { k:"orbitron",  label:"Orbitron",           fam:"Orbitron",           w:600, st:"normal", url:"fonts/webfonts/orbitron.woff2?v=3906d33a" },
 ];
 const fontOf = k => FONTS.find(f => f.k === k) || FONTS[0];
 
@@ -402,8 +402,8 @@ const FRAMES = {
    there is no reason to hide them here the way the banner has to. */
 const TFS = [17, 21, 47, 72, 86, 93];
 const EMBLEMS = { none: { label:"None", url:null, group:"" } };
-EMBLEMS.bf  = { label:"Bravo Fleet delta", url:"assets/logos/bf-delta.png", group:"Bravo Fleet" };
-EMBLEMS.bfl = { label:"Bravo Fleet logo",  url:"assets/logos/bf-logo.png",  group:"Bravo Fleet" };
+EMBLEMS.bf  = { label:"Bravo Fleet delta", url:"assets/logos/bf-delta.png?v=322c9308", group:"Bravo Fleet" };
+EMBLEMS.bfl = { label:"Bravo Fleet logo",  url:"assets/logos/bf-logo.png?v=16b17ae2",  group:"Bravo Fleet" };
 TFS.forEach(n => { EMBLEMS["tf"+n]     = { label:"Task Force "+n, url:`assets/logos/tf${n}a.png`, group:"Task force delta" }; });
 TFS.forEach(n => { EMBLEMS["tf"+n+"n"] = { label:"Task Force "+n, url:`assets/logos/tf${n}.png`,  group:"Task force with numeral" }; });
 EMBLEMS.custom = { label:"Custom image…", url:null, group:"", custom:true };
