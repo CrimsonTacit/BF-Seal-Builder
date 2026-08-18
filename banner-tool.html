@@ -268,19 +268,38 @@
 const $ = id => document.getElementById(id);
 
 /* ================= logos ================= */
-const LOGOS = {
-  bf:   { label:"Bravo Fleet",   url:"assets/logos/bf-delta.png", w:300, h:468 },
-  tf17: { label:"Task Force 17", url:"assets/logos/tf17a.png",    w:516, h:804 },
-  tf21: { label:"Task Force 21", url:"assets/logos/tf21a.png",    w:516, h:804 },
-  tf47: { label:"Task Force 47", url:"assets/logos/tf47a.png",    w:516, h:804 },
-  tf72: { label:"Task Force 72", url:"assets/logos/tf72a.png",    w:516, h:804 },
-  tf86: { label:"Task Force 86", url:"assets/logos/tf86a.png",    w:516, h:804 },
-  tf93: { label:"Task Force 93", url:"assets/logos/tf93a.png",    w:516, h:804 },
+const LOGOS = {  // top/bot = opaque bounds as a fraction of height, remeasured on load
+  bf:   { label:"Bravo Fleet",   url:"assets/logos/bf-delta.png", w:300, h:468, top:.010, bot:.988 },
+  tf17: { label:"Task Force 17", url:"assets/logos/tf17a.png",    w:516, h:804, top:.010, bot:.988 },
+  tf21: { label:"Task Force 21", url:"assets/logos/tf21a.png",    w:516, h:804, top:.010, bot:.988 },
+  tf47: { label:"Task Force 47", url:"assets/logos/tf47a.png",    w:516, h:804, top:.010, bot:.988 },
+  tf72: { label:"Task Force 72", url:"assets/logos/tf72a.png",    w:516, h:804, top:.010, bot:.988 },
+  tf86: { label:"Task Force 86", url:"assets/logos/tf86a.png",    w:516, h:804, top:.010, bot:.988 },
+  tf93: { label:"Task Force 93", url:"assets/logos/tf93a.png",    w:516, h:804, top:.010, bot:.988 },
 };
-/* true natural sizes load async; placeholders above keep first paint sane */
+/* True natural sizes load async; placeholders above keep first paint sane.
+   The files pad the artwork by different amounts (0.8%-1.6% of height), so the
+   opaque bounds are measured too and the delta slot is fitted to the art, not
+   to the file — otherwise the apex sits at a different height per logo. */
 Object.values(LOGOS).forEach(L => {
   const im = new Image();
-  im.onload = () => { L.w = im.naturalWidth; L.h = im.naturalHeight; render(); };
+  im.onload = () => {
+    L.w = im.naturalWidth; L.h = im.naturalHeight;
+    try{
+      const c = document.createElement("canvas");
+      c.width = L.w; c.height = L.h;
+      const g = c.getContext("2d"); g.drawImage(im, 0, 0);
+      const d = g.getImageData(0, 0, L.w, L.h).data;
+      let top = -1, bot = -1;
+      for(let y=0; y<L.h; y++){
+        let hit = false;
+        for(let x=0; x<L.w; x++){ if(d[(y*L.w+x)*4+3] > 25){ hit = true; break; } }
+        if(hit){ if(top < 0) top = y; bot = y; }
+      }
+      if(top >= 0){ L.top = top/L.h; L.bot = (bot+1)/L.h; }
+    }catch(e){ /* canvas read blocked (file://) — keep the defaults */ }
+    render();
+  };
   im.src = L.url;
 });
 
@@ -297,21 +316,52 @@ let IMG = null; // {dataUrl, w, h} — deliberately not persisted
 
 /* ================= fixed geometry (logical canvas 1400x503) ================= */
 const W = 1400, H = 503;
-const FRAME = { x:170, y:30, w:1222, h:276, rx:34 };   // outer edge of frame
+const FRAME = { x:170, y:36, w:1222, h:270, rx:34 };   // outer edge of frame
 const BORDER = 11;                                     // main gold border width
-const RIBBON = { x:52, w:112 };
-const DELTA = { x:36, y:8, h:452 };                    // logo slot (width from aspect)
-const TAB_H = 37, TAB_PAD = 26;
+const DELTA = { x:36, artTop:1, artBot:501 };          // logo slot: where the ART lands
+/* Right edge of the delta silhouette inside its box, as height fraction -> width
+   fraction, measured off assets/logos/*.png (they all share the one silhouette).
+   The box is sized so the delta hides the frame's left rail and corners; this
+   table keeps the type clear of the art without guessing. */
+const DELTA_EDGE = [[0,.50],[.05,.557],[.1,.603],[.15,.643],[.2,.68],[.25,.72],[.3,.753],
+                    [.35,.783],[.4,.813],[.45,.84],[.5,.867],[.55,.89],[.6,.91],[.65,.93],
+                    [.7,.947],[.75,.96],[.8,.973],[.85,.98],[.9,.99],[1,.99]];
+const CLEAR = 24;                                      // ~0.25in at 96dpi: type-to-delta gap
+const CAP = .772;                                      // Sealstile cap height / font size
 const SMALL_FS = 30, SMALL_TRACK = 5;
-const NAME_FS = 70, NAME_RIGHT = 1268, NAME_BASE = 380, NAME_MAXW = 870;
+const SMALL_BASE = 27;                                 // top line rests just above the frame
+const NAME_FS = 70, NAME_BASE = 380;
+const TEXT_RIGHT = FRAME.x + FRAME.w;                  // name + registry flush to the frame
 
 const esc = Metal.esc;
 const GOLD = Metal.MATERIALS.gold;
+/* The shared gold ramp is built for solid glyphs: bright top, dark horizon in
+   the middle, bright bottom. A hollow frame only ever shows the two ends of it,
+   so its rails came out pale cream instead of gold. This ramp puts a full
+   bevel cycle inside each rail band (top 0-.07, bottom .93-1) and lands, once
+   fxFrame's specular is added on top, within a few counts of the colours the
+   PSD renders its own rails at: #e3d386 up top, #e3cd5f along the bottom. */
+const FRAME_GOLD = [[0,"#e0d089"],[.018,"#ddca7e"],[.04,"#d3bd68"],[.07,"#bd9a3c"],
+                    [.5,"#ab8428"],[.93,"#bd9a3c"],[.962,"#e2ca4c"],[.99,"#e6d16a"],[1,"#c9a845"]];
 
 const measCtx = document.createElement("canvas").getContext("2d");
 function measure(text, fs, track){
   measCtx.font = `400 ${fs}px "Sealstile"`;
   return measCtx.measureText(text).width + Math.max(0, text.length-1)*track;
+}
+
+/* image box that puts logo L's artwork between DELTA.artTop and DELTA.artBot */
+function deltaBox(L){
+  const h = (DELTA.artBot - DELTA.artTop) / (L.bot - L.top);
+  return { x:DELTA.x, y:DELTA.artTop - L.top*h, w:h*(L.w/L.h), h };
+}
+/* x of the delta silhouette's right edge at canvas y */
+function deltaRightAt(y, box){
+  const f = (y - box.y) / box.h;
+  let i = 1; while(i < DELTA_EDGE.length-1 && DELTA_EDGE[i][0] < f) i++;
+  const [f0,r0] = DELTA_EDGE[i-1], [f1,r1] = DELTA_EDGE[i];
+  const t = Math.min(1, Math.max(0, (f-f0)/(f1-f0)));
+  return box.x + box.w * (r0 + (r1-r0)*t);
 }
 
 /* seeded starfield fallback for the frame interior */
@@ -337,28 +387,35 @@ function buildSVG(res){
   res = res || {};
   const L = LOGOS[S.logo] || LOGOS.bf;
   const logoHref = res.logoHref || L.url;
-  const dW = DELTA.h * (L.w / L.h);
+  const box = deltaBox(L);
 
   const name = (S.name||"").toUpperCase();
   const reg  = (S.registry||"").toUpperCase();
   const cls  = (S.cls||"").toUpperCase();
 
-  /* name auto-shrink */
+  /* class hangs off the delta, name + registry hang off the frame's right edge */
+  const clsX = deltaRightAt(SMALL_BASE, box) + CLEAR;
+
+  /* name auto-shrink to the run between the delta and the frame edge */
+  const nameMaxW = TEXT_RIGHT - CLEAR - deltaRightAt(NAME_BASE, box);
   let nameFs = NAME_FS;
   const nw = measure(name, NAME_FS, 2);
-  if(nw > NAME_MAXW) nameFs = Math.max(30, NAME_FS * NAME_MAXW / nw);
+  if(nw > nameMaxW) nameFs = Math.max(30, NAME_FS * nameMaxW / nw);
 
-  /* tabs hug their text */
-  const clsW = measure(cls, SMALL_FS, SMALL_TRACK) + TAB_PAD*2;
-  const regW = measure(reg, SMALL_FS, SMALL_TRACK) + TAB_PAD*2;
-  const clsX = 252;                       // tab left edge
-  const regX = 1312 - regW;               // tab right edge fixed
-  const tabBase = TAB_H/2 + SMALL_FS*.36; // optically centered baseline
+  /* top line shrinks only if class and registry would run into each other */
+  let smallFs = SMALL_FS, smallTrack = SMALL_TRACK;
+  const topAvail = TEXT_RIGHT - clsX - CLEAR;
+  const topW = measure(cls, SMALL_FS, SMALL_TRACK) + measure(reg, SMALL_FS, SMALL_TRACK);
+  if(topW > topAvail){ const k = Math.max(.6, topAvail / topW); smallFs = SMALL_FS*k; smallTrack = SMALL_TRACK*k; }
 
   /* frame rects */
   const F = FRAME;
   const inEdge = { x:F.x+7, y:F.y+7, w:F.w-14, h:F.h-14, rx:F.rx-6 };            // main border centerline inset
-  const inner  = { x:F.x+7+BORDER, y:F.y+7+BORDER, w:F.w-14-BORDER*2, h:F.h-14-BORDER*2, rx:Math.max(10,F.rx-6-BORDER) };
+  /* Art area runs to the border's inner edge (its centerline inset half its
+     width), then 1px further so it tucks under the gold instead of leaving a
+     transparent seam — the frame is drawn over it. */
+  const IN = BORDER/2 - 1;
+  const inner  = { x:inEdge.x+IN, y:inEdge.y+IN, w:inEdge.w-IN*2, h:inEdge.h-IN*2, rx:Math.max(10,inEdge.rx-IN) };
 
   /* ship image cover-fit into inner rect */
   let imgSVG = "";
@@ -378,19 +435,13 @@ function buildSVG(res){
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
 <defs>
 <style>${fontCSS} text{font-family:"Sealstile";}</style>
-${goldGrad("gradFrame", F.y, F.y+F.h)}
-${goldGrad("gradTab", 2, TAB_H)}
+${Metal.gradientDef("gradFrame", FRAME_GOLD, F.y, F.y+F.h)}
+${goldGrad("gradTab", SMALL_BASE - smallFs*CAP, SMALL_BASE)}
 ${goldGrad("gradName", NAME_BASE-nameFs*.78, NAME_BASE+nameFs*.1)}
-<linearGradient id="gradRibbon" x1="${RIBBON.x}" y1="0" x2="${RIBBON.x+RIBBON.w*1.6}" y2="430" gradientUnits="userSpaceOnUse">
-  <stop offset="0" stop-color="#8a6410"/><stop offset=".2" stop-color="#d9b23f"/>
-  <stop offset=".33" stop-color="#f4e18e"/><stop offset=".45" stop-color="#c9992e"/>
-  <stop offset=".62" stop-color="#8a6410"/><stop offset=".8" stop-color="#c9992e"/>
-  <stop offset="1" stop-color="#a87c17"/>
-</linearGradient>
 <linearGradient id="starBg" x1="0" y1="${inner.y}" x2="0" y2="${inner.y+inner.h}" gradientUnits="userSpaceOnUse">
   <stop offset="0" stop-color="#101b38"/><stop offset=".6" stop-color="#0a1226"/><stop offset="1" stop-color="#060a16"/>
 </linearGradient>
-${Metal.bevelFilter("fxFrame",{bevel:2,shine:.55,se:16,shadow:.35,shadowDy:3,shadowBlur:4})}
+${Metal.bevelFilter("fxFrame",{bevel:1.6,shine:.18,se:26,shadow:.3,shadowDy:2,shadowBlur:3})}
 ${Metal.bevelFilter("fxSmall",{bevel:1.4,shine:.8,se:20,shadow:.4,shadowDy:2,shadowBlur:2})}
 ${Metal.bevelFilter("fxName",{bevel:3,shine:.85,se:22,shadow:.45,shadowDy:4,shadowBlur:5})}
 <filter id="fxLogo" x="-15%" y="-10%" width="130%" height="125%">
@@ -398,8 +449,6 @@ ${Metal.bevelFilter("fxName",{bevel:3,shine:.85,se:22,shadow:.45,shadowDy:4,shad
 </filter>
 <clipPath id="frameClip"><rect x="${inner.x}" y="${inner.y}" width="${inner.w}" height="${inner.h}" rx="${inner.rx}"/></clipPath>
 </defs>
-
-<g filter="url(#fxLogo)"><rect x="${RIBBON.x}" y="0" width="${RIBBON.w}" height="${H}" fill="url(#gradRibbon)"/></g>
 
 <g clip-path="url(#frameClip)">${imgSVG}</g>
 
@@ -409,19 +458,15 @@ ${Metal.bevelFilter("fxName",{bevel:3,shine:.85,se:22,shadow:.45,shadowDy:4,shad
   <rect x="${inEdge.x}" y="${inEdge.y}" width="${inEdge.w}" height="${inEdge.h}" rx="${inEdge.rx}" fill="none" stroke="#241a06" stroke-width="1.6" opacity=".8"/>
 </g>
 
-<g>
-  <rect x="${clsX}" y="1" width="${clsW.toFixed(1)}" height="${TAB_H}" rx="18" fill="#05070c"/>
-  <rect x="${regX.toFixed(1)}" y="1" width="${regW.toFixed(1)}" height="${TAB_H}" rx="18" fill="#05070c"/>
-  <g filter="url(#fxSmall)">
-    <text x="${clsX+TAB_PAD}" y="${tabBase.toFixed(1)}" font-size="${SMALL_FS}" letter-spacing="${SMALL_TRACK}" fill="url(#gradTab)" stroke="${GOLD.edge}" stroke-width=".9" paint-order="stroke">${esc(cls)}</text>
-    <text x="${(regX+TAB_PAD).toFixed(1)}" y="${tabBase.toFixed(1)}" font-size="${SMALL_FS}" letter-spacing="${SMALL_TRACK}" fill="url(#gradTab)" stroke="${GOLD.edge}" stroke-width=".9" paint-order="stroke">${esc(reg)}</text>
-  </g>
+<g filter="url(#fxSmall)">
+  <text x="${clsX.toFixed(1)}" y="${SMALL_BASE}" font-size="${smallFs.toFixed(1)}" letter-spacing="${smallTrack.toFixed(2)}" fill="url(#gradTab)" stroke="${GOLD.edge}" stroke-width=".9" paint-order="stroke">${esc(cls)}</text>
+  <text x="${(TEXT_RIGHT+smallTrack).toFixed(1)}" y="${SMALL_BASE}" text-anchor="end" font-size="${smallFs.toFixed(1)}" letter-spacing="${smallTrack.toFixed(2)}" fill="url(#gradTab)" stroke="${GOLD.edge}" stroke-width=".9" paint-order="stroke">${esc(reg)}</text>
 </g>
 
-<g filter="url(#fxLogo)"><image href="${logoHref}" x="${DELTA.x}" y="${DELTA.y}" width="${dW.toFixed(1)}" height="${DELTA.h}"/></g>
+<g filter="url(#fxLogo)"><image href="${logoHref}" x="${box.x}" y="${box.y.toFixed(1)}" width="${box.w.toFixed(1)}" height="${box.h.toFixed(1)}"/></g>
 
 <g filter="url(#fxName)">
-  <text x="${NAME_RIGHT}" y="${NAME_BASE}" text-anchor="end" font-size="${nameFs.toFixed(1)}" letter-spacing="2" fill="url(#gradName)" stroke="${GOLD.edge}" stroke-width="${(nameFs*.02).toFixed(1)}" paint-order="stroke" stroke-linejoin="round">${esc(name)}</text>
+  <text x="${TEXT_RIGHT+2}" y="${NAME_BASE}" text-anchor="end" font-size="${nameFs.toFixed(1)}" letter-spacing="2" fill="url(#gradName)" stroke="${GOLD.edge}" stroke-width="${(nameFs*.02).toFixed(1)}" paint-order="stroke" stroke-linejoin="round">${esc(name)}</text>
 </g>
 </svg>`;
 }
