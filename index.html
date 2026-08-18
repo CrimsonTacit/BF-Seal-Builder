@@ -116,6 +116,23 @@
   .mark-pat i:nth-child(2){background:#d3a92c;transform:scale(.88)}
   .mark-pat i:nth-child(3){background:#2864a8;transform:scale(.62)}
   .mark-pat i:nth-child(4){background:#13223a;transform:scale(.55)}
+  /* mission mark: a framed 3:4 sheet with its gold title block at the foot */
+  .mark-mis{
+    width:54px;height:72px;flex:none;border:2px solid #c9992e;
+    background:
+      radial-gradient(1.2px 1.2px at 12px 13px, #cfe0f4 50%, transparent 50%),
+      radial-gradient(1.2px 1.2px at 35px 9px, #cfe0f4 50%, transparent 50%),
+      radial-gradient(1.2px 1.2px at 22px 25px, #cfe0f4 50%, transparent 50%),
+      radial-gradient(1.2px 1.2px at 41px 30px, #cfe0f4 50%, transparent 50%),
+      linear-gradient(180deg,#16283f 0%,#0e1a2c 58%,#070b12 100%);
+    display:flex;flex-direction:column;justify-content:flex-end;align-items:center;
+    gap:4px;padding:0 6px 7px;
+  }
+  .mark-mis i{
+    display:block;width:100%;height:9px;
+    background:linear-gradient(180deg,#fdf6bd,#c9992e 48%,#8a6410 52%,#e8c14a);
+  }
+  .mark-mis i:last-child{width:62%;height:4px}
   footer{
     color:var(--ink-dim);font-size:10px;letter-spacing:.08em;line-height:1.8;
     text-transform:uppercase;text-align:center;
@@ -163,11 +180,17 @@
     <p>Triangular patches — the wide-bordered command patch with type along its edges, or a rounded development-project patch with the title inside.</p>
     <div class="go">Open →</div>
   </a>
+  <a class="card" href="mission-tool.html">
+    <div class="mark-mis"><i></i><i></i></div>
+    <h2>Mission Builder</h2>
+    <p>Mission posters and story covers — your art under thirteen fonts, raised or embossed lettering, foil and outline effects, and a choice of frames.</p>
+    <div class="go">Open →</div>
+  </a>
 </div>
 
 <footer>
   © Bravo Fleet 1997–<span id="copyYear"></span><br>
-  Seal, patch and plaque design by <b>CrimsonTacit</b> · original Columbia header by <b>JustSlide</b><br>
+  Seal, patch, plaque and poster design by <b>CrimsonTacit</b> · original Columbia header by <b>JustSlide</b><br>
   Bravo Fleet logo by <b>Kevin Steeper</b> · ship banner by <b>Emily Wolf</b> and <b>Kevin Steeper</b><br>
   <a href="https://wiki.bravofleet.com/index.php/Credits#Graphics" target="_blank" rel="noopener">Full graphics credits here</a>
 </footer>

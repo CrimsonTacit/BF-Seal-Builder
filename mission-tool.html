@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission Builder</title>
+<style>
+  :root{
+    --bg:#070b12;
+    --panel:#0d1420;
+    --panel2:#111a29;
+    --line:#1f2a3a;
+    --line-bright:#2c3b52;
+    --ink:#c7d3e0;
+    --ink-dim:#6d7d92;
+    --bolt-gold:#d3a92c;
+    --bf-blue:#2864a8;
+    --danger:#b8503f;
+  }
+  @font-face{font-family:"Sealstile";font-weight:400;src:url(fonts/sealstile.woff2) format("woff2")}
+  @font-face{font-family:"Cinzel";font-weight:600;src:url(fonts/webfonts/cinzel.woff2) format("woff2")}
+  @font-face{font-family:"Cinzel Decorative";font-weight:700;src:url(fonts/webfonts/cinzeldecor-700.woff2) format("woff2")}
+  @font-face{font-family:"Playfair Display";font-weight:700;src:url(fonts/webfonts/playfair-700.woff2) format("woff2")}
+  @font-face{font-family:"Cormorant Garamond";font-weight:600;src:url(fonts/webfonts/cormorant-600.woff2) format("woff2")}
+  @font-face{font-family:"EB Garamond";font-weight:600;src:url(fonts/webfonts/ebgaramond-600.woff2) format("woff2")}
+  @font-face{font-family:"EB Garamond";font-weight:500;font-style:italic;src:url(fonts/webfonts/ebgaramond-it500.woff2) format("woff2")}
+  @font-face{font-family:"Tenor Sans";font-weight:400;src:url(fonts/webfonts/tenor.woff2) format("woff2")}
+  @font-face{font-family:"Bebas Neue";font-weight:400;src:url(fonts/webfonts/bebas.woff2) format("woff2")}
+  @font-face{font-family:"Oswald";font-weight:500;src:url(fonts/webfonts/oswald-500.woff2) format("woff2")}
+  @font-face{font-family:"Anton";font-weight:400;src:url(fonts/webfonts/anton.woff2) format("woff2")}
+  @font-face{font-family:"Michroma";font-weight:400;src:url(fonts/webfonts/michroma.woff2) format("woff2")}
+  @font-face{font-family:"Orbitron";font-weight:600;src:url(fonts/webfonts/orbitron.woff2) format("woff2")}
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:
+      radial-gradient(1200px 700px at 75% -10%, rgba(59,152,168,.07), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, rgba(216,166,58,.05), transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    font:13px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+
+  header{
+    display:flex;align-items:center;gap:16px;
+    padding:10px 18px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, #0c1320, #0a101b);
+    flex:none;
+  }
+  header .mark{
+    width:17px;height:23px;flex:none;border:2px solid var(--bolt-gold);
+    background:linear-gradient(180deg,#16233c,#0d1626);
+    box-shadow:inset 0 -7px 0 -4px var(--bf-blue);
+  }
+  header h1{
+    font-family:"Sealstile",ui-monospace,monospace;
+    font-size:17px;letter-spacing:.28em;color:var(--bolt-gold);
+    font-weight:normal;text-transform:uppercase;white-space:nowrap;
+  }
+  header .sub{color:var(--ink-dim);letter-spacing:.12em;font-size:11px;text-transform:uppercase}
+  header .spacer{flex:1}
+  header a.navlink{
+    color:var(--ink-dim);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    text-decoration:none;border:1px solid var(--line-bright);border-radius:2px;padding:7px 12px;
+    background:var(--panel2);white-space:nowrap;
+  }
+  header a.navlink:hover{border-color:var(--bolt-gold);color:var(--bolt-gold)}
+  .btn{
+    background:var(--panel2);border:1px solid var(--line-bright);color:var(--ink);
+    padding:7px 14px;cursor:pointer;font:inherit;letter-spacing:.08em;text-transform:uppercase;
+    font-size:11px; border-radius:2px; white-space:nowrap;
+  }
+  .btn:hover{border-color:var(--bolt-gold);color:var(--bolt-gold)}
+  .btn.primary{border-color:var(--bolt-gold);color:var(--bolt-gold)}
+  .btn.primary:hover{background:var(--bolt-gold);color:#14100a}
+  .btn.danger{border-color:var(--danger);color:var(--danger)}
+  .btn.danger:hover{background:var(--danger);color:#fff}
+  .btn.mini{padding:5px 9px;font-size:10px}
+  select{
+    background:var(--panel2);border:1px solid var(--line-bright);color:var(--ink);
+    font:inherit;font-size:11px;padding:6px 8px;border-radius:2px;max-width:100%;
+  }
+
+  main{flex:1;display:flex;min-height:0}
+
+  #panel{
+    width:352px;flex:none;overflow-y:auto;
+    background:var(--panel);border-right:1px solid var(--line);
+    scrollbar-width:thin; scrollbar-color:var(--line-bright) transparent;
+  }
+  details.acc{border-bottom:1px solid var(--line)}
+  details.acc > summary{
+    cursor:pointer;user-select:none;list-style:none;
+    padding:14px 16px 14px;
+    font-family:"Sealstile",ui-monospace,monospace;font-weight:normal;
+    font-size:11px;letter-spacing:.3em;color:var(--bf-blue);text-transform:uppercase;
+    display:flex;align-items:center;gap:8px;
+  }
+  details.acc > summary::-webkit-details-marker{display:none}
+  details.acc > summary::before{
+    content:"▸";flex:none;font-size:9px;color:var(--ink-dim);letter-spacing:0;
+    display:inline-block;transition:transform .15s ease;
+  }
+  details.acc[open] > summary::before{transform:rotate(90deg)}
+  details.acc > summary::after{content:"";flex:1;height:1px;background:var(--line-bright)}
+  details.acc > .acc-body{padding:0 16px 16px}
+  /* a text row whose slot is switched off dims its own summary */
+  details.acc.rowoff > summary{color:#3c4a5e}
+  section.plain{border-bottom:1px solid var(--line);padding:14px 16px 16px}
+  .row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .row label{flex:1;color:var(--ink-dim);letter-spacing:.05em;font-size:12px}
+  .row .val{width:46px;text-align:right;color:var(--ink);font-size:11px}
+  input[type=text]{
+    width:100%;background:#0a111c;border:1px solid var(--line-bright);color:var(--ink);
+    font:inherit;padding:7px 9px;letter-spacing:.05em;border-radius:2px;margin-bottom:8px;
+  }
+  textarea{
+    width:100%;background:#0a111c;border:1px solid var(--line-bright);color:var(--ink);
+    font:inherit;padding:7px 9px;letter-spacing:.05em;border-radius:2px;margin-bottom:8px;
+    resize:vertical;line-height:1.5;
+  }
+  input[type=text]:focus,textarea:focus{outline:none;border-color:var(--bf-blue)}
+  input[type=range]{
+    flex:1.4;appearance:none;height:2px;background:var(--line-bright);border-radius:1px;outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    appearance:none;width:12px;height:12px;border-radius:50%;
+    background:var(--bolt-gold);border:2px solid #0a0f18;cursor:pointer;
+  }
+  input[type=checkbox]{accent-color:var(--bolt-gold);width:14px;height:14px;cursor:pointer;flex:none}
+  input[type=color]{
+    width:30px;height:24px;flex:none;padding:0;border:1px solid var(--line-bright);
+    border-radius:2px;background:none;cursor:pointer;
+  }
+  input[type=color]::-webkit-color-swatch-wrapper{padding:2px}
+  input[type=color]::-webkit-color-swatch{border:none;border-radius:1px}
+  .hint{color:var(--ink-dim);font-size:11px;margin-top:6px;line-height:1.45}
+  .sublabel{color:var(--ink-dim);font-size:10px;letter-spacing:.14em;text-transform:uppercase;margin:12px 0 6px}
+  .sublabel:first-child{margin-top:0}
+  .filebox{
+    border:1px dashed var(--line-bright);border-radius:2px;padding:14px 10px;
+    text-align:center;color:var(--ink-dim);font-size:11px;cursor:pointer;margin-bottom:8px;
+    line-height:1.5;word-break:break-all;
+  }
+  .filebox:hover,.filebox.drag{border-color:var(--bolt-gold);color:var(--bolt-gold)}
+  .credit{
+    padding:14px 16px 18px;text-align:center;color:var(--ink-dim);
+    font-size:10px;letter-spacing:.08em;line-height:1.8;text-transform:uppercase;
+  }
+  .credit b{color:var(--ink);font-weight:normal}
+  .credit a{color:var(--bf-blue);text-decoration:none;border-bottom:1px solid transparent}
+  .credit a:hover{color:var(--ink);border-bottom-color:var(--bf-blue)}
+  .btnrow{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .seg{display:flex;border:1px solid var(--line-bright);border-radius:2px;overflow:hidden;margin-bottom:8px}
+  .seg button{
+    flex:1;background:var(--panel2);border:none;color:var(--ink-dim);cursor:pointer;
+    font:inherit;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:8px 6px;
+  }
+  .seg button + button{border-left:1px solid var(--line-bright)}
+  .seg button:hover{color:var(--ink)}
+  .seg button.on{background:var(--bolt-gold);color:#14100a}
+  .swgroup{margin-bottom:10px}
+  .swgroup:last-child{margin-bottom:0}
+  .swgroup-label{color:var(--ink-dim);font-size:10px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px}
+  .swatches{display:flex;gap:5px;flex-wrap:wrap}
+  .sw{
+    width:34px;height:26px;border-radius:2px;border:1px solid var(--line-bright);
+    cursor:pointer;padding:0;overflow:hidden;display:block;
+  }
+  .sw:hover{border-color:var(--bolt-gold)}
+  .sw.on{border-color:var(--bolt-gold);box-shadow:0 0 0 1px var(--bolt-gold)}
+  .off{opacity:.4}
+
+  #stage{
+    flex:1;display:flex;align-items:center;justify-content:center;position:relative;
+    min-width:0;background-color:#10151d;
+  }
+  #stage.dark{
+    background-color:#10151d;
+    background-image:
+      radial-gradient(1000px 500px at 50% 0%, rgba(40,100,168,.16), transparent 70%),
+      linear-gradient(180deg,#131a26,#0a0e15);
+  }
+  #stage.light{
+    background-color:#eceef1;
+    background-image:linear-gradient(180deg,#f6f7f9,#dfe2e7);
+  }
+  #stage.grey{background-color:#7d838c;background-image:none}
+  #posterwrap{
+    position:relative;z-index:1;height:min(94%, 1160px);display:flex;align-items:center;
+    filter:drop-shadow(0 10px 26px rgba(0,0,0,.55));
+  }
+  #posterwrap svg{height:100%;width:auto;max-width:100%;display:block}
+  .stagehint{
+    position:absolute;bottom:12px;left:0;right:0;text-align:center;z-index:1;
+    color:rgba(140,155,175,.7);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    pointer-events:none;
+  }
+  #stage.light .stagehint,#stage.grey .stagehint{color:rgba(20,25,35,.5)}
+  .stagebg{
+    position:absolute;top:14px;right:14px;z-index:2;
+    display:flex;background:var(--panel2);border:1px solid var(--line-bright);
+    border-radius:2px;overflow:hidden;
+  }
+  .stagebg button{
+    background:none;border:none;color:var(--ink-dim);cursor:pointer;
+    font:inherit;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:7px 13px;
+  }
+  .stagebg button + button{border-left:1px solid var(--line-bright)}
+  .stagebg button:hover{color:var(--ink)}
+  .stagebg button.active{background:var(--bolt-gold);color:#14100a}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="mark"></div>
+  <h1>Mission Builder</h1>
+  <div class="sub">Bravo Fleet · Mission Posters &amp; Story Covers</div>
+  <div class="spacer"></div>
+  <a class="navlink" href="index.html">⌂</a>
+  <a class="navlink" href="seal-tool.html">Seal →</a>
+  <a class="navlink" href="header-tool.html">Header →</a>
+  <a class="navlink" href="banner-tool.html">Banner →</a>
+  <a class="navlink" href="plaque-tool.html">Plaque →</a>
+  <a class="navlink" href="patch-tool.html">Patch →</a>
+</header>
+
+<main>
+  <div id="panel">
+
+    <details class="acc" open>
+      <summary>Format</summary>
+      <div class="acc-body">
+        <div class="seg" data-seg="ratio">
+          <button data-v="poster">3:4</button>
+          <button data-v="sheet">2:3</button>
+          <button data-v="wide">4:5</button>
+        </div>
+        <div class="row"><label>Side margin</label><input type="range" min="0" max="360" step="2" data-k="margin"><span class="val" data-val="margin"></span></div>
+        <div class="hint"><b>3:4</b> is the source artwork's shape (18×24in at 300dpi). <b>2:3</b> covers the classic one-sheet and a 6×9 novel; <b>4:5</b> is a 16×20 print. Every text line shrinks to fit inside the side margin.</div>
+      </div>
+    </details>
+
+    <details class="acc" open>
+      <summary>Styles</summary>
+      <div class="acc-body">
+        <div id="presetGroups"></div>
+        <div class="hint">A style sets the type's fill, relief and effects across every line, plus the frame. Your text, fonts and layout are left alone.</div>
+      </div>
+    </details>
+
+    <div id="textRows"></div>
+
+    <details class="acc">
+      <summary>Text Effects</summary>
+      <div class="acc-body">
+        <div class="hint" style="margin:0 0 10px">These are shared by every line; each line chooses which of them it wears in its own section.</div>
+
+        <div class="sublabel">Relief</div>
+        <div class="row"><label>Depth</label><input type="range" min="1" max="24" step="0.5" data-k="bevel"><span class="val" data-val="bevel"></span></div>
+        <div class="row"><label>Shine</label><input type="range" min="0" max="1.6" step="0.05" data-k="shine"><span class="val" data-val="shine"></span></div>
+
+        <div class="sublabel">Outline</div>
+        <div class="row"><label>Colour</label><input type="color" data-k="strokeCol"></div>
+
+        <div class="sublabel">Glow</div>
+        <div class="row"><label>Colour</label><input type="color" data-k="glowCol"></div>
+        <div class="row"><label>Spread</label><input type="range" min="0" max="40" step="1" data-k="glowSize"><span class="val" data-val="glowSize"></span></div>
+        <div class="row"><label>Softness</label><input type="range" min="1" max="60" step="1" data-k="glowBlur"><span class="val" data-val="glowBlur"></span></div>
+        <div class="row"><label>Strength</label><input type="range" min="0" max="1" step="0.02" data-k="glowOp"><span class="val" data-val="glowOp"></span></div>
+
+        <div class="sublabel">Shadow</div>
+        <div class="row"><label>Strength</label><input type="range" min="0" max="1" step="0.02" data-k="shadowOp"><span class="val" data-val="shadowOp"></span></div>
+        <div class="row"><label>Drop</label><input type="range" min="0" max="40" step="1" data-k="shadowDy"><span class="val" data-val="shadowDy"></span></div>
+        <div class="row"><label>Softness</label><input type="range" min="0" max="40" step="1" data-k="shadowBlur"><span class="val" data-val="shadowBlur"></span></div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>Frame</summary>
+      <div class="acc-body">
+        <div class="row"><label>Style</label><select data-k="frame" id="frameSel"></select></div>
+        <div class="row"><label>Inset</label><input type="range" min="0" max="240" step="2" data-k="frInset"><span class="val" data-val="frInset"></span></div>
+        <div class="row"><label>Width</label><input type="range" min="1" max="160" step="1" data-k="frW"><span class="val" data-val="frW"></span></div>
+        <div class="row"><label>Gap</label><input type="range" min="0" max="120" step="1" data-k="frGap"><span class="val" data-val="frGap"></span></div>
+        <div class="row"><label>Corner radius</label><input type="range" min="0" max="200" step="2" data-k="frRadius"><span class="val" data-val="frRadius"></span></div>
+        <div class="row"><label>Corner run</label><input type="range" min="40" max="700" step="5" data-k="frCorner"><span class="val" data-val="frCorner"></span></div>
+        <div class="sublabel">Colour</div>
+        <div class="seg" data-seg="frFill">
+          <button data-v="solid">Solid</button>
+          <button data-v="metal">Metal</button>
+        </div>
+        <div class="row"><label>Solid colour</label><input type="color" data-k="frCol"></div>
+        <div class="row"><label>Material</label><select data-k="frMat" data-mats="1"></select></div>
+        <div class="row"><label>Custom metal</label><input type="color" data-k="frMatCustom"></div>
+        <div class="row"><input type="checkbox" data-k="frRelief"><label>Bevel the frame</label></div>
+        <div class="hint"><b>Gap</b> separates the two rules of the double and deco frames. <b>Corner run</b> is how far the brackets reach along each edge. Pick <b>Custom</b> under Material to drive the ramp from the colour below it.</div>
+      </div>
+    </details>
+
+    <details class="acc" open>
+      <summary>Artwork</summary>
+      <div class="acc-body">
+        <div class="filebox" id="filebox">Drop an image here or click to choose</div>
+        <input type="file" id="fileInput" accept="image/*" style="display:none">
+        <div class="row"><label>Zoom</label><input type="range" min="0.3" max="4" step="0.01" data-k="imgZoom"><span class="val" data-val="imgZoom"></span></div>
+        <div class="row"><label>Horizontal</label><input type="range" min="-1200" max="1200" step="4" data-k="imgX"><span class="val" data-val="imgX"></span></div>
+        <div class="row"><label>Vertical</label><input type="range" min="-1600" max="1600" step="4" data-k="imgY"><span class="val" data-val="imgY"></span></div>
+        <div class="btnrow">
+          <button class="btn" id="imgCenter">Center</button>
+          <button class="btn danger" id="imgRemove">Remove image</button>
+        </div>
+        <div class="row" style="margin-top:12px"><input type="checkbox" data-k="stars"><label>Starfield when there is no image</label></div>
+        <div class="row"><label>Backdrop</label><input type="color" data-k="c_back"></div>
+
+        <div class="sublabel">Grade</div>
+        <div class="row"><label>Brightness</label><input type="range" min="0.3" max="1.8" step="0.02" data-k="bright"><span class="val" data-val="bright"></span></div>
+        <div class="row"><label>Contrast</label><input type="range" min="0.4" max="2.2" step="0.02" data-k="contrast"><span class="val" data-val="contrast"></span></div>
+        <div class="row"><label>Saturation</label><input type="range" min="0" max="2.5" step="0.02" data-k="sat"><span class="val" data-val="sat"></span></div>
+
+        <div class="sublabel">Duotone</div>
+        <div class="row"><input type="checkbox" data-k="duoOn"><label>Map to two colours</label></div>
+        <div class="row"><label>Shadows</label><input type="color" data-k="duoA"><label style="flex:0 0 auto;color:var(--ink-dim)">Lights</label><input type="color" data-k="duoB"></div>
+        <div class="row"><label>Strength</label><input type="range" min="0" max="1" step="0.02" data-k="duoAmt"><span class="val" data-val="duoAmt"></span></div>
+
+        <div class="sublabel">Vignette &amp; scrims</div>
+        <div class="row"><label>Vignette</label><input type="range" min="0" max="1" step="0.02" data-k="vig"><span class="val" data-val="vig"></span></div>
+        <div class="row"><label>Top scrim</label><input type="range" min="0" max="1" step="0.02" data-k="scrimT"><span class="val" data-val="scrimT"></span></div>
+        <div class="row"><label>Top reach</label><input type="range" min="0.05" max="0.9" step="0.01" data-k="scrimTH"><span class="val" data-val="scrimTH"></span></div>
+        <div class="row"><label>Bottom scrim</label><input type="range" min="0" max="1" step="0.02" data-k="scrimB"><span class="val" data-val="scrimB"></span></div>
+        <div class="row"><label>Bottom reach</label><input type="range" min="0.05" max="0.9" step="0.01" data-k="scrimBH"><span class="val" data-val="scrimBH"></span></div>
+        <div class="hint">Scrims darken the art behind the type — the top one sits under the campaign line, the bottom one under the title block.</div>
+
+        <div class="sublabel">Emblem</div>
+        <div class="row"><label>Overlay</label><select data-k="emblem" id="emblemSel"></select></div>
+        <div class="row"><label>Size</label><input type="range" min="0.03" max="0.6" step="0.005" data-k="emScale"><span class="val" data-val="emScale"></span></div>
+        <div class="row"><label>Horizontal</label><input type="range" min="-900" max="900" step="4" data-k="emX"><span class="val" data-val="emX"></span></div>
+        <div class="row"><label>Vertical</label><input type="range" min="-1200" max="1200" step="4" data-k="emY"><span class="val" data-val="emY"></span></div>
+        <div class="row"><label>Opacity</label><input type="range" min="0.05" max="1" step="0.05" data-k="emOp"><span class="val" data-val="emOp"></span></div>
+        <div class="hint">Uploads stay in this tab — they aren't saved with the design.</div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>Export</summary>
+      <div class="acc-body">
+        <div class="row">
+          <label>PNG width</label>
+          <select id="exportSize">
+            <option value="900">900 px (½×)</option>
+            <option value="1800" selected>1800 px (native)</option>
+            <option value="3600">3600 px (2×)</option>
+            <option value="5400">5400 px (print, 300dpi)</option>
+          </select>
+        </div>
+        <div class="btnrow">
+          <button class="btn primary" id="exportPng">Export PNG</button>
+          <button class="btn" id="exportSvg">Export SVG</button>
+        </div>
+        <div class="hint">At 3:4 the print size is 5400×7200 — the same pixels as the original PSDs.</div>
+      </div>
+    </details>
+
+    <section class="plain">
+      <button class="btn danger" id="resetBtn">Reset to defaults</button>
+    </section>
+
+    <div class="credit">
+      Fonts: <b>Sealstile</b> (Librestile) and twelve OFL faces<br>
+      © Bravo Fleet 1997–<span id="copyYear"></span><br>
+      Seal, patch, plaque and poster design by <b>CrimsonTacit</b><br>
+      Original Columbia header by <b>JustSlide</b><br>
+      Bravo Fleet logo by <b>Kevin Steeper</b><br>
+      Ship banner by <b>Emily Wolf</b> and <b>Kevin Steeper</b><br>
+      <a href="https://wiki.bravofleet.com/index.php/Credits#Graphics" target="_blank" rel="noopener">Full graphics credits here</a>
+    </div>
+  </div>
+
+  <div id="stage" class="dark">
+    <div class="stagebg" id="stageBg">
+      <button data-mode="dark" class="active">Dark</button>
+      <button data-mode="grey">Grey</button>
+      <button data-mode="light">Light</button>
+    </div>
+    <div id="posterwrap"></div>
+    <div class="stagehint">Preview background is not exported — the poster fills the whole frame</div>
+  </div>
+</main>
+
+<script src="shared/metal.js"></script>
+<script src="shared/export.js"></script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const esc = Metal.esc;
+const f2 = n => Math.round(n*100)/100;
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+
+/* ================= canvas =================
+   Width is fixed so a type size means the same thing whichever shape you pick;
+   only the height changes. 3:4 is the source artwork's own shape — all three
+   reference PSDs are 5400x7200 (18x24in at 300dpi), so native 1800x2400 is
+   exactly a third of them and the print export lands back on their pixels. */
+const W = 1800;
+const RATIOS = {
+  poster: { label:"3:4 Poster",   h:2400 },
+  sheet:  { label:"2:3 One-Sheet", h:2700 },
+  wide:   { label:"4:5 Portrait",  h:2250 },
+};
+const HH = () => RATIOS[S.ratio] ? RATIOS[S.ratio].h : 2400;
+
+/* ================= fonts =================
+   Sealstile — this project's own patched Librestile — is the default on every
+   row; it is also the closest thing we have to the Microstyle Bold Extended the
+   PSDs set their titles in. The rest are OFL faces chosen for poster and cover
+   work: Cinzel/Cinzel Decorative for the Trajan-style epic title, Playfair and
+   the Garamonds for a novel jacket, Bebas/Oswald/Anton for the condensed
+   one-sheet and billing block, Michroma/Orbitron for something more technical.
+   Files come from tools/fetch_shared_fonts.py. */
+const FONTS = [
+  { k:"sealstile", label:"Sealstile",          fam:"Sealstile",          w:400, st:"normal", url:"fonts/sealstile.woff2" },
+  { k:"cinzel",    label:"Cinzel",             fam:"Cinzel",             w:600, st:"normal", url:"fonts/webfonts/cinzel.woff2" },
+  { k:"cinzeldec", label:"Cinzel Decorative",  fam:"Cinzel Decorative",  w:700, st:"normal", url:"fonts/webfonts/cinzeldecor-700.woff2" },
+  { k:"playfair",  label:"Playfair Display",   fam:"Playfair Display",   w:700, st:"normal", url:"fonts/webfonts/playfair-700.woff2" },
+  { k:"cormorant", label:"Cormorant Garamond", fam:"Cormorant Garamond", w:600, st:"normal", url:"fonts/webfonts/cormorant-600.woff2" },
+  { k:"garamond",  label:"EB Garamond",        fam:"EB Garamond",        w:600, st:"normal", url:"fonts/webfonts/ebgaramond-600.woff2" },
+  { k:"garamondit",label:"EB Garamond Italic", fam:"EB Garamond",        w:500, st:"italic", url:"fonts/webfonts/ebgaramond-it500.woff2" },
+  { k:"tenor",     label:"Tenor Sans",         fam:"Tenor Sans",         w:400, st:"normal", url:"fonts/webfonts/tenor.woff2" },
+  { k:"bebas",     label:"Bebas Neue",         fam:"Bebas Neue",         w:400, st:"normal", url:"fonts/webfonts/bebas.woff2" },
+  { k:"oswald",    label:"Oswald",             fam:"Oswald",             w:500, st:"normal", url:"fonts/webfonts/oswald-500.woff2" },
+  { k:"anton",     label:"Anton",              fam:"Anton",              w:400, st:"normal", url:"fonts/webfonts/anton.woff2" },
+  { k:"michroma",  label:"Michroma",           fam:"Michroma",           w:400, st:"normal", url:"fonts/webfonts/michroma.woff2" },
+  { k:"orbitron",  label:"Orbitron",           fam:"Orbitron",           w:600, st:"normal", url:"fonts/webfonts/orbitron.woff2" },
+];
+const fontOf = k => FONTS.find(f => f.k === k) || FONTS[0];
+
+/* ================= text rows =================
+   Six named slots rather than a free list: a poster's lines have fixed jobs, so
+   each one can carry sensible defaults and its own effect choices. Nothing is
+   mutually exclusive — every slot is independent and can be switched off.
+
+   A slot is anchored to the top or the bottom edge, never to an absolute y, so
+   changing the canvas shape doesn't scatter the layout. Bottom-anchored blocks
+   grow upward from their last baseline, the way the plaque's quote does, so a
+   two-line title pushes into the art instead of off the bottom edge. */
+const ROWS = [
+  { k:"camp",   label:"Campaign",      anchor:"top",    lines:1, max:70,  open:true },
+  { k:"pre",    label:"Above Title",   anchor:"bottom", lines:1, max:80,  open:false },
+  { k:"title",  label:"Title",         anchor:"bottom", lines:4, max:160, open:true },
+  { k:"sub",    label:"Subtitle",      anchor:"bottom", lines:2, max:120, open:false,
+    note:"Its default spot is above the title, because the reference design runs the title and the story credit right down to the bottom edge." },
+  { k:"credit", label:"Story Credit",  anchor:"bottom", lines:1, max:70,  open:true },
+  { k:"bill",   label:"Billing Block", anchor:"bottom", lines:5, max:400, open:false,
+    note:"A billing block wants the same bottom strip as the story credit — switch that one off, or raise it, before turning this on." },
+];
+const RELIEFS = [
+  ["none",  "Flat"],
+  ["raised","Raised"],
+  ["emboss","Embossed"],
+  ["inlay", "Inlaid"],
+];
+
+/* ================= frames ================= */
+const FRAMES = {
+  none:      "None",
+  rule:      "Single rule",
+  double:    "Double rule",
+  band:      "Solid band",
+  metal:     "Metal band",
+  deco:      "Deco rule + corners",
+  brackets:  "Corner brackets",
+  letterbox: "Letterbox bars",
+};
+
+/* ================= emblems ================= */
+const EMBLEMS = {
+  none: { label:"None", url:null },
+  bf:   { label:"Bravo Fleet delta", url:"assets/logos/bf-delta.png" },
+  bfl:  { label:"Bravo Fleet logo",  url:"assets/logos/bf-logo.png" },
+  tf17: { label:"Task Force 17", url:"assets/logos/tf17a.png" },
+  tf21: { label:"Task Force 21", url:"assets/logos/tf21a.png" },
+  tf47: { label:"Task Force 47", url:"assets/logos/tf47a.png" },
+  tf72: { label:"Task Force 72", url:"assets/logos/tf72a.png" },
+  tf86: { label:"Task Force 86", url:"assets/logos/tf86a.png" },
+  tf93: { label:"Task Force 93", url:"assets/logos/tf93a.png" },
+};
+const EM_SIZE = {};
+Object.values(EMBLEMS).forEach(E => {
+  if(!E.url) return;
+  const im = new Image();
+  im.onload = () => { EM_SIZE[E.url] = {w:im.naturalWidth, h:im.naturalHeight}; render(); };
+  im.src = E.url;
+});
+
+/* ================= state =================
+   Row defaults come off the reference PSDs, divided by three for this canvas.
+   All three set every line in Microstyle Bold Extended at HorizontalScale 0.9
+   over a photo, in white, under a 20px cyan Stroke and a 50% Satin; Sealstile
+   at squeeze 0.9 with the raised relief below is this tool's read of that. */
+const FXDEF = {
+  bevel:5, shine:.85,
+  strokeCol:"#00a2ff",
+  glowCol:"#0060ff", glowSize:8, glowBlur:18, glowOp:.55,
+  shadowOp:.45, shadowDy:5, shadowBlur:8,
+};
+const ROWDEF = {
+  camp:   { on:true,  txt:"ARCTURUS", font:"sealstile", size:300, track:0,     sq:.9,  lead:.9,  align:"center", y:353, x:0,
+            fill:"solid", col:"#ffffff", col2:"#8a6410", mat:"gold", relief:"raised", strokeOn:true,  strokeW:7, glowOn:false, shadowOn:true },
+  pre:    { on:false, txt:"THE FOURTH FLEET PRESENTS", font:"sealstile", size:52, track:.16, sq:.9, lead:1, align:"center", y:620, x:0,
+            fill:"solid", col:"#ffffff", col2:"#8a6410", mat:"gold", relief:"none",   strokeOn:false, strokeW:3, glowOn:false, shadowOn:true },
+  title:  { on:true,  txt:"ALL HANDS,\nBURY THE DEAD", font:"sealstile", size:200, track:0, sq:.9, lead:.82, align:"center", y:162, x:0,
+            fill:"solid", col:"#ffffff", col2:"#8a6410", mat:"gold", relief:"raised", strokeOn:true,  strokeW:7, glowOn:false, shadowOn:true },
+  sub:    { on:false, txt:"A Mission of the USS Arcturus", font:"garamondit", size:72, track:.02, sq:1, lead:1.1, align:"center", y:480, x:0,
+            fill:"solid", col:"#e8eef6", col2:"#8a6410", mat:"silver", relief:"none", strokeOn:false, strokeW:3, glowOn:false, shadowOn:true },
+  credit: { on:true,  txt:"A Bravo Fleet Story", font:"sealstile", size:100, track:-.03, sq:.9, lead:1, align:"center", y:52, x:0,
+            fill:"solid", col:"#ffffff", col2:"#8a6410", mat:"gold", relief:"raised", strokeOn:true,  strokeW:4, glowOn:false, shadowOn:true },
+  bill:   { on:false, txt:"BRAVO FLEET PRESENTS  A STORY OF TASK FORCE 47\nWRITTEN ON THE HOLODECK · STARDATE 78412.6", font:"oswald",
+            size:30, track:.08, sq:1, lead:1.35, align:"center", y:46, x:0,
+            fill:"solid", col:"#cfd8e2", col2:"#8a6410", mat:"silver", relief:"none", strokeOn:false, strokeW:2, glowOn:false, shadowOn:false },
+};
+
+const DEFAULTS = (() => {
+  const D = Object.assign({
+    ratio:"poster", margin:70, preset:"Bravo Fleet Story",
+    /* frame */
+    frame:"none", frInset:36, frW:8, frGap:14, frRadius:0, frCorner:260,
+    frFill:"solid", frCol:"#d3a92c", frMat:"gold", frMatCustom:"#c9992e", frRelief:true,
+    /* artwork */
+    c_back:"#080d16", stars:true, starSeed:1701,
+    imgZoom:1, imgX:0, imgY:0,
+    bright:1, contrast:1, sat:1,
+    duoOn:false, duoA:"#08101f", duoB:"#cfe0f4", duoAmt:.85,
+    vig:.35, scrimT:.5, scrimTH:.3, scrimB:.75, scrimBH:.42,
+    emblem:"none", emScale:.14, emX:0, emY:-560, emOp:1,
+  }, FXDEF);
+  ROWS.forEach(R => Object.entries(ROWDEF[R.k]).forEach(([p,v]) => { D[R.k+"_"+p] = v; }));
+  return D;
+})();
+
+let S = JSON.parse(JSON.stringify(DEFAULTS));
+let IMG = null;   /* {dataUrl,w,h} — never persisted, like the other tools */
+
+/* ================= styles =================
+   `all` is applied to every row (the poster reads as one lockup), `title` and
+   `camp` may override it, `fx` sets the shared effect params, `frame` the
+   frame. Text, fonts, sizes and positions are never touched. */
+const PRESETS = [
+  { name:"Bravo Fleet Story", group:"Reference", sw:["#ffffff","#00a2ff"],
+    all:{ fill:"solid", col:"#ffffff", relief:"raised", strokeOn:true, glowOn:false, shadowOn:true },
+    fx:{ strokeCol:"#00a2ff", bevel:5, shine:.85, shadowOp:.45, shadowDy:5, shadowBlur:8 },
+    frame:{ frame:"none" } },
+
+  { name:"Gold Foil", group:"Novel Cover", sw:["#f3d356","#8a6410"],
+    all:{ fill:"metal", mat:"gold", relief:"raised", strokeOn:false, glowOn:false, shadowOn:true },
+    fx:{ bevel:7, shine:1.05, shadowOp:.55, shadowDy:6, shadowBlur:9 },
+    frame:{ frame:"metal", frMat:"gold", frInset:34, frW:14, frRadius:0, frRelief:true } },
+
+  { name:"Silver Foil", group:"Novel Cover", sw:["#dfe4ea","#79828e"],
+    all:{ fill:"metal", mat:"silver", relief:"raised", strokeOn:false, glowOn:false, shadowOn:true },
+    fx:{ bevel:7, shine:1.05, shadowOp:.5, shadowDy:6, shadowBlur:9 },
+    frame:{ frame:"metal", frMat:"silver", frInset:34, frW:14, frRadius:0, frRelief:true } },
+
+  { name:"Embossed Slate", group:"Novel Cover", sw:["#8f9aa6","#2b3542"],
+    all:{ fill:"solid", col:"#9dabba", relief:"emboss", strokeOn:false, glowOn:false, shadowOn:false },
+    fx:{ bevel:8, shine:.5 },
+    frame:{ frame:"rule", frCol:"#6d7d92", frInset:44, frW:3, frRadius:0, frRelief:false, frFill:"solid" } },
+
+  { name:"One-Sheet", group:"Movie Poster", sw:["#ffffff","#111111"],
+    all:{ fill:"solid", col:"#ffffff", relief:"none", strokeOn:false, glowOn:false, shadowOn:true },
+    fx:{ shadowOp:.6, shadowDy:3, shadowBlur:12 },
+    frame:{ frame:"letterbox", frCol:"#07080b", frInset:0, frW:74, frRadius:0, frRelief:false, frFill:"solid" } },
+
+  { name:"Deco Epic", group:"Movie Poster", sw:["#e6c975","#1d2c46"],
+    all:{ fill:"metal", mat:"bronze", relief:"raised", strokeOn:false, glowOn:false, shadowOn:true },
+    fx:{ bevel:5, shine:.95, shadowOp:.5, shadowDy:5, shadowBlur:10 },
+    frame:{ frame:"deco", frCol:"#c9a544", frInset:40, frW:5, frGap:12, frRadius:0, frRelief:false, frFill:"solid" } },
+
+  { name:"Cold Open", group:"Movie Poster", sw:["#dceaff","#1c4f8a"],
+    all:{ fill:"solid", col:"#e6f0ff", relief:"none", strokeOn:false, glowOn:true, shadowOn:true },
+    fx:{ glowCol:"#2b7fd4", glowSize:6, glowBlur:26, glowOp:.7, shadowOp:.5, shadowDy:4, shadowBlur:10 },
+    frame:{ frame:"brackets", frCol:"#8fc4f2", frInset:44, frW:5, frCorner:300, frRadius:0, frRelief:false, frFill:"solid" } },
+
+  { name:"Red Alert", group:"Movie Poster", sw:["#ffffff","#7c0309"],
+    all:{ fill:"solid", col:"#ffffff", relief:"raised", strokeOn:true, glowOn:true, shadowOn:true },
+    fx:{ strokeCol:"#7c0309", glowCol:"#c2160f", glowSize:4, glowBlur:30, glowOp:.6, bevel:4, shine:.8, shadowOp:.5, shadowDy:4, shadowBlur:8 },
+    frame:{ frame:"double", frCol:"#7c0309", frInset:36, frW:6, frGap:10, frRadius:0, frRelief:false, frFill:"solid" } },
+];
+
+/* ================= text metrics =================
+   A live SVG <text> node, not a canvas 2D context — the poster is laid out in
+   SVG and the two engines disagree enough to trip a fit (that is what shrank
+   the plaque's registry line in Safari). Cached per font at a reference size. */
+const MEAS_REF = 100;
+const measSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+measSVG.setAttribute("aria-hidden", "true");
+measSVG.setAttribute("style", "position:absolute;left:-9999px;top:0;width:10px;height:10px;overflow:hidden");
+const measNode = document.createElementNS("http://www.w3.org/2000/svg", "text");
+measSVG.appendChild(measNode);
+document.body.appendChild(measSVG);
+const measCache = new Map();
+function measureRaw(text, fk){
+  const key = fk + " " + text;
+  let w = measCache.get(key);
+  if(w === undefined){
+    const F = fontOf(fk);
+    measNode.setAttribute("font-family", F.fam);
+    measNode.setAttribute("font-weight", F.w);
+    measNode.setAttribute("font-style", F.st);
+    measNode.setAttribute("font-size", MEAS_REF);
+    measNode.textContent = text;
+    w = measNode.getComputedTextLength();
+    measCache.set(key, w);
+  }
+  return w;
+}
+/* letter-spacing lands after the last glyph too, so the fit counts it the way
+   the browser advances it. Width is pre-squeeze. */
+const measure = (t, fk, fs, ls) => measureRaw(t, fk)*(fs/MEAS_REF) + t.length*(ls||0);
+
+/* ================= row layout ================= */
+const rowGet = (k, p) => S[k+"_"+p];
+
+/* Every visual line of a row, with its baseline, fitted size and tracking.
+   Returns {lines:[{str,fs,ls,base}], x, anchor, top, bot} — top/bot bound the
+   block so a gradient fill can span exactly the ink. */
+function rowLayout(k){
+  const raw = String(rowGet(k,"txt") == null ? "" : rowGet(k,"txt"));
+  const strs = raw.split("\n");
+  if(!strs.some(s => s.trim())) return null;
+  const H = HH(), m = S.margin, sq = Math.max(.2, rowGet(k,"sq"));
+  const maxW = Math.max(60, W - 2*m);
+  const align = rowGet(k,"align");
+  const x = (align === "left" ? m : align === "right" ? W - m : W/2) + rowGet(k,"x");
+  const anchor = align === "left" ? "start" : align === "right" ? "end" : "middle";
+
+  /* One scale for the whole row, set by its longest line — a title broken over
+     two lines has to stay one size, so the fit is the smallest shrink any line
+     needs rather than a per-line shrink. Leading rides the same scale, which
+     keeps a block that had to shrink in proportion. */
+  const size0 = rowGet(k,"size"), track = rowGet(k,"track"), fk = rowGet(k,"font");
+  let scale = 1;
+  for(const str of strs){
+    if(!str.trim()) continue;
+    const w = measure(str, fk, size0, size0*track)*sq;
+    if(w > maxW) scale = Math.min(scale, maxW/w);
+  }
+  const fs = size0*scale, ls = size0*track*scale;
+  const lines = strs.map(str => ({ str, fs, ls, base:0 }));
+
+  const gap = fs*rowGet(k,"lead");
+  const n = lines.length;
+  const yEdge = rowGet(k,"y");
+  const lastBase = R(k).anchor === "top" ? yEdge + gap*(n-1) : H - yEdge;
+  lines.forEach((L,i) => { L.base = lastBase - gap*(n-1-i); });
+
+  return { lines, x, anchor, sq,
+           top: lines[0].base - fs*0.82,
+           bot: lines[n-1].base + fs*0.10 };
+}
+const R = k => ROWS.find(r => r.k === k);
+
+/* One <text> element: the squeeze rides a transform, so letter-spacing and the
+   anchor correction are applied in the unsqueezed frame first. */
+function textEl(L, x, base, anchor, sq, fk, fill, stroke, strokeW){
+  const F = fontOf(fk);
+  const dx = anchor === "end" ? L.ls : anchor === "start" ? 0 : L.ls/2;
+  const tf = sq === 1 ? `translate(${f2(x)} ${f2(base)})`
+                      : `translate(${f2(x)} ${f2(base)}) scale(${f2(sq)} 1)`;
+  /* paint-order draws the stroke first and the fill over it, so only the outer
+     half shows — doubling the width makes the slider read as an outside stroke,
+     the way the PSD's Stroke effect is set. */
+  const sk = strokeW > 0
+    ? ` stroke="${stroke}" stroke-width="${f2(strokeW*2)}" stroke-linejoin="round" style="paint-order:stroke fill"`
+    : "";
+  return `<text transform="${tf}" x="${f2(dx)}" y="0" text-anchor="${anchor}"`
+    + ` font-family="${esc(F.fam)}" font-weight="${F.w}" font-style="${F.st}"`
+    + ` font-size="${f2(L.fs)}" letter-spacing="${f2(L.ls)}" fill="${fill}"${sk}`
+    + ` xml:space="preserve">${esc(L.str)}</text>`;
+}
+
+/* ================= filters =================
+   Relief and glow/shadow are two nested groups rather than one giant filter:
+   the shared Metal relief filters can't have a glow spliced into them, but an
+   outer filtered <g> sees the inner one's rendered result, so the glow and the
+   shadow are cast by the finished lockup — stroke and all. */
+function reliefFilter(id, mode){
+  if(mode === "raised") return Metal.bevelFilter(id, { bevel:S.bevel, shine:S.shine, se:22, shadow:0 });
+  if(mode === "emboss") return Metal.engraveFilter(id, { depth:Math.max(1,S.bevel*.9), blur:Math.max(1,S.bevel*.7), dark:.75, shine:S.shine*.6, se:14 });
+  if(mode === "inlay")  return Metal.inlayFilter(id, { depth:Math.max(1,S.bevel*.4), blur:Math.max(1,S.bevel*.32), dark:.55, bevel:Math.max(1,S.bevel*.4), shine:S.shine*.25, se:22 });
+  return "";
+}
+/* Glow under shadow under the artwork. feDropShadow renders its input too, so
+   the shadow is built by hand to keep it a separate layer. */
+function auraFilter(id, glow, shadow){
+  const g = glow && S.glowOp > 0, s = shadow && S.shadowOp > 0;
+  if(!g && !s) return "";
+  let f = `<filter id="${id}" x="-25%" y="-60%" width="150%" height="220%" color-interpolation-filters="sRGB">`;
+  const layers = [];
+  if(s){
+    f += `<feOffset in="SourceAlpha" dx="0" dy="${f2(S.shadowDy)}" result="so"/>`
+      +  `<feGaussianBlur in="so" stdDeviation="${f2(Math.max(.01,S.shadowBlur))}" result="sb"/>`
+      +  `<feFlood flood-color="#000000" flood-opacity="${f2(S.shadowOp)}" result="sc"/>`
+      +  `<feComposite in="sc" in2="sb" operator="in" result="shadowL"/>`;
+    layers.push("shadowL");
+  }
+  if(g){
+    f += `<feMorphology in="SourceAlpha" operator="dilate" radius="${f2(Math.max(.01,S.glowSize))}" result="gd"/>`
+      +  `<feGaussianBlur in="gd" stdDeviation="${f2(Math.max(.01,S.glowBlur))}" result="gb"/>`
+      +  `<feFlood flood-color="${S.glowCol}" flood-opacity="${f2(S.glowOp)}" result="gc"/>`
+      +  `<feComposite in="gc" in2="gb" operator="in" result="glowL"/>`;
+    layers.push("glowL");
+  }
+  layers.push("SourceGraphic");
+  return f + `<feMerge>${layers.map(l=>`<feMergeNode in="${l}"/>`).join("")}</feMerge></filter>`;
+}
+
+/* ================= frame ================= */
+const rrect = (x,y,w,h,r) => {
+  r = clamp(r, 0, Math.min(w,h)/2);
+  return r <= 0 ? `M ${f2(x)} ${f2(y)} H ${f2(x+w)} V ${f2(y+h)} H ${f2(x)} Z`
+    : `M ${f2(x+r)} ${f2(y)} H ${f2(x+w-r)} A ${f2(r)} ${f2(r)} 0 0 1 ${f2(x+w)} ${f2(y+r)}`
+      + ` V ${f2(y+h-r)} A ${f2(r)} ${f2(r)} 0 0 1 ${f2(x+w-r)} ${f2(y+h)}`
+      + ` H ${f2(x+r)} A ${f2(r)} ${f2(r)} 0 0 1 ${f2(x)} ${f2(y+h-r)}`
+      + ` V ${f2(y+r)} A ${f2(r)} ${f2(r)} 0 0 1 ${f2(x+r)} ${f2(y)} Z`;
+};
+/* A band is a filled ring, not a stroke: two rounded rects under evenodd, so a
+   corner radius and a wide band don't fight SVG's centred stroke alignment. */
+const ringPath = (inset, w, r, H) =>
+  rrect(inset, inset, W-2*inset, H-2*inset, r) + " " +
+  rrect(inset+w, inset+w, W-2*(inset+w), H-2*(inset+w), Math.max(0, r-w));
+
+function frameSVG(H){
+  const kind = S.frame;
+  if(kind === "none" || kind === undefined) return { defs:"", body:"" };
+  const i = S.frInset, w = Math.max(.5, S.frW), g = S.frGap, r = S.frRadius;
+  const metal = kind === "metal" || S.frFill === "metal";
+  const matKey = S.frMat === "custom" ? S.frMatCustom : S.frMat;
+  const M = Metal.matInfo(matKey);
+  let defs = "";
+  let paint = S.frCol;
+  if(metal){
+    defs += Metal.gradientDef("frGrad", M.stops, i, H-i);
+    paint = "url(#frGrad)";
+  }
+  const useRelief = S.frRelief;
+  if(useRelief) defs += Metal.bevelFilter("frFx", { bevel:Math.max(1.5, Math.min(w*.5, 10)), shine:metal ? .9 : .55, se:24, shadow:.28, shadowDy:3, shadowBlur:5 });
+  const fx = useRelief ? ` filter="url(#frFx)"` : "";
+
+  let body = "";
+  if(kind === "rule"){
+    body = `<path d="${ringPath(i, w, r, H)}" fill="${paint}" fill-rule="evenodd"/>`;
+  }else if(kind === "double"){
+    body = `<path d="${ringPath(i, w, r, H)}" fill="${paint}" fill-rule="evenodd"/>`
+         + `<path d="${ringPath(i+w+g, Math.max(.5,w*.6), Math.max(0,r-w-g), H)}" fill="${paint}" fill-rule="evenodd"/>`;
+  }else if(kind === "band" || kind === "metal"){
+    body = `<path d="${ringPath(i, Math.max(4,w), r, H)}" fill="${paint}" fill-rule="evenodd"/>`;
+  }else if(kind === "deco"){
+    const c = Math.max(w*3, 26);
+    body = `<path d="${ringPath(i, w, r, H)}" fill="${paint}" fill-rule="evenodd"/>`
+         + `<path d="${ringPath(i+w+g, Math.max(.5,w*.5), Math.max(0,r-w-g), H)}" fill="${paint}" fill-rule="evenodd"/>`;
+    /* a filled lozenge over each corner of the outer rule, the way a deco
+       border pins its rules together */
+    [[i,i],[W-i,i],[i,H-i],[W-i,H-i]].forEach(([px,py]) => {
+      body += `<path d="M ${f2(px)} ${f2(py-c/2)} L ${f2(px+c/2)} ${f2(py)} L ${f2(px)} ${f2(py+c/2)} L ${f2(px-c/2)} ${f2(py)} Z" fill="${paint}"/>`;
+    });
+  }else if(kind === "brackets"){
+    const run = Math.min(S.frCorner, Math.min(W, H)/2 - i - 4);
+    const arm = (px, py, sx, sy) =>
+      `<path d="M ${f2(px)} ${f2(py+sy*run)} L ${f2(px)} ${f2(py)} L ${f2(px+sx*run)} ${f2(py)}`
+      + ` L ${f2(px+sx*run)} ${f2(py+sy*w)} L ${f2(px+sx*w)} ${f2(py+sy*w)} L ${f2(px+sx*w)} ${f2(py+sy*run)} Z" fill="${paint}"/>`;
+    body = arm(i,i,1,1) + arm(W-i,i,-1,1) + arm(i,H-i,1,-1) + arm(W-i,H-i,-1,-1);
+  }else if(kind === "letterbox"){
+    const bw = Math.max(4, w);
+    body = `<rect x="0" y="${f2(i)}" width="${W}" height="${f2(bw)}" fill="${paint}"/>`
+         + `<rect x="0" y="${f2(H-i-bw)}" width="${W}" height="${f2(bw)}" fill="${paint}"/>`;
+  }
+  return { defs, body: fx ? `<g${fx}>${body}</g>` : body };
+}
+
+/* ================= artwork ================= */
+function starfield(H){
+  const rnd = (a => () => {a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296})(S.starSeed);
+  let out = `<g fill="#cfe0f4">`;
+  for(let i=0;i<900;i++){
+    const sx = rnd()*W, sy = rnd()*H, r = .7 + rnd()*rnd()*3.6;
+    out += `<circle cx="${f2(sx)}" cy="${f2(sy)}" r="${f2(r)}" opacity="${(.25+rnd()*.75).toFixed(2)}"/>`;
+  }
+  for(let i=0;i<7;i++){
+    const sx = (.1+rnd()*.8)*W, sy = (.1+rnd()*.8)*H, s = 22 + rnd()*34, ww = s*.15;
+    out += `<path d="M ${f2(sx)} ${f2(sy-s)} Q ${f2(sx+ww*.35)} ${f2(sy-ww)} ${f2(sx+s)} ${f2(sy)}`
+        +  ` Q ${f2(sx+ww*.35)} ${f2(sy+ww)} ${f2(sx)} ${f2(sy+s)}`
+        +  ` Q ${f2(sx-ww*.35)} ${f2(sy+ww)} ${f2(sx-s)} ${f2(sy)}`
+        +  ` Q ${f2(sx-ww*.35)} ${f2(sy-ww)} ${f2(sx)} ${f2(sy-s)} Z" opacity=".85"/>`;
+  }
+  return out + `</g>`;
+}
+
+/* Grade then duotone, as one filter over the art group. The duotone is a
+   luminance pass through a two-entry colour table — the same feComponentTransfer
+   trick the plaque uses for its colourways — mixed back over the graded art by
+   its own alpha, so "strength" is a real blend and not a second exposure. */
+function artFilter(){
+  const parts = [];
+  let cur = "SourceGraphic";
+  if(Math.abs(S.sat-1) > .005){
+    parts.push(`<feColorMatrix in="${cur}" type="saturate" values="${f2(S.sat)}" result="aSat"/>`);
+    cur = "aSat";
+  }
+  if(Math.abs(S.bright-1) > .005 || Math.abs(S.contrast-1) > .005){
+    const sl = S.contrast*S.bright, ic = ((1-S.contrast)/2)*S.bright;
+    parts.push(`<feComponentTransfer in="${cur}" result="aLev">`
+      + ["R","G","B"].map(c => `<feFunc${c} type="linear" slope="${f2(sl)}" intercept="${f2(ic)}"/>`).join("")
+      + `</feComponentTransfer>`);
+    cur = "aLev";
+  }
+  if(S.duoOn && S.duoAmt > 0){
+    const A = Metal.hexRgb(S.duoA), B = Metal.hexRgb(S.duoB);
+    parts.push(`<feColorMatrix in="${cur}" type="matrix" result="aLum" values="`
+      + `0.2126 0.7152 0.0722 0 0  0.2126 0.7152 0.0722 0 0  0.2126 0.7152 0.0722 0 0  0 0 0 1 0"/>`);
+    parts.push(`<feComponentTransfer in="aLum" result="aDuo">`
+      + `<feFuncR type="table" tableValues="${f2(A[0]/255)} ${f2(B[0]/255)}"/>`
+      + `<feFuncG type="table" tableValues="${f2(A[1]/255)} ${f2(B[1]/255)}"/>`
+      + `<feFuncB type="table" tableValues="${f2(A[2]/255)} ${f2(B[2]/255)}"/>`
+      + `<feFuncA type="linear" slope="${f2(S.duoAmt)}"/></feComponentTransfer>`);
+    parts.push(`<feMerge result="aOut"><feMergeNode in="${cur}"/><feMergeNode in="aDuo"/></feMerge>`);
+  }
+  if(!parts.length) return "";
+  return `<filter id="artFx" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">${parts.join("")}</filter>`;
+}
+
+/* ================= render ================= */
+function buildSVG(res){
+  res = res || {};
+  const H = HH();
+
+  /* --- art: photo or starfield, graded, then vignette and scrims --- */
+  let art = "";
+  if(IMG || res.imgHref){
+    const href = res.imgHref || IMG.dataUrl;
+    const k = Math.max(W/IMG.w, H/IMG.h) * S.imgZoom;
+    const iw = IMG.w*k, ih = IMG.h*k;
+    art = `<image href="${href}" x="${f2((W-iw)/2 + S.imgX)}" y="${f2((H-ih)/2 + S.imgY)}"`
+        + ` width="${f2(iw)}" height="${f2(ih)}" preserveAspectRatio="none"/>`;
+  }else if(S.stars){
+    art = starfield(H);
+  }
+  const aFx = artFilter();
+  const artG = art ? `<g${aFx ? ` filter="url(#artFx)"` : ""}>${art}</g>` : "";
+
+  let overlays = "";
+  if(S.vig > 0) overlays += `<rect x="0" y="0" width="${W}" height="${H}" fill="url(#vigG)"/>`;
+  if(S.scrimT > 0) overlays += `<rect x="0" y="0" width="${W}" height="${f2(H*S.scrimTH)}" fill="url(#scrimTG)"/>`;
+  if(S.scrimB > 0) overlays += `<rect x="0" y="${f2(H*(1-S.scrimBH))}" width="${W}" height="${f2(H*S.scrimBH)}" fill="url(#scrimBG)"/>`;
+
+  let emblem = "";
+  const EM = EMBLEMS[S.emblem];
+  if(EM && EM.url){
+    const nat = EM_SIZE[EM.url] || {w:300, h:468};
+    const href = res.emHref || EM.url;
+    const eh = H*S.emScale, ew = eh*nat.w/nat.h;
+    emblem = `<image href="${href}" x="${f2(W/2 + S.emX - ew/2)}" y="${f2(H/2 + S.emY - eh/2)}"`
+           + ` width="${f2(ew)}" height="${f2(eh)}" opacity="${f2(S.emOp)}"/>`;
+  }
+
+  /* --- type --- */
+  let defs = "", type = "";
+  for(const Rw of ROWS){
+    const k = Rw.k;
+    if(!rowGet(k,"on")) continue;
+    const L = rowLayout(k);
+    if(!L) continue;
+
+    const mode = rowGet(k,"fill");
+    let fill = rowGet(k,"col");
+    if(mode === "metal"){
+      const mk = rowGet(k,"mat") === "custom" ? rowGet(k,"col") : rowGet(k,"mat");
+      defs += Metal.gradientDef("g_"+k, Metal.matInfo(mk).stops, L.top, L.bot);
+      fill = `url(#g_${k})`;
+    }else if(mode === "grad"){
+      defs += Metal.gradientDef("g_"+k, [[0, rowGet(k,"col")],[1, rowGet(k,"col2")]], L.top, L.bot);
+      fill = `url(#g_${k})`;
+    }
+    /* an engraved cut has no colour of its own — it takes a darkened version of
+       whatever the row was wearing, the way the plaque's engraved parts do */
+    const relief = rowGet(k,"relief");
+    if(relief === "emboss" && mode === "solid") fill = Metal.dkn(rowGet(k,"col"), .42);
+
+    const rid = "r_"+k, aid = "a_"+k;
+    const rf = reliefFilter(rid, relief);
+    const af = auraFilter(aid, rowGet(k,"glowOn"), rowGet(k,"shadowOn"));
+    defs += rf + af;
+
+    const sw = rowGet(k,"strokeOn") ? rowGet(k,"strokeW") : 0;
+    let inner = L.lines.filter(l => l.str.trim())
+      .map(l => textEl(l, L.x, l.base, L.anchor, L.sq, rowGet(k,"font"), fill, S.strokeCol, sw)).join("");
+    if(rf) inner = `<g filter="url(#${rid})">${inner}</g>`;
+    if(af) inner = `<g filter="url(#${aid})">${inner}</g>`;
+    type += inner;
+  }
+
+  const FR = frameSVG(H);
+  defs += FR.defs;
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
+<defs>
+${res.fontCSS ? `<style>${res.fontCSS}</style>` : ""}
+<clipPath id="pageClip"><rect x="0" y="0" width="${W}" height="${H}"/></clipPath>
+<radialGradient id="vigG" cx="0.5" cy="0.46" r="0.78">
+  <stop offset="0.35" stop-color="#000000" stop-opacity="0"/>
+  <stop offset="1" stop-color="#000000" stop-opacity="${f2(S.vig)}"/>
+</radialGradient>
+<linearGradient id="scrimTG" x1="0" y1="0" x2="0" y2="1">
+  <stop offset="0" stop-color="#000000" stop-opacity="${f2(S.scrimT)}"/>
+  <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+</linearGradient>
+<linearGradient id="scrimBG" x1="0" y1="0" x2="0" y2="1">
+  <stop offset="0" stop-color="#000000" stop-opacity="0"/>
+  <stop offset="1" stop-color="#000000" stop-opacity="${f2(S.scrimB)}"/>
+</linearGradient>
+${aFx}
+${defs}
+</defs>
+<g clip-path="url(#pageClip)">
+<rect x="0" y="0" width="${W}" height="${H}" fill="${S.c_back}"/>
+${artG}
+${overlays}
+${emblem}
+${FR.body}
+${type}
+</g>
+</svg>`;
+}
+
+function render(){ $("posterwrap").innerHTML = buildSVG(); }
+
+/* ================= export ================= */
+function usedFonts(){
+  const keys = new Set();
+  ROWS.forEach(R => { if(rowGet(R.k,"on") && String(rowGet(R.k,"txt")||"").trim()) keys.add(rowGet(R.k,"font")); });
+  return FONTS.filter(f => keys.has(f.k));
+}
+async function exportResources(){
+  const fonts = usedFonts();
+  const EM = EMBLEMS[S.emblem];
+  const [faces, emHref] = await Promise.all([
+    Promise.all(fonts.map(f => ExportKit.fetchDataURI(f.url))),
+    EM && EM.url ? ExportKit.fetchDataURI(EM.url) : Promise.resolve(null),
+  ]);
+  return {
+    fontCSS: fonts.map((f,i) => ExportKit.fontFaceRule(f.fam, f.w, f.st, faces[i])).join(""),
+    emHref: emHref || undefined,
+    imgHref: IMG ? IMG.dataUrl : undefined,
+  };
+}
+function slug(){
+  const src = String(rowGet("title","txt") || rowGet("camp","txt") || "mission").split("\n").join(" ");
+  return src.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || "mission";
+}
+async function renderToCanvas(widthPx){
+  const svg = buildSVG(await exportResources());
+  return ExportKit.svgToCanvas(svg, widthPx, Math.round(widthPx*HH()/W));
+}
+$("exportPng").addEventListener("click", async ()=>{
+  const size = parseInt($("exportSize").value, 10);
+  const btn = $("exportPng"), old = btn.textContent;
+  btn.textContent = "Rendering…"; btn.disabled = true;
+  try{
+    const cv = await renderToCanvas(size);
+    await ExportKit.downloadCanvasPNG(cv, slug()+"-"+size+".png");
+  }catch(err){ console.error(err); btn.textContent = "Failed"; }
+  setTimeout(()=>{ btn.textContent = old; btn.disabled = false; }, 400);
+});
+$("exportSvg").addEventListener("click", async ()=>{
+  ExportKit.downloadSVG(buildSVG(await exportResources()), slug()+".svg");
+});
+
+/* ================= image upload ================= */
+const filebox = $("filebox"), fileInput = $("fileInput");
+filebox.addEventListener("click", ()=>fileInput.click());
+fileInput.addEventListener("change", e => { if(e.target.files[0]) loadImageFile(e.target.files[0]); });
+["dragover","dragenter"].forEach(ev => {
+  filebox.addEventListener(ev, e=>{e.preventDefault();filebox.classList.add("drag");});
+  document.body.addEventListener(ev, e=>e.preventDefault());
+});
+["dragleave","drop"].forEach(ev => filebox.addEventListener(ev, e=>{e.preventDefault();filebox.classList.remove("drag");}));
+filebox.addEventListener("drop", e => { if(e.dataTransfer.files[0]) loadImageFile(e.dataTransfer.files[0]); });
+document.body.addEventListener("drop", e => { e.preventDefault(); if(e.dataTransfer.files[0]) loadImageFile(e.dataTransfer.files[0]); });
+function loadImageFile(file){
+  const rd = new FileReader();
+  rd.onload = () => {
+    const im = new Image();
+    im.onload = () => {
+      IMG = { dataUrl: rd.result, w: im.naturalWidth, h: im.naturalHeight };
+      S.imgZoom = 1; S.imgX = 0; S.imgY = 0;
+      filebox.textContent = file.name + " · " + im.naturalWidth + "×" + im.naturalHeight;
+      syncUI(); render(); persist();
+    };
+    im.src = rd.result;
+  };
+  rd.readAsDataURL(file);
+}
+$("imgRemove").addEventListener("click", ()=>{
+  IMG = null; filebox.textContent = "Drop an image here or click to choose"; render();
+});
+$("imgCenter").addEventListener("click", ()=>{ S.imgX=0; S.imgY=0; syncUI(); render(); persist(); });
+
+/* ================= panel: text rows =================
+   Generated from ROWS so a slot is one spec entry, not sixteen hand-written
+   control rows six times over. */
+const fontOpts = FONTS.map(f => `<option value="${f.k}">${esc(f.label)}</option>`).join("");
+const matOpts = Object.entries(Metal.MATERIALS).map(([k,m]) => `<option value="${k}">${esc(m.name)}</option>`).join("")
+              + `<option value="custom">Custom…</option>`;
+function buildTextRows(){
+  $("textRows").innerHTML = ROWS.map(R => {
+    const k = R.k, K = p => `${k}_${p}`;
+    return `
+    <details class="acc" id="sec_${k}"${R.open ? " open" : ""}>
+      <summary>${esc(R.label)}</summary>
+      <div class="acc-body">
+        <div class="row"><input type="checkbox" data-k="${K("on")}"><label>Show this line</label></div>
+        <textarea data-k="${K("txt")}" rows="${R.lines}" maxlength="${R.max}" spellcheck="false"></textarea>
+        <div class="row"><label>Font</label><select data-k="${K("font")}">${fontOpts}</select></div>
+        <div class="row"><label>Size</label><input type="range" min="14" max="460" step="1" data-k="${K("size")}"><span class="val" data-val="${K("size")}"></span></div>
+        <div class="row"><label>Tracking</label><input type="range" min="-0.08" max="0.4" step="0.005" data-k="${K("track")}"><span class="val" data-val="${K("track")}"></span></div>
+        <div class="row"><label>Squeeze</label><input type="range" min="0.4" max="1.4" step="0.01" data-k="${K("sq")}"><span class="val" data-val="${K("sq")}"></span></div>
+        <div class="row"><label>Leading</label><input type="range" min="0.6" max="2.2" step="0.01" data-k="${K("lead")}"><span class="val" data-val="${K("lead")}"></span></div>
+        <div class="seg" data-seg="${K("align")}">
+          <button data-v="left">Left</button><button data-v="center">Centre</button><button data-v="right">Right</button>
+        </div>
+        <div class="row"><label>From ${R.anchor === "top" ? "top" : "bottom"}</label><input type="range" min="0" max="2200" step="2" data-k="${K("y")}"><span class="val" data-val="${K("y")}"></span></div>
+        <div class="row"><label>Nudge across</label><input type="range" min="-700" max="700" step="2" data-k="${K("x")}"><span class="val" data-val="${K("x")}"></span></div>
+
+        <div class="sublabel">Fill</div>
+        <div class="seg" data-seg="${K("fill")}">
+          <button data-v="solid">Solid</button><button data-v="metal">Metal</button><button data-v="grad">Fade</button>
+        </div>
+        <div class="row"><label>Colour</label><input type="color" data-k="${K("col")}"><label style="flex:0 0 auto;color:var(--ink-dim)">to</label><input type="color" data-k="${K("col2")}"></div>
+        <div class="row"><label>Material</label><select data-k="${K("mat")}">${matOpts}</select></div>
+
+        <div class="sublabel">Effects</div>
+        <div class="row"><label>Relief</label><select data-k="${K("relief")}">${RELIEFS.map(([v,l])=>`<option value="${v}">${l}</option>`).join("")}</select></div>
+        <div class="row"><input type="checkbox" data-k="${K("strokeOn")}"><label>Outline</label><input type="range" min="0.5" max="40" step="0.5" data-k="${K("strokeW")}"><span class="val" data-val="${K("strokeW")}"></span></div>
+        <div class="row"><input type="checkbox" data-k="${K("glowOn")}"><label>Glow</label></div>
+        <div class="row"><input type="checkbox" data-k="${K("shadowOn")}"><label>Drop shadow</label></div>
+        <div class="hint">Break the text over several lines with Return; the whole block takes one size, set by its longest line. <b>Squeeze</b> narrows the glyphs the way the original artwork sets its type at 90 %; <b>Material</b> and the second colour apply to the Metal and Fade fills. Effect strengths live in <b>Text Effects</b>.${R.note ? " " + esc(R.note) : ""}</div>
+      </div>
+    </details>`;
+  }).join("");
+}
+
+/* ================= panel: styles ================= */
+function buildPresets(){
+  const groups = [];
+  PRESETS.forEach(p => {
+    let g = groups.find(x => x.name === p.group);
+    if(!g) groups.push(g = {name:p.group, items:[]});
+    g.items.push(p);
+  });
+  $("presetGroups").innerHTML = groups.map(g => `
+    <div class="swgroup">
+      <div class="swgroup-label">${esc(g.name)}</div>
+      <div class="swatches">${g.items.map(p =>
+        `<button class="sw" data-preset="${esc(p.name)}" title="${esc(p.name)}"
+          style="background:linear-gradient(135deg,${p.sw[0]} 0 52%,${p.sw[1]} 52% 100%)"></button>`).join("")}</div>
+    </div>`).join("");
+  $("presetGroups").addEventListener("click", e => {
+    const b = e.target.closest("[data-preset]"); if(!b) return;
+    applyPreset(b.dataset.preset);
+  });
+}
+function applyPreset(name){
+  const p = PRESETS.find(x => x.name === name); if(!p) return;
+  S.preset = name;
+  if(p.fx) Object.assign(S, p.fx);
+  ROWS.forEach(R => {
+    const src = Object.assign({}, p.all, p[R.k] || {});
+    Object.entries(src).forEach(([prop,v]) => { S[R.k+"_"+prop] = v; });
+  });
+  if(p.frame){
+    Object.assign(S, { frame:"none", frFill:"solid" }, p.frame);
+    if(p.frame.frame === "metal") S.frFill = "metal";
+  }
+  syncUI(); render(); persist();
+}
+
+/* ================= wiring ================= */
+function bindInputs(){
+  document.querySelectorAll("[data-k]").forEach(inp=>{
+    if(inp.dataset.bound) return;
+    inp.dataset.bound = "1";
+    const k = inp.dataset.k;
+    const ev = (inp.tagName === "SELECT") ? "change" : "input";
+    inp.addEventListener(ev, ()=>{
+      if(inp.type === "range") S[k] = parseFloat(inp.value);
+      else if(inp.type === "checkbox") S[k] = inp.checked;
+      else S[k] = inp.value;
+      syncVals(); syncEnable(); render(); persist();
+    });
+  });
+  document.querySelectorAll("[data-seg]").forEach(seg=>{
+    if(seg.dataset.bound) return;
+    seg.dataset.bound = "1";
+    seg.addEventListener("click", e=>{
+      const b = e.target.closest("[data-v]"); if(!b) return;
+      S[seg.dataset.seg] = b.dataset.v;
+      syncUI(); render(); persist();
+    });
+  });
+}
+function syncVals(){
+  document.querySelectorAll("[data-val]").forEach(sp=>{
+    const v = S[sp.dataset.val];
+    sp.textContent = (typeof v === "number" && !Number.isInteger(v)) ? v.toFixed(2) : v;
+  });
+}
+/* dim what has no effect right now, so the panel says what it is doing */
+function syncEnable(){
+  ROWS.forEach(R => {
+    const sec = $("sec_"+R.k);
+    if(sec) sec.classList.toggle("rowoff", !rowGet(R.k,"on"));
+  });
+  const framed = S.frame !== "none";
+  const fbody = $("frameSel").closest(".acc-body");
+  fbody.querySelectorAll(".row, .sublabel, .seg").forEach(el=>{
+    if(el.querySelector("#frameSel")) return;
+    el.classList.toggle("off", !framed);
+  });
+}
+function syncUI(){
+  document.querySelectorAll("[data-k]").forEach(inp=>{
+    const k = inp.dataset.k;
+    if(!(k in S)) return;
+    if(inp.type === "checkbox") inp.checked = !!S[k];
+    else inp.value = S[k];
+  });
+  document.querySelectorAll("[data-seg]").forEach(seg=>{
+    const v = S[seg.dataset.seg];
+    seg.querySelectorAll("[data-v]").forEach(b => b.classList.toggle("on", b.dataset.v === v));
+  });
+  document.querySelectorAll("[data-preset]").forEach(b =>
+    b.classList.toggle("on", b.dataset.preset === S.preset));
+  syncVals(); syncEnable();
+}
+
+$("frameSel").innerHTML = Object.entries(FRAMES).map(([k,l])=>`<option value="${k}">${esc(l)}</option>`).join("");
+document.querySelectorAll("[data-mats]").forEach(sel => { sel.innerHTML = matOpts; });
+$("emblemSel").innerHTML = Object.entries(EMBLEMS).map(([k,E])=>`<option value="${k}">${esc(E.label)}</option>`).join("");
+
+$("stageBg").addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  $("stage").className = b.dataset.mode;
+  document.querySelectorAll("#stageBg button").forEach(x=>x.classList.toggle("active", x===b));
+});
+$("resetBtn").addEventListener("click", ()=>{
+  S = JSON.parse(JSON.stringify(DEFAULTS));
+  syncUI(); render(); persist();
+});
+
+/* ================= persistence ================= */
+const LS_KEY = "missionbuilder-v1";
+let persistT = null;
+function persist(){
+  clearTimeout(persistT);
+  persistT = setTimeout(()=>{
+    try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }catch(e){}
+  }, 150);
+}
+(function boot(){
+  buildTextRows(); buildPresets();
+  try{
+    const saved = localStorage.getItem(LS_KEY);
+    if(saved) S = Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), JSON.parse(saved));
+  }catch(e){}
+  if(!RATIOS[S.ratio]) S.ratio = DEFAULTS.ratio;
+  $("copyYear").textContent = new Date().getFullYear();
+  bindInputs(); syncUI(); render();
+  /* anything measured before the webfonts land was measured in fallback metrics */
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ measCache.clear(); render(); });
+})();
+</script>
+</body>
+</html>
