@@ -12,7 +12,7 @@
 <meta property="og:url" content="https://crimsontacit.github.io/BF-Seal-Builder/header-tool.html">
 <meta name="twitter:card" content="summary">
 <title>Header Builder</title>
-<link rel="stylesheet" href="shared/chrome.css?v=a84c7f43">
+<link rel="stylesheet" href="shared/chrome.css?v=d62425d5">
 <style>
   header .mark{
     width:26px;height:14px;border-radius:2px;flex:none;
@@ -34,29 +34,11 @@
   #stage{
     flex:1;display:flex;align-items:center;justify-content:center;position:relative;
     min-width:0;background-color:#10151d;
-    background-size:cover;background-position:center;
-  }
-  #stage.checker{
-    background-color:#a9adb4;
-    background-image:
-      repeating-conic-gradient(#8d929a 0% 25%, #a9adb4 0% 50%);
-    background-size:28px 28px;
-  }
-  #stage.dark{
-    background-color:#10151d;
-    background-image:
-      radial-gradient(1000px 500px at 50% 0%, rgba(40,100,168,.18), transparent 70%),
-      linear-gradient(180deg,#131a26,#0a0e15);
-  }
-  #stage.light{
-    background-color:#eceef1;
-    background-image:linear-gradient(180deg,#f6f7f9,#dfe2e7);
   }
   #hdrwrap{
     position:relative;z-index:1;width:min(92%, 1200px);
   }
   #hdrwrap svg{width:100%;height:auto;display:block}
-  #stage.light .stagehint,#stage.checker .stagehint{color:rgba(20,25,35,.45)}
 </style>
 </head>
 <body>
@@ -175,21 +157,16 @@
   </div>
 
   <div id="stage" class="dark">
-    <div class="stagebg" id="stageBg">
-      <button data-mode="checker">Checker</button>
-      <button data-mode="dark" class="active">Dark</button>
-      <button data-mode="light">Light</button>
-      <button data-mode="image">Image…</button>
-    </div>
+    <div class="stagebg" id="stageBg"></div>
     <div id="hdrwrap"></div>
     <div class="stagehint">Preview background is not exported — PNG output is transparent</div>
-    <input type="file" id="bgFile" accept="image/*" style="display:none">
   </div>
 </main>
 
 <script src="shared/state.js?v=fa880068"></script>
 <script src="shared/text.js?v=127a04be"></script>
 <script src="shared/export.js?v=07669e3b"></script>
+<script src="shared/stage.js?v=b9df1f51"></script>
 <script>
 /*HDRFONTS_START*/const FONTS = [
   {id:"sealstile", label:"Sealstile (seal font)", family:"Sealstile", weight:400, url:"fonts/sealstile.woff2?v=8128806d"},
@@ -697,33 +674,7 @@ try{
 }catch(e){}
 
 /* ================= stage background ================= */
-const STAGEBG_KEY = "headerbuilder-stagebg";
-const stage = $("stage");
-const stageBgBtns = document.querySelectorAll("#stageBg button[data-mode]");
-function setStageBg(mode){
-  if(mode !== "image") stage.style.backgroundImage = "";
-  stage.className = mode === "image" ? "" : mode;
-  stageBgBtns.forEach(b => b.classList.toggle("active", b.dataset.mode === mode));
-  if(mode !== "image"){ try{ localStorage.setItem(STAGEBG_KEY, mode); }catch(e){} }
-}
-stageBgBtns.forEach(b => b.addEventListener("click", () => {
-  if(b.dataset.mode === "image"){ $("bgFile").click(); return; }
-  setStageBg(b.dataset.mode);
-}));
-$("bgFile").addEventListener("change", e=>{
-  const f = e.target.files[0];
-  if(!f) return;
-  const rd = new FileReader();
-  rd.onload = () => {
-    setStageBg("image");
-    stage.style.backgroundImage = `url(${rd.result})`;
-  };
-  rd.readAsDataURL(f);
-  e.target.value = "";
-});
-let stageBgMode = "dark";
-try{ stageBgMode = localStorage.getItem(STAGEBG_KEY) || "dark"; }catch(e){}
-setStageBg(stageBgMode);
+Stage.init();
 
 /* ================= boot ================= */
 $("copyYear").textContent = new Date().getFullYear();

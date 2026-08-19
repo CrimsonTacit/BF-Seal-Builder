@@ -12,7 +12,7 @@
 <meta property="og:url" content="https://crimsontacit.github.io/BF-Seal-Builder/seal-tool.html">
 <meta name="twitter:card" content="summary">
 <title>Seal Builder</title>
-<link rel="stylesheet" href="shared/chrome.css?v=a84c7f43">
+<link rel="stylesheet" href="shared/chrome.css?v=d62425d5">
 <style>
   .microstyle{font-family:"Sealstile",ui-monospace,monospace}
   header .mark{
@@ -49,55 +49,19 @@
   #stage{
     flex:1;display:flex;align-items:center;justify-content:center;position:relative;
     min-width:0;
-    background:
-      linear-gradient(rgba(31,42,58,.35) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(31,42,58,.35) 1px, transparent 1px);
-    background-size:36px 36px;
-    background-position:center center;
-  }
-  #stage::after{
-    content:"";position:absolute;inset:0;pointer-events:none;
-    background:radial-gradient(ellipse at center, transparent 45%, rgba(4,7,12,.75) 100%);
-  }
-  #stage.light{
-    background-color:#f2f3f5;
-    background-image:
-      linear-gradient(rgba(20,25,35,.07) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(20,25,35,.07) 1px, transparent 1px);
-    background-size:36px 36px;
-    background-position:center center;
-  }
-  #stage.light::after{
-    background:radial-gradient(ellipse at center, transparent 45%, rgba(255,255,255,.55) 100%);
   }
   #sealwrap{
     position:relative;z-index:1;
     width:min(78vh, 78%);aspect-ratio:1;
     filter:drop-shadow(0 18px 50px rgba(0,0,0,.6));
   }
-  #stage.light #sealwrap{filter:drop-shadow(0 14px 34px rgba(20,25,35,.22))}
+  #stage.light #sealwrap,#stage.grey #sealwrap,#stage.checker #sealwrap{
+    filter:drop-shadow(0 14px 34px rgba(20,25,35,.22));
+  }
   #sealwrap svg{width:100%;height:100%;display:block}
   #sealwrap.grabbable{cursor:grab}
   #sealwrap.grabbing{cursor:grabbing}
-  #stage.light .stagehint{color:rgba(20,25,35,.4)}
-  .stagebg .sep{width:1px;background:var(--line-bright);align-self:stretch}
 
-  /* ---------- alignment grid overlay ---------- */
-  #gridOverlay{
-    display:none;position:absolute;z-index:2;pointer-events:none;
-    inset:0;
-    background-image:
-      linear-gradient(rgba(20,25,35,.16) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(20,25,35,.16) 1px, transparent 1px);
-    background-size:36px 36px;
-    background-position:center center;
-  }
-  #gridOverlay.on{display:block}
-  #gridOverlay::before,#gridOverlay::after{
-    content:"";position:absolute;background:rgba(211,169,44,.55);
-  }
-  #gridOverlay::before{left:50%;top:0;bottom:0;width:1px;margin-left:-.5px}
-  #gridOverlay::after{top:50%;left:0;right:0;height:1px;margin-top:-.5px}
 
   /* ---------- swatch popover ---------- */
   #swatchpop{
@@ -271,20 +235,15 @@
   </div>
 
   <div id="stage">
-    <div class="stagebg" id="stageBg">
-      <button type="button" data-mode="dark">Dark</button>
-      <button type="button" data-mode="light">Light</button>
-      <span class="sep"></span>
-      <button type="button" id="gridToggle">Grid Overlay</button>
-    </div>
+    <div class="stagebg" id="stageBg"></div>
     <div id="sealwrap"></div>
-    <div id="gridOverlay"></div>
     <div class="stagehint">Drag to position background image · Scroll to zoom</div>
   </div>
 </main>
 
 <script src="shared/state.js?v=fa880068"></script>
 <script src="shared/export.js?v=07669e3b"></script>
+<script src="shared/stage.js?v=b9df1f51"></script>
 <script>
 "use strict";
 
@@ -886,31 +845,7 @@ try{
 }catch(e){}
 
 /* ================= stage background preview ================= */
-const STAGEBG_KEY = "sealbuilder-stagebg";
-const stage = $("stage");
-const stageBgBtns = document.querySelectorAll("#stageBg button[data-mode]");
-function setStageBg(mode){
-  stage.classList.toggle("light", mode === "light");
-  stageBgBtns.forEach(b => b.classList.toggle("active", b.dataset.mode === mode));
-  try{ localStorage.setItem(STAGEBG_KEY, mode); }catch(e){}
-}
-stageBgBtns.forEach(b => b.addEventListener("click", () => setStageBg(b.dataset.mode)));
-let stageBgMode = "dark";
-try{ stageBgMode = localStorage.getItem(STAGEBG_KEY) || "dark"; }catch(e){}
-setStageBg(stageBgMode);
-
-const GRID_KEY = "sealbuilder-grid";
-const gridOverlay = $("gridOverlay");
-const gridToggleBtn = $("gridToggle");
-function setGrid(on){
-  gridOverlay.classList.toggle("on", on);
-  gridToggleBtn.classList.toggle("active", on);
-  try{ localStorage.setItem(GRID_KEY, on ? "1" : "0"); }catch(e){}
-}
-gridToggleBtn.addEventListener("click", () => setGrid(!gridOverlay.classList.contains("on")));
-let gridOn = false;
-try{ gridOn = localStorage.getItem(GRID_KEY) === "1"; }catch(e){}
-setGrid(gridOn);
+Stage.init();
 
 /* ================= boot ================= */
 document.fonts.load('16px "Sealstile"').then(()=>render());

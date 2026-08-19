@@ -12,7 +12,7 @@
 <meta property="og:url" content="https://crimsontacit.github.io/BF-Seal-Builder/patch-tool.html">
 <meta name="twitter:card" content="summary">
 <title>Patch Builder</title>
-<link rel="stylesheet" href="shared/chrome.css?v=a84c7f43">
+<link rel="stylesheet" href="shared/chrome.css?v=d62425d5">
 <style>
   :root{--panel-w:340px}
   @font-face{
@@ -59,21 +59,6 @@
     flex:1;display:flex;align-items:center;justify-content:center;position:relative;
     min-width:0;background-color:#10151d;
   }
-  #stage.checker{
-    background-color:#a9adb4;
-    background-image:repeating-conic-gradient(#8d929a 0% 25%, #a9adb4 0% 50%);
-    background-size:28px 28px;
-  }
-  #stage.dark{
-    background-color:#10151d;
-    background-image:
-      radial-gradient(1000px 500px at 50% 0%, rgba(40,100,168,.18), transparent 70%),
-      linear-gradient(180deg,#131a26,#0a0e15);
-  }
-  #stage.light{
-    background-color:#eceef1;
-    background-image:linear-gradient(180deg,#f6f7f9,#dfe2e7);
-  }
   /* The wrap fills the stage and centres the patch itself, rather than being
      sized by it: a flex item whose width comes from a percentage height on a
      replaced child is the case Safari resolves to the SVG's intrinsic width,
@@ -87,7 +72,6 @@
   #patchwrap svg{
     width:auto;height:auto;max-width:100%;max-height:min(100%, 900px);display:block;
   }
-  #stage.light .stagehint,#stage.checker .stagehint{color:rgba(20,25,35,.45)}
 </style>
 </head>
 <body>
@@ -249,11 +233,7 @@
   </div>
 
   <div id="stage" class="dark">
-    <div class="stagebg" id="stageBg">
-      <button data-mode="checker">Checker</button>
-      <button data-mode="dark" class="active">Dark</button>
-      <button data-mode="light">Light</button>
-    </div>
+    <div class="stagebg" id="stageBg"></div>
     <div id="patchwrap"></div>
     <div class="stagehint">Preview background is not exported — PNG output is transparent</div>
   </div>
@@ -262,6 +242,7 @@
 <script src="shared/state.js?v=fa880068"></script>
 <script src="shared/text.js?v=127a04be"></script>
 <script src="shared/export.js?v=07669e3b"></script>
+<script src="shared/stage.js?v=b9df1f51"></script>
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
@@ -729,11 +710,7 @@ $("typeSeg").addEventListener("click", e => {
 $("emblemSel").innerHTML = Object.entries(EMBLEMS)
   .map(([k,E])=>`<option value="${k}">${esc(E.label)}</option>`).join("");
 
-$("stageBg").addEventListener("click", e=>{
-  const b = e.target.closest("button"); if(!b) return;
-  $("stage").className = b.dataset.mode;
-  document.querySelectorAll("#stageBg button").forEach(x=>x.classList.toggle("active", x===b));
-});
+Stage.init();
 
 $("resetBtn").addEventListener("click", ()=>{
   S = JSON.parse(JSON.stringify(DEFAULTS));
