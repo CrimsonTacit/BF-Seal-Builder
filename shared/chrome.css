@@ -24,9 +24,10 @@
    many tools happened to carry them.
 
    What stays per-tool: `header .mark` (each tool's own identity mark), the
-   `#stage` backdrop and its light/dark variants (seal draws a grid, plaque
-   pads, header sizes an uploaded image), `.filebox`, and anything a tool
-   genuinely does differently. Panel width is a token — set --panel-w in the
+   `#stage` *layout* (the plaque pads, the poster's wrap fills its box), the
+   artwork wrap, `.filebox`, and anything a tool genuinely does differently.
+   The `#stage` backdrop is no longer among them -- see the stage block below
+   and shared/stage.js. Panel width is a token — set --panel-w in the
    tool's own <style> to override the 330px default. */
 
 *{box-sizing:border-box;margin:0;padding:0}
@@ -120,8 +121,56 @@ input[type=color]{
   }
 input[type=color]::-webkit-color-swatch{border:none;border-radius:1px}
 input[type=color]::-webkit-color-swatch-wrapper{padding:2px}
+/* ---- stage: the canvas background behind the artwork ----------------------
+   The five modes below and the alignment overlay are driven by shared/stage.js,
+   which builds the bar's buttons; the tools carry only an empty #stageBg. Every
+   tool offers every mode -- each used to expose a different subset, and four of
+   the six carried a byte-identical copy of this paint. */
+#stage.checker{
+    background-color:#a9adb4;
+    background-image:repeating-conic-gradient(#8d929a 0% 25%, #a9adb4 0% 50%);
+    background-size:28px 28px;
+  }
+#stage.dark{
+    background-color:#10151d;
+    background-image:
+      radial-gradient(1000px 500px at 50% 0%, rgba(40,100,168,.18), transparent 70%),
+      linear-gradient(180deg,#131a26,#0a0e15);
+  }
+#stage.grey{background-color:#7d838c;background-image:none}
+#stage.light{
+    background-color:#eceef1;
+    background-image:linear-gradient(180deg,#f6f7f9,#dfe2e7);
+  }
+#stage.image{
+    background-color:#10151d;
+    background-repeat:no-repeat;background-size:cover;background-position:center;
+  }
+/* The overlay's grid lines have to flip with the mode or they vanish into it;
+   the gold crosshair reads on both. */
+#stageGrid{
+    display:none;position:absolute;inset:0;z-index:2;pointer-events:none;
+    background-image:
+      linear-gradient(rgba(255,255,255,.11) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.11) 1px, transparent 1px);
+    background-size:36px 36px;
+    background-position:center center;
+  }
+#stageGrid.on{display:block}
+#stage.light #stageGrid,
+#stage.grey #stageGrid,
+#stage.checker #stageGrid{
+    background-image:
+      linear-gradient(rgba(20,25,35,.16) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(20,25,35,.16) 1px, transparent 1px);
+  }
+#stageGrid::before,#stageGrid::after{
+    content:"";position:absolute;background:rgba(211,169,44,.55);
+  }
+#stageGrid::before{left:50%;top:0;bottom:0;width:1px;margin-left:-.5px}
+#stageGrid::after{top:50%;left:0;right:0;height:1px;margin-top:-.5px}
 .stagebg{
-    position:absolute;top:14px;right:14px;z-index:2;
+    position:absolute;top:14px;right:14px;z-index:3;
     display:flex;background:var(--panel2);border:1px solid var(--line-bright);
     border-radius:2px;overflow:hidden;
   }
@@ -132,9 +181,22 @@ input[type=color]::-webkit-color-swatch-wrapper{padding:2px}
 .stagebg button + button{border-left:1px solid var(--line-bright)}
 .stagebg button.active{background:var(--bolt-gold);color:#14100a}
 .stagebg button:hover{color:var(--ink)}
+.stagebg .sep{width:1px;background:var(--line-bright);align-self:stretch}
+/* The hint sits over whatever the stage is wearing -- including the checker's
+   hard edges and, in image mode, an arbitrary photo -- so it carries its own
+   backing plate rather than trying to pick a text colour per mode. A colour can
+   be chosen for the four fixed modes; it cannot be chosen for an upload. Dark
+   and translucent: all but invisible on the dark stage, clean separation on
+   every other one, and >=6.2:1 in all five. */
 .stagehint{
-    position:absolute;bottom:12px;left:0;right:0;text-align:center;z-index:1;
-    color:rgba(140,155,175,.7);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    position:absolute;bottom:12px;left:50%;transform:translateX(-50%);z-index:1;
+    width:max-content;max-width:calc(100% - 28px);text-align:center;
+    color:rgba(198,212,228,.92);
+    background:rgba(8,12,18,.78);
+    -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
+    border:1px solid rgba(255,255,255,.07);border-radius:3px;
+    padding:5px 12px;
+    font-size:11px;letter-spacing:.1em;text-transform:uppercase;
     pointer-events:none;
   }
 .credit{

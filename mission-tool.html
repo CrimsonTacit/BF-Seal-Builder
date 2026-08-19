@@ -12,7 +12,7 @@
 <meta property="og:url" content="https://crimsontacit.github.io/BF-Seal-Builder/mission-tool.html">
 <meta name="twitter:card" content="summary">
 <title>Mission Poster Builder</title>
-<link rel="stylesheet" href="shared/chrome.css?v=a84c7f43">
+<link rel="stylesheet" href="shared/chrome.css?v=d62425d5">
 <style>
   :root{--panel-w:352px}
   @font-face{font-family:"Sealstile";font-weight:400;src:url(fonts/sealstile.woff2) format("woff2")}
@@ -74,17 +74,6 @@
     flex:1;display:flex;align-items:center;justify-content:center;position:relative;
     min-width:0;background-color:#10151d;
   }
-  #stage.dark{
-    background-color:#10151d;
-    background-image:
-      radial-gradient(1000px 500px at 50% 0%, rgba(40,100,168,.16), transparent 70%),
-      linear-gradient(180deg,#131a26,#0a0e15);
-  }
-  #stage.light{
-    background-color:#eceef1;
-    background-image:linear-gradient(180deg,#f6f7f9,#dfe2e7);
-  }
-  #stage.grey{background-color:#7d838c;background-image:none}
   /* The wrap fills the stage and centres the poster itself, rather than being
      sized by it: a flex item whose width comes from a percentage height on a
      replaced child is exactly the case Safari resolves to the SVG's intrinsic
@@ -100,7 +89,6 @@
   #posterwrap svg{
     width:auto;height:auto;max-width:100%;max-height:min(100%, 1160px);display:block;
   }
-  #stage.light .stagehint,#stage.grey .stagehint{color:rgba(20,25,35,.5)}
 </style>
 </head>
 <body>
@@ -298,11 +286,7 @@
   </div>
 
   <div id="stage" class="dark">
-    <div class="stagebg" id="stageBg">
-      <button data-mode="dark" class="active">Dark</button>
-      <button data-mode="grey">Grey</button>
-      <button data-mode="light">Light</button>
-    </div>
+    <div class="stagebg" id="stageBg"></div>
     <div id="posterwrap"></div>
     <div class="stagehint">Preview background is not exported — the poster fills the whole frame</div>
   </div>
@@ -311,6 +295,7 @@
 <script src="shared/state.js?v=fa880068"></script>
 <script src="shared/metal.js?v=8aa4ac74"></script>
 <script src="shared/export.js?v=07669e3b"></script>
+<script src="shared/stage.js?v=b9df1f51"></script>
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
@@ -1444,11 +1429,7 @@ $("emblemSel").innerHTML = (() => {
   return html + (open ? "</optgroup>" : "");
 })();
 
-$("stageBg").addEventListener("click", e=>{
-  const b = e.target.closest("button"); if(!b) return;
-  $("stage").className = b.dataset.mode;
-  document.querySelectorAll("#stageBg button").forEach(x=>x.classList.toggle("active", x===b));
-});
+Stage.init();
 $("resetBtn").addEventListener("click", ()=>{
   S = JSON.parse(JSON.stringify(DEFAULTS));
   syncUI(); render(); persist();
