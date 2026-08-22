@@ -166,37 +166,37 @@
 </div>
 
 <div class="cards">
-  <a class="card" href="seal-tool.html">
+  <a class="card" href="/seal">
     <div class="mark-seal"></div>
     <h2>Seal Builder</h2>
     <p>Round seals for vessels, stations, and organizations — curved ring text, task-force emblems, starfields, custom art.</p>
     <div class="go">Open →</div>
   </a>
-  <a class="card" href="header-tool.html">
+  <a class="card" href="/header">
     <div class="mark-hdr"><i></i><i></i><i></i></div>
     <h2>Header Builder</h2>
     <p>Metallic wordmark headers for BFMS command pages — gold and brushed-steel type, divider rules, emblems, transparent PNG output.</p>
     <div class="go">Open →</div>
   </a>
-  <a class="card" href="banner-tool.html">
+  <a class="card" href="/banner">
     <div class="mark-bnr"><i></i><b></b></div>
     <h2>Banner Builder</h2>
     <p>Ship and station banners — the fixed gold frame with your art, name, registry and class, and a task-force delta in place of the BF one.</p>
     <div class="go">Open →</div>
   </a>
-  <a class="card" href="plaque-tool.html">
+  <a class="card" href="/plaque">
     <div class="mark-plq"><i></i></div>
     <h2>Plaque Builder</h2>
     <p>Dedication plaques from the original 2399 artwork — twelve backings, seven trims, editable rosters, raised or engraved lettering.</p>
     <div class="go">Open →</div>
   </a>
-  <a class="card" href="patch-tool.html">
+  <a class="card" href="/patch">
     <div class="mark-pat"><i></i><i></i><i></i><i></i></div>
     <h2>Patch Builder</h2>
     <p>Triangular patches — the wide-bordered command patch with type along its edges, or a rounded development-project patch with the title inside.</p>
     <div class="go">Open →</div>
   </a>
-  <a class="card" href="mission-tool.html">
+  <a class="card" href="/mission">
     <div class="mark-mis"><i></i><i></i></div>
     <h2>Mission Poster Builder</h2>
     <p>Mission posters and cover art — your image or a built-in starfield under thirteen fonts, raised, foil or embossed lettering, outlines and glows, frames, and the seal palette.</p>

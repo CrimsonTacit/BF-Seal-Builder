@@ -93,12 +93,12 @@
   <h1>Seal Builder</h1>
   <div class="sub">Bravo Fleet · Vessel &amp; Station Seals</div>
   <div class="spacer"></div>
-  <a class="btn" href="index.html">⌂</a>
-  <a class="btn" href="header-tool.html">Header →</a>
-  <a class="btn" href="banner-tool.html">Banner →</a>
-  <a class="btn" href="plaque-tool.html">Plaque →</a>
-  <a class="btn" href="patch-tool.html">Patch →</a>
-  <a class="btn" href="mission-tool.html">Poster →</a>
+  <a class="btn" href="/">⌂</a>
+  <a class="btn" href="/header">Header →</a>
+  <a class="btn" href="/banner">Banner →</a>
+  <a class="btn" href="/plaque">Plaque →</a>
+  <a class="btn" href="/patch">Patch →</a>
+  <a class="btn" href="/mission">Poster →</a>
   <select id="exportSize">
     <option value="512">512 px</option>
     <option value="1024">1024 px</option>

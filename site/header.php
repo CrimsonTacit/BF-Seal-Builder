@@ -49,12 +49,12 @@
   <h1>Header Builder</h1>
   <div class="sub">Bravo Fleet · BFMS Command Headers</div>
   <div class="spacer"></div>
-  <a class="navlink" href="index.html">⌂</a>
-  <a class="navlink" href="seal-tool.html">Seal →</a>
-  <a class="navlink" href="banner-tool.html">Banner →</a>
-  <a class="navlink" href="plaque-tool.html">Plaque →</a>
-  <a class="navlink" href="patch-tool.html">Patch →</a>
-  <a class="navlink" href="mission-tool.html">Poster →</a>
+  <a class="navlink" href="/">⌂</a>
+  <a class="navlink" href="/seal">Seal →</a>
+  <a class="navlink" href="/banner">Banner →</a>
+  <a class="navlink" href="/plaque">Plaque →</a>
+  <a class="navlink" href="/patch">Patch →</a>
+  <a class="navlink" href="/mission">Poster →</a>
 </header>
 
 <main>
