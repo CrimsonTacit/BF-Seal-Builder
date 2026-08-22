@@ -1,0 +1,8 @@
+<?php
+declare(strict_types=1);
+
+return [
+    // Absolute filesystem path to the main site's WordPress bootstrap.
+    'wp_load_path' => '/path/to/bravofleet.com/public_html/wp-load.php',
+    'login_url' => 'https://bravofleet.com/wp-login.php',
+];

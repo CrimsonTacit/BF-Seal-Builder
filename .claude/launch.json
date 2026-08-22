@@ -4,35 +4,20 @@
     {
       "name": "seal-builder",
       "runtimeExecutable": "python3",
-      "runtimeArgs": [
-        "-m",
-        "http.server",
-        "8517",
-        "--bind",
-        "127.0.0.1"
-      ],
+      "runtimeArgs": ["tools/serve_site.py", "8517", "--bind", "127.0.0.1"],
       "port": 8517
     },
     {
       "name": "seal-builder-auto",
       "runtimeExecutable": "sh",
-      "runtimeArgs": [
-        "-c",
-        "exec python3 -m http.server \"$PORT\" --bind 127.0.0.1"
-      ],
+      "runtimeArgs": ["-c", "exec python3 tools/serve_site.py \"$PORT\" --bind 127.0.0.1"],
       "autoPort": true,
       "port": 8519
     },
     {
       "name": "seal-builder-alt",
       "runtimeExecutable": "python3",
-      "runtimeArgs": [
-        "-m",
-        "http.server",
-        "8518",
-        "--bind",
-        "127.0.0.1"
-      ],
+      "runtimeArgs": ["tools/serve_site.py", "8518", "--bind", "127.0.0.1"],
       "port": 8518
     }
   ]

@@ -1,0 +1,12 @@
+Options -Indexes -MultiViews
+
+DirectoryIndex index.php
+
+<FilesMatch "^auth(?:-config)?\.php(?:\.example)?$">
+  Require all denied
+</FilesMatch>
+
+RewriteEngine On
+
+# Keep the public URLs extensionless while serving the authenticated PHP pages.
+RewriteRule ^(seal|header|banner|plaque|patch|mission)$ $1.php [L]
