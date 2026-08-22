@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Refresh seal-tool.html's asset registry, and rebuild the Sealstile font.
+"""Refresh site/seal.php's asset registry, and rebuild the Sealstile font.
 
 Run after changing the font or any emblem in assets/emblems/:
 
@@ -18,9 +18,10 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-INDEX = ROOT / "seal-tool.html"
-EMBLEM_DIR = ROOT / "assets" / "emblems"
-FONT_SRC = ROOT / "fonts/LibrestileExtBold.ttf"
+SITE = ROOT / "site"          # the webroot; registry URLs are relative to it
+INDEX = SITE / "seal.php"
+EMBLEM_DIR = SITE / "assets" / "emblems"
+FONT_SRC = SITE / "fonts/LibrestileExtBold.ttf"
 
 EMBLEM_NAMES = {
     "tf17b": "Task Force 17", "tf21b": "Task Force 21", "tf47b": "Task Force 47",

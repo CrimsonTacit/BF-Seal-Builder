@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Refresh header-tool.html's font + emblem registries.
+"""Refresh site/header.php's font + emblem registries.
 
     python3 tools/embed_header_assets.py
 
 Downloads four OFL-licensed webfonts from Google Fonts into fonts/webfonts/
 (cached, so rebuilds work offline) and writes the FONTS registry that points
 at them. The Sealstile entry and the TF emblem CHARGES block are copied from
-seal-tool.html, so run tools/embed_assets.py first if those changed.
+site/seal.php, so run tools/embed_assets.py first if those changed.
 
-Nothing is base64-embedded: header-tool.html fetches these by URL and inlines
+Nothing is base64-embedded: site/header.php fetches these by URL and inlines
 them as data URIs only at export time.
 """
 import re
@@ -16,9 +16,10 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-HEADER = ROOT / "header-tool.html"
-INDEX = ROOT / "seal-tool.html"
-CACHE = ROOT / "fonts" / "webfonts"
+SITE = ROOT / "site"          # the webroot; registry URLs are relative to it
+HEADER = SITE / "header.php"
+INDEX = SITE / "seal.php"
+CACHE = SITE / "fonts" / "webfonts"
 
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")

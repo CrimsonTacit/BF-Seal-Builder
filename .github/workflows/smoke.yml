@@ -7,7 +7,12 @@
 #
 # No npm install and no package.json: the runner drives Chrome over the DevTools
 # Protocol using Node's built-in fetch and WebSocket. ubuntu-latest ships Chrome
-# already, so this needs nothing fetched at all.
+# and PHP already, so this needs nothing fetched at all.
+#
+# The site is PHP now, so it is served with `php -S` via tools/serve_site.py --
+# http.server would hand the browser the source of every page. auth.php returns
+# early under the cli-server SAPI, which is what lets CI reach the tools without
+# a WordPress install.
 
 name: Smoke test
 
@@ -50,14 +55,26 @@ jobs:
           fi
           "$(grep '^bin=' "$GITHUB_OUTPUT" | cut -d= -f2-)" --version
 
+      - name: Locate PHP
+        run: |
+          # ubuntu-latest ships PHP 8.3, so this normally just prints a version.
+          # The fallback is here so an image change is a slow build, not a red X.
+          if ! command -v php >/dev/null; then
+            echo "No preinstalled PHP on this runner image; installing php-cli."
+            sudo apt-get update -qq && sudo apt-get install -y -qq php-cli
+          fi
+          php --version
+
       - name: Serve the site
         run: |
-          python3 -m http.server 8517 --bind 127.0.0.1 &
+          python3 tools/serve_site.py 8517 --bind 127.0.0.1 &
+          # /seal is a route, not a file — a readiness probe for index.html
+          # would 404 forever now that the pages are extensionless
           for i in $(seq 1 30); do
-            curl -sf -o /dev/null http://127.0.0.1:8517/index.html && break
+            curl -sf -o /dev/null http://127.0.0.1:8517/seal && break
             sleep 0.5
           done
-          curl -sf -o /dev/null http://127.0.0.1:8517/index.html
+          curl -sf -o /dev/null http://127.0.0.1:8517/seal
 
       - name: Run smoke test
         env:
@@ -78,8 +95,8 @@ jobs:
           python3 tools/stamp_assets.py   # embed_* write unstamped URLs; restamp before diffing
           # scope this to the files those scripts actually write, so an
           # unrelated change in the tree can't masquerade as registry drift
-          if ! git diff --quiet -- seal-tool.html header-tool.html; then
+          if ! git diff --quiet -- site/seal.php site/header.php; then
             echo "::error::Asset registries are stale — run tools/embed_assets.py and tools/embed_header_assets.py, then commit."
-            git --no-pager diff -- seal-tool.html header-tool.html
+            git --no-pager diff -- site/seal.php site/header.php
             exit 1
           fi

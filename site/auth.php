@@ -47,7 +47,7 @@ $safeLoginUrl = htmlspecialchars((string) $loginUrl, ENT_QUOTES | ENT_SUBSTITUTE
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Login Required — Bravo Fleet Graphics Builder</title>
-<link rel="stylesheet" href="shared/chrome.css">
+<link rel="stylesheet" href="shared/chrome.css?v=d62425d5">
 <style>
   /* chrome.css supplies the palette, the page background and the mono stack;
      this is only the card, which no tool page has an equivalent of. It stays

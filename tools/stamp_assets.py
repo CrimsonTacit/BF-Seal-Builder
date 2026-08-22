@@ -6,12 +6,11 @@
 
 Every tool loads its fonts, artwork and shared code by relative URL. Change a
 file in place -- same name, new bytes -- and a browser holding the old copy
-keeps using it. GitHub Pages caps that at ten minutes (it sends
-`cache-control: max-age=600` with an ETag, so the next revalidation picks the
-change up), but a plain `python3 -m http.server` sends no cache headers at all
-and the browser then caches heuristically for far longer. That is the case that
-actually bites: with fonts/sealstile.woff2 deleted and the server returning 404,
-the tools kept exporting perfectly from cache.
+keeps using it. Apache's own defaults bound that loosely at best, and the local
+`php -S` dev server sends no cache headers at all, after which the browser
+caches heuristically for far longer. That is the case that actually bites: with
+fonts/sealstile.woff2 deleted and the server returning 404, the tools kept
+exporting perfectly from cache.
 
 `foo.png?v=a1b2c3d4` makes the URL itself change with the bytes, so a stale copy
 can never be reused. The version is the first 8 hex of the file's SHA-256, so it
@@ -27,14 +26,15 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-PAGES = sorted(ROOT.glob("*.html")) + sorted((ROOT / "tests").glob("*.html"))
+SITE = ROOT / "site"          # the webroot every stamped URL is relative to
+PAGES = sorted(SITE.glob("*.php")) + sorted((ROOT / "tests").glob("*.html"))
 
 # any quoted relative path into these, with or without an existing ?v= stamp
 REF = re.compile(r'(["\'])((?:assets|fonts|shared)/[^"\'?#]+\.[A-Za-z0-9]+)(\?v=[0-9a-f]+)?\1')
 
 
 def version(rel: str):
-    p = ROOT / rel
+    p = SITE / rel
     if not p.is_file():
         return None
     return hashlib.sha256(p.read_bytes()).hexdigest()[:8]
