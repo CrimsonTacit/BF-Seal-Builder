@@ -1,3 +1,4 @@
+<?php require __DIR__ . '/auth.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,12 +6,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Build mission posters and cover art from your own artwork, and export them at print resolution.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%225%22%20fill%3D%22%230d1420%22%2F%3E%3Crect%20x%3D%227%22%20y%3D%224%22%20width%3D%2218%22%20height%3D%2224%22%20rx%3D%222%22%20fill%3D%22%232864a8%22%2F%3E%3Crect%20x%3D%229%22%20y%3D%227%22%20width%3D%2214%22%20height%3D%223%22%20fill%3D%22%23d3a92c%22%2F%3E%3Crect%20x%3D%229%22%20y%3D%2222%22%20width%3D%2214%22%20height%3D%223%22%20fill%3D%22%23d3a92c%22%2F%3E%3C%2Fsvg%3E">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Bravo Fleet Graphics Tools">
-<meta property="og:title" content="Mission Poster Builder — Bravo Fleet Graphics Tools">
-<meta property="og:description" content="Build mission posters and cover art from your own artwork, and export them at print resolution.">
-<meta property="og:url" content="https://crimsontacit.github.io/BF-Seal-Builder/mission-tool.html">
-<meta name="twitter:card" content="summary">
 <title>Mission Poster Builder</title>
 <link rel="stylesheet" href="shared/chrome.css?v=d62425d5">
 <style>
@@ -99,12 +94,12 @@
   <h1>Mission Poster Builder</h1>
   <div class="sub">Bravo Fleet · Mission Posters &amp; Cover Art</div>
   <div class="spacer"></div>
-  <a class="navlink" href="index.html">⌂</a>
-  <a class="navlink" href="seal-tool.html">Seal →</a>
-  <a class="navlink" href="header-tool.html">Header →</a>
-  <a class="navlink" href="banner-tool.html">Banner →</a>
-  <a class="navlink" href="plaque-tool.html">Plaque →</a>
-  <a class="navlink" href="patch-tool.html">Patch →</a>
+  <a class="navlink" href="/">⌂</a>
+  <a class="navlink" href="/seal">Seal →</a>
+  <a class="navlink" href="/header">Header →</a>
+  <a class="navlink" href="/banner">Banner →</a>
+  <a class="navlink" href="/plaque">Plaque →</a>
+  <a class="navlink" href="/patch">Patch →</a>
 </header>
 
 <main>

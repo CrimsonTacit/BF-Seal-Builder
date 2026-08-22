@@ -1,3 +1,4 @@
+<?php require __DIR__ . '/auth.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,12 +6,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Build round vessel, station and organisation seals in your browser, and export them as transparent PNGs.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%225%22%20fill%3D%22%230d1420%22%2F%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2216%22%20r%3D%2210%22%20fill%3D%22none%22%20stroke%3D%22%23d3a92c%22%20stroke-width%3D%222.5%22%2F%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2216%22%20r%3D%225.5%22%20fill%3D%22%232864a8%22%2F%3E%3C%2Fsvg%3E">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Bravo Fleet Graphics Tools">
-<meta property="og:title" content="Seal Builder — Bravo Fleet Graphics Tools">
-<meta property="og:description" content="Build round vessel, station and organisation seals in your browser, and export them as transparent PNGs.">
-<meta property="og:url" content="https://crimsontacit.github.io/BF-Seal-Builder/seal-tool.html">
-<meta name="twitter:card" content="summary">
 <title>Seal Builder</title>
 <link rel="stylesheet" href="shared/chrome.css?v=d62425d5">
 <style>
@@ -93,12 +88,12 @@
   <h1>Seal Builder</h1>
   <div class="sub">Bravo Fleet · Vessel &amp; Station Seals</div>
   <div class="spacer"></div>
-  <a class="btn" href="index.html">⌂</a>
-  <a class="btn" href="header-tool.html">Header →</a>
-  <a class="btn" href="banner-tool.html">Banner →</a>
-  <a class="btn" href="plaque-tool.html">Plaque →</a>
-  <a class="btn" href="patch-tool.html">Patch →</a>
-  <a class="btn" href="mission-tool.html">Poster →</a>
+  <a class="btn" href="/">⌂</a>
+  <a class="btn" href="/header">Header →</a>
+  <a class="btn" href="/banner">Banner →</a>
+  <a class="btn" href="/plaque">Plaque →</a>
+  <a class="btn" href="/patch">Patch →</a>
+  <a class="btn" href="/mission">Poster →</a>
   <select id="exportSize">
     <option value="512">512 px</option>
     <option value="1024">1024 px</option>

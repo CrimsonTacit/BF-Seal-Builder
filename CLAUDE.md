@@ -1,22 +1,34 @@
 # Bravo Fleet Graphics Tools
 
-Browser apps for the user's Bravo Fleet continuity (Star Trek fan fleet), replacing Photoshop workflows. No build step and no dependencies — serve the folder (`.claude/launch.json` runs `python3 -m http.server`; the `seal-builder-auto` entry takes any free port when 8517/8518 are busy). **Deployed on GitHub Pages**, so relative-URL assets are fine. Seven pages:
+Browser apps for the user's Bravo Fleet continuity (Star Trek fan fleet), replacing Photoshop workflows. No build step and no dependencies **in the browser** — but the pages are PHP now, so serving them takes PHP 8.3+ (`.claude/launch.json` runs `tools/serve_site.py`, which is a thin wrapper over `php -S`; the `seal-builder-auto` entry takes any free port when 8517/8518 are busy). **Deployed on Apache behind a Bravo Fleet login** — see "Deployment" below. Relative-URL assets are still fine, because every route sits one level under the webroot. Seven pages, served at extensionless routes:
 
-- [index.html](index.html) — static landing page linking to the six tools (plain CSS, no embedded assets; card "marks" mimic each tool's look).
-- [seal-tool.html](seal-tool.html) — **Seal Builder**: round vessel/station/org seals.
-- [header-tool.html](header-tool.html) — **Header Builder**: metallic wordmark overlays for BFMS command pages.
-- [banner-tool.html](banner-tool.html) — **Banner Builder**: ship/station banners (fixed design, swappable TF delta).
-- [plaque-tool.html](plaque-tool.html) — **Plaque Builder**: dedication plaques, built from the original PSD artwork.
-- [patch-tool.html](patch-tool.html) — **Patch Builder**: triangular patches, both the wide-bordered command/facility patch and the rounded development-project patch.
-- [mission-tool.html](mission-tool.html) — **Mission Poster Builder**: mission posters / cover art, the one tool with an open-ended design rather than a fixed one. (Named for the *poster*, not the mission — "Mission Builder" read as though it built stories.)
+- [site/index.php](site/index.php) — `/` — static landing page linking to the six tools (plain CSS, no embedded assets; card "marks" mimic each tool's look).
+- [site/seal.php](site/seal.php) — `/seal` — **Seal Builder**: round vessel/station/org seals.
+- [site/header.php](site/header.php) — `/header` — **Header Builder**: metallic wordmark overlays for BFMS command pages.
+- [site/banner.php](site/banner.php) — `/banner` — **Banner Builder**: ship/station banners (fixed design, swappable TF delta).
+- [site/plaque.php](site/plaque.php) — `/plaque` — **Plaque Builder**: dedication plaques, built from the original PSD artwork.
+- [site/patch.php](site/patch.php) — `/patch` — **Patch Builder**: triangular patches, both the wide-bordered command/facility patch and the rounded development-project patch.
+- [site/mission.php](site/mission.php) — `/mission` — **Mission Poster Builder**: mission posters / cover art, the one tool with an open-ended design rather than a fixed one. (Named for the *poster*, not the mission — "Mission Builder" read as though it built stories.)
+
+## Deployment
+
+`site/` is the webroot. Everything else — `tools/`, `tests/`, `examples/`, the source PSDs, this file — sits outside it and is never served. That split is the reason for the directory, and `site/.htaccess` adds to it by denying `auth.php` and `auth-config.php` directly, turning off indexes and rewriting `/seal` → `/seal.php`.
+
+**Every page's first line is `<?php require __DIR__ . '/auth.php'; ?>`**, above the doctype. `auth.php` loads WordPress from `BRAVO_WP_LOAD_PATH` (or `wp_load_path` in `site/auth-config.php`, which is gitignored — copy `auth-config.php.example`), and anyone not logged in to Bravo Fleet gets a login card instead of the tool. Its login card links `shared/chrome.css` for the palette and carries its own dozen rules inline; it does **not** depend on any per-tool stylesheet.
+
+**The `cli-server` early return is load-bearing, not a shortcut.** `auth.php` returns immediately under `PHP_SAPI === 'cli-server'`, which only PHP's built-in server ever reports — Apache and PHP-FPM never do. That is what lets local development and CI serve the whole site without a WordPress install, and it is why the smoke test can run at all. Don't "tidy" it away.
+
+`tools/serve_site.py` starts `php -S` with `tools/dev-router.php`, which reproduces Apache's routes and, because it is dev-only by construction, also serves `/tests/` from outside the webroot so the smoke suite is openable in a browser. It 404s anything that is not a route, a test file or a real file in the webroot — `php -S` would otherwise answer an unrecognised path with the nearest `index.php`, i.e. a stale URL coming back 200 with the landing page.
+
+**This repo and the `bfe` remote were briefly two lines of development** — the fork converted the pre-refactor pages to PHP while this tree was de-embedding assets and adding shared modules and CI. The PHP side has been ported here and `bfe` should be a deploy target, not a place work happens. `RECONCILIATION-PLAN.md` records how that was done and what was deliberately not taken across: notably bfe's per-tool `css/<tool>.css` + `js/<tool>.js` split, which is a **real open follow-up** — splitting each page's inline `<style>`/`<script>` out would let browsers cache per-tool code, which they currently cannot do at all. It was left out only because doing it in the same diff as the move would make the move unreviewable.
 
 Reference art lives in `examples/`: seals (`*Seal.png`, `USS*.png`), `Examples/Headers/ColumbiaTitle.png`, `examples/Banners/` (+ `BF-banners copy.psd`), `examples/Plaques/PallasPlaque.png` (+ `NewPlaqueDesign copy.psd`), `examples/Triangle Patch/` (+ `AcademyPatch copy.psd`), `examples/Project Patch/` (canon Memory-Alpha art, no PSD) and `examples/Mission Poster/` (three 5400×7200 PSDs, ~180–500 MB each). **`examples/` is gitignored** — the source PSDs are local-only, so anything derived from them (the plaque artwork below) must be committed as the derived asset. Every tool and the landing page carry the same `© Bravo Fleet` credit footer — seal/patch/plaque/poster design by CrimsonTacit, original Columbia header by JustSlide, BF logo by Kevin Steeper, ship banner by Emily Wolf and Kevin Steeper, then a link to the [wiki's full graphics credits](https://wiki.bravofleet.com/index.php/Credits#Graphics). Index runs the credits two-per-line; the tools' narrow `.credit` panel runs one per line. Keep them in sync when it changes. Tools also cross-link to each other and the landing page.
 
 ## Assets are loaded by URL, everywhere
 
-**Every tool now loads its fonts and artwork by relative URL.** The seal and header tools used to be single-file, with the font and the TF emblems inline as base64; that ended when the suite went from a personal tool to something hosted for the whole fleet. `CHARGES` alone was 127 KB of base64 *duplicated byte-for-byte* in both files — 254 KB shipped to stand in for 108 KB of PNGs that already sat loose in `assets/emblems/`. Inline base64 costs ~33 % inflation, cannot be cached apart from the page, cannot be shared between two tools that use the same art, and blocks parsing on every load. De-embedding took seal-tool.html from 195 KB to 53 KB and header-tool.html from 241 KB to 41 KB, with the exported pixels unchanged (verified by diffing old and new renders — see "Testing notes").
+**Every tool now loads its fonts and artwork by relative URL.** The seal and header tools used to be single-file, with the font and the TF emblems inline as base64; that ended when the suite went from a personal tool to something hosted for the whole fleet. `CHARGES` alone was 127 KB of base64 *duplicated byte-for-byte* in both files — 254 KB shipped to stand in for 108 KB of PNGs that already sat loose in `assets/emblems/`. Inline base64 costs ~33 % inflation, cannot be cached apart from the page, cannot be shared between two tools that use the same art, and blocks parsing on every load. De-embedding took the seal tool from 195 KB to 53 KB and the header tool from 241 KB to 41 KB (then `seal-tool.html` and `header-tool.html`, now `site/seal.php` and `site/header.php`), with the exported pixels unchanged (verified by diffing old and new renders — see "Testing notes").
 
-The cost is that seal-tool and header-tool no longer work from `file://`, which is what their single-file form bought. That was worth keeping while the tools were passed around as files; it is not worth 300 KB per visitor now that they are served over HTTP.
+The cost was that seal-tool and header-tool stopped working from `file://`, which is what their single-file form bought. That was worth keeping while the tools were passed around as files; it was not worth 300 KB per visitor once they were served over HTTP. The point is moot now in any case — the pages are PHP and nothing in the suite opens from disk.
 
 **Self-containment is a preference, never a rule.** Fewer files is worth having *where it costs nothing* — and nothing beyond that. When a thing is genuinely shared between tools, sharing wins: that is why `shared/stage.js` is loaded by all six even though it is small enough to have inlined six times. When a thing belongs to one tool, keep it in that tool. Apply that test to the next candidate rather than defending any file's page count.
 
@@ -36,12 +48,12 @@ Every tool loads `shared/chrome.css` plus the scripts it needs; tool-specific CS
   - Two things the merge had to settle, both in `chrome.css`: the overlay's grid lines **flip with the mode** or they vanish into it, and `.stagehint` carries **its own backing plate** rather than a per-mode colour — a colour can be picked for the four fixed modes but not for an arbitrary upload, and the plate fixed the checker's legibility at the same time (≥6.2:1 in all five modes; a lighter first pass composited to mid-grey on the light stage at ~3:1).
 - [shared/state.js](shared/state.js) — `StateKit.*`: `mulberry32` (the seeded PRNG every starfield uses), `slugify`, `persister` (debounced, try/caught localStorage writer) and `loadState`. **The starfields themselves are deliberately not shared** — a seal's circle, a patch's triangle and a poster's page are different geometry, and folding them together would be false commonality; only the PRNG is common.
 
-- [shared/metal.js](shared/metal.js) — `Metal.*`: the `MATERIALS` ramps, colour math (`hexRgb`/`mix`/`ltn`/`dkn`/`rampFor`/`matInfo`), `gradientDef`, and the two relief filters — `bevelFilter` (raised: blur of SourceAlpha → `feSpecularLighting` → drop shadow) and `engraveFilter` (recessed: inverted offset alpha as an inner shadow + negative-surfaceScale specular; pass `flatten` to recolour artwork to the cut colour first). A hand-kept copy of header-tool.html's recipe, not a refactor of it.
+- [shared/metal.js](shared/metal.js) — `Metal.*`: the `MATERIALS` ramps, colour math (`hexRgb`/`mix`/`ltn`/`dkn`/`rampFor`/`matInfo`), `gradientDef`, and the two relief filters — `bevelFilter` (raised: blur of SourceAlpha → `feSpecularLighting` → drop shadow) and `engraveFilter` (recessed: inverted offset alpha as an inner shadow + negative-surfaceScale specular; pass `flatten` to recolour artwork to the cut colour first). A hand-kept copy of the header tool's recipe, not a refactor of it.
 - [shared/export.js](shared/export.js) — `ExportKit.*`: memoized `fetchDataURI` / `fetchDataURIs`, `fontFaceRule`, `svgToCanvas`, the download helpers, and `wireExport`. (The patch, seal and header tools load only this one — they draw flat colour or roll their own metal, no `Metal`.)
   - `fetchDataURI` caches only **successful** fetches. It used to cache the promise unconditionally, so one flaky request left a rejected promise in the map and *every later export in that tab* failed until reload — a retry just handed back the same rejection. On failure the entry is now evicted so the next attempt really re-fetches.
   - `wireExport(btn, run, opts)` owns the export-button lifecycle: busy label, double-click guard, and a failure state that holds ~2.6 s (the old hand-rolled copies cleared it after 400 ms, faster than anyone can read) with the error on the button's tooltip. Every tool had this block copy-pasted, and in all of them **the SVG button had no error handling at all** — a failed asset fetch surfaced as an unhandled rejection and a button that appeared to do nothing. Wire both buttons through this; don't re-hand-roll it.
 
-## Seal Builder architecture (all inside seal-tool.html)
+## Seal Builder architecture (all inside site/seal.php)
 
 - **State**: single `S` object (see `DEFAULTS`); persisted to localStorage key `sealbuilder-v5` (uploaded images excluded — see `IMG`/`CUSTOM_CHARGE` below). Bump the key when changing state shape (boot falls back through older keys; additive fields merge cleanly over `DEFAULTS`, and the v4→v5 step also rescales text metrics for the font swap).
 - **Colors**: clicking a color well opens the `#swatchpop` popover (last-applied preset's colors via `S.lastPreset`, then the deduped palette across all `PRESETS`); "Custom color…" falls through to the native picker via `showPicker()` guarded by a `nativeBypass` flag. The popover stays open while swatches are tried; outside click / Esc closes it.
@@ -60,7 +72,7 @@ Every tool loads `shared/chrome.css` plus the scripts it needs; tool-specific CS
 
 Every asset reference carries a content stamp — `assets/emblems/tf17b.png?v=444bb0c6`, the first 8 hex of the file's SHA-256 — written by `tools/stamp_assets.py` and enforced in CI with `--check`. Change a file in place and its URL changes with it, so a cached copy can never be reused.
 
-Measured before building it, because the severity is easy to overstate: **GitHub Pages sends `cache-control: max-age=600` with an ETag**, so on the real host a stale asset self-heals within ten minutes. The case that actually bites is local development — `python3 -m http.server` sends *no* cache headers, the browser then caches heuristically for far longer, and with `fonts/sealstile.woff2` deleted and the server returning 404 the tools kept exporting perfectly from cache. Treat this as belt-and-braces plus a real fix for local work, not as a production emergency.
+Measured before building it, because the severity is easy to overstate. It was first written against GitHub Pages, which sent `cache-control: max-age=600` with an ETag, so a stale asset self-healed within ten minutes; on Apache the bound depends on whatever that host's config says, which is a weaker guarantee, not a stronger one. The case that actually bites is still local development — the `php -S` dev server sends *no* cache headers, the browser then caches heuristically for far longer, and with `fonts/sealstile.woff2` deleted and the server returning 404 the tools kept exporting perfectly from cache. Treat this as belt-and-braces plus a real fix for local work, not as a production emergency.
 
 Run it **after** the embed scripts, which write unstamped registry URLs; the full `embed_assets` → `embed_header_assets` → `stamp_assets` sequence converges, which is what makes CI's diff check sound. Stamps appear only in the *preview* path — exports inline everything as data URIs, so no `?v=` ever reaches an exported SVG.
 
@@ -86,7 +98,7 @@ Bravo Blue `#2864A8` · Bolt Gold `#D3A92C` · TF17 Gray `#434E5F` · TF21 Purpl
 
 `PRESETS` also has an unofficial "Department Inspired" group (Command Red, Sciences Blue, Operations Gold, Medical White) for inspiration, and an "Other" group of hand-picked fictional themes (Sea Greens, Pegasus, Federation, Healer) — same darker-shade-by-eye convention, not tied to any real fleet's graphics. Every preset sets `c_edge`/`c_gap` to the same color and `c_ring1`/`c_ring2` to the same color (the click handler also forces `edgeW`/`gapW` to 20), and `c_delta` (separators) must differ from `c_band` — check new presets against this before adding them. Each preset's `group` field controls which labeled section it renders under in the Presets panel (array order = section order = button order within a section).
 
-## Header Builder (header-tool.html)
+## Header Builder (site/header.php)
 
 Parallel app for BFMS page-header wordmarks (reference: `Examples/Headers/ColumbiaTitle.png`, in use at bravofleet.com command pages). Same dark-console chrome, state object `S` (localStorage `headerbuilder-v1`), and export pipeline (SVG string → blob → canvas for PNG; exports embed only the fonts actually used). Key differences from the seal app:
 
@@ -96,7 +108,7 @@ Parallel app for BFMS page-header wordmarks (reference: `Examples/Headers/Columb
 - **Fonts**: `FONTS` array = Sealstile + four OFL Google Fonts (Tenor Sans — closest to the Optima-style reference, Cinzel 600, Michroma, Orbitron 600), latin subsets only, all loaded by URL from `fonts/webfonts/`. Regenerate the registry with `python3 tools/embed_header_assets.py` (stdlib; downloads cached so it's offline after first run). Run it after `embed_assets.py` if the seal font or emblems changed. `CAP` holds per-font cap-height ratios used by row layout. Which faces a header uses is only known inside `layout()`'s row loop, so `exportResources()` resolves **all five** (memoized, and the page used to ship all five to every visitor anyway) while `buildSVG` still inlines only the used ones. Note `RES`/`uri()` are module-level rather than local to `buildSVG`, because `emblemSVG()` sits outside it and has to resolve art the same way.
 - **Stage**: shared with every tool — see `shared/stage.js`. The image-background upload started here and is now available suite-wide (preview only, never exported).
 
-## Banner Builder (banner-tool.html)
+## Banner Builder (site/banner.php)
 
 Fixed-design ship/station banners (reference: `examples/Banners/*.png`, source `BF-banners copy.psd`, 1400×503 transparent). State `S` in localStorage `bannerbuilder-v1`.
 
@@ -106,7 +118,7 @@ Fixed-design ship/station banners (reference: `examples/Banners/*.png`, source `
 - **Frame gold** is `FRAME_GOLD`, local to this tool, not `Metal.MATERIALS.gold`. The shared ramp is built for solid glyphs — bright top, dark horizon at the middle, bright bottom — and a hollow frame only ever shows its two ends, so the rails came out pale cream. `FRAME_GOLD` puts a bevel cycle inside each rail band instead. It is tuned against the PSD's own output: `AscensionOdyssey.png` renders its rails at `#e3d386` (top) and `#e3cd5f` (bottom) at x=700, and the ramp plus `fxFrame`'s specular lands within a few counts of both. Re-tune by sampling those rows, not by eye — the specular adds ~10 counts per channel and is what washed the gold out before.
 - **What the PSD does** (`BF-banners copy.psd`, layer `Layer 5` for the border, `Class`/`Registry`/`Name` for the type — `psd_tools` reads the effects): one custom gradient shared by frame and type, applied as *hardLight at 59 %* over the base art, plus colorDodge white 5 %, a colorDodge inner shadow, an inner bevel (highlight colorDodge white 83 %, shadow multiply `#7d2f0f` 56 %, size 3, soften 1, angle 138°, altitude 26°, depth 80 %, gloss contour "Ring - Double") and an inverted overlay satin. SVG filters can't stack that, which is why the tool matches the *rendered* colours rather than the recipe.
 
-## Plaque Builder (plaque-tool.html)
+## Plaque Builder (site/plaque.php)
 
 Dedication plaques, 2350×1700 (reference: `examples/Plaques/PallasPlaque.png`, source `NewPlaqueDesign copy.psd`). State `S` in localStorage `plaquebuilder-v3`.
 
@@ -123,7 +135,7 @@ Dedication plaques, 2350×1700 (reference: `examples/Plaques/PallasPlaque.png`, 
 - **Era registry**: `ERAS` holds each era's artwork paths, `squeeze`, and `rows` metrics; `S.era` selects one and the dropdown is already wired, so a new era is a new entry plus its extracted art.
 - **Roster columns**: `S.columns` is an editable array of `{h, n}` (heading + one name per line); columns spread evenly across `colLeft…colRight` and shrink their type to fit. A name line starting with `##` renders as a second heading partway down a column (that is how the reference stacks "Admiralty Board" under "Chiefs of Staff").
 
-## Patch Builder (patch-tool.html)
+## Patch Builder (site/patch.php)
 
 Triangular patches, one tool covering both families (references: `examples/Triangle Patch/BravoFleetAcademy.png` + `Telescope.png`, source `AcademyPatch copy.psd`; `examples/Project Patch/*.webp`, canon art with no PSD). State `S` in localStorage `patchbuilder-v1`.
 
@@ -137,7 +149,7 @@ Triangular patches, one tool covering both families (references: `examples/Trian
 - **Field artwork**: an uploaded image cover-fitted with zoom/x/y (module-level `IMG`, never persisted, like the other tools), a seeded starfield until one is added, and an optional emblem overlay from `assets/logos/` — all clipped to the field triangle.
 - `PRESETS` recolour the four rings, the field and the type in one click, grouped Official Bravo Fleet / Development Project / Department Inspired; ring widths and text are left alone. Text-measuring uses the same live-SVG `measure()` trick as the plaque tool, cleared on `document.fonts.ready`.
 
-## Mission Poster Builder (mission-tool.html)
+## Mission Poster Builder (site/mission.php)
 
 Mission posters / cover art (references: the three PSDs in `examples/Mission Poster/`). State `S` in localStorage `missionbuilder-v2` (the v1→v2 step folds the old single `schemeInv` flag into `S.schemeMode`). **This is the one tool with an open-ended design instead of a fixed one** — the PSDs set the aspect ratio and the house type recipe, everything else is meant to be dialled in, so the panel is deliberately wide-open where the other tools are opinionated.
 
@@ -182,13 +194,13 @@ This is how the banner's hardLight/colorDodge/bevel recipe above was confirmed, 
 **CI runs the smoke test on every push** (`.github/workflows/smoke.yml`), plus a check that the build scripts are idempotent — that one catches an emblem added or changed without its registry regenerated and committed. Locally:
 
 ```bash
-python3 -m http.server 8517            # then open tests/smoke.html
+python3 tools/serve_site.py 8517       # then open http://127.0.0.1:8517/tests/smoke.html
 node tools/run_smoke.mjs               # or headless, same checks, exits non-zero on failure
 ```
 
 `tools/run_smoke.mjs` drives Chrome over the **DevTools Protocol using Node's built-in `fetch` and `WebSocket`** (Node 22+), rather than pulling in Playwright or Puppeteer — this project ships no build step and no npm footprint, and a CI harness is a poor reason to start one. It finds Chrome via `$CHROME_BIN` or the usual paths, and reads `window.__SMOKE_RESULT` rather than scraping the table.
 
-**Run `tests/smoke.html` before deploying.** Serve the repo and open it; no build step, no dependencies, matching the rest of the project. For every page it checks the page loads without JS errors, that **every relative path into `assets/`, `fonts/` or `shared/` actually resolves on the server**, that the favicon/description/`<noscript>` are present, and — for the six tools — that a PNG export renders non-blank and the export SVG is fully self-contained. That asset check exists because a broken path is the failure mode this suite is most exposed to now that everything loads by URL.
+**Run `tests/smoke.html` before deploying.** Start `tools/serve_site.py` and open `/tests/smoke.html`; no build step, no dependencies, matching the rest of the project. The suite lives *outside* the webroot, so it is the dev router that serves it — on the real host that path does not exist, which is intended. It addresses pages by route (`""` for the landing page, then `seal`, `header`, …), so adding a page means adding a `{name, route}` entry. For every page it checks the page loads without JS errors, that **every relative path into `assets/`, `fonts/` or `shared/` actually resolves on the server**, that the favicon/description/`<noscript>` are present, and — for the six tools — that a PNG export renders non-blank and the export SVG is fully self-contained. That asset check exists because a broken path is the failure mode this suite is most exposed to now that everything loads by URL.
 
 Two traps that made the first version of that test useless, both worth knowing:
 
@@ -198,7 +210,7 @@ Two traps that made the first version of that test useless, both worth knowing:
 - **The error listener attaches at load, after the page's own scripts have run**, so it sees async errors rather than boot-time ones. Boot failures are caught by *outcome* instead: the tools by their export actually rendering, and the landing page by its copyright year being filled in. If you add a page, give it an outcome check rather than trusting the listener.
 
 
-- Use the launch.json server — the browser pane renders `file://` pages as `data:` snapshots where data-URI font loads fail with NetworkError, which looks like a font bug but isn't. (The banner and plaque tools can't work from `file://` at all: they fetch their assets.) If 8517/8518 are taken by another session, start `seal-builder-auto`.
+- Use the launch.json server. `file://` is not an option at all now — the pages are PHP and need an interpreter — and it was already a trap before that: the browser pane renders `file://` pages as `data:` snapshots where data-URI font loads fail with NetworkError, which looks like a font bug but isn't. If 8517/8518 are taken by another session, start `seal-builder-auto`.
 - Verify PNG export by calling `renderToCanvas(…)` in the console and sampling pixels rather than downloading.
 - To check a tool against its reference art, draw the reference into a canvas and scan for glyph bands/extents (that is how the plaque's row metrics were derived) — eyeballing scaled screenshots hides pixel-level offsets.
 - **To prove a refactor didn't change the output**, load the old build in a hidden `<iframe>` alongside the new one, copy `S` across, render both to canvas and diff the pixel buffers. Note that top-level `let`/`const` (including `S`) are *not* properties of `window`, so reach into the frame with `fr.contentWindow.eval("…")`, not `fr.contentWindow.S`. Seal came out bit-identical this way; **header does not — it differs from itself run to run** (measured: 11 channels at Δ≤5 with no emblem, 59 at Δ≤4 with one, out of ~1.5 M), because its `feTurbulence`/`feSpecularLighting` filters don't rasterize deterministically. Always measure that self-diff first as the control, or you'll read the tool's own noise as a regression.

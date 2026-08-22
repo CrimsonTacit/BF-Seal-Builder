@@ -42,8 +42,9 @@ from PIL import Image
 from psd_tools import PSDImage
 
 ROOT = Path(__file__).resolve().parent.parent
-PSD_PATH = ROOT / "examples" / "Plaques" / "NewPlaqueDesign copy.psd"
-OUT = ROOT / "assets" / "plaque"
+SITE = ROOT / "site"          # the webroot; the tool requests these by URL
+PSD_PATH = ROOT / "examples" / "Plaques" / "NewPlaqueDesign copy.psd"   # source, stays out of the webroot
+OUT = SITE / "assets" / "plaque"
 STEPS = 33  # table resolution for the gradient maps
 
 # Colourway ids as the tool knows them, mapped to each part's PSD layer names.

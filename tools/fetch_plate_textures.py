@@ -22,7 +22,8 @@ from pathlib import Path
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
-OUT = ROOT / "assets" / "plaque"
+SITE = ROOT / "site"          # the webroot; the tool requests these by URL
+OUT = SITE / "assets" / "plaque"
 W, H = 2350, 1700
 JPEG_QUALITY = 88
 

@@ -1,3 +1,4 @@
+<?php require __DIR__ . '/auth.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,12 +6,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Browser tools for making Bravo Fleet seals, headers, banners, plaques, patches and mission posters — no Photoshop required.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%225%22%20fill%3D%22%230d1420%22%2F%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2216%22%20r%3D%229%22%20fill%3D%22none%22%20stroke%3D%22%23d3a92c%22%20stroke-width%3D%223%22%2F%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2216%22%20r%3D%223.5%22%20fill%3D%22%232864a8%22%2F%3E%3C%2Fsvg%3E">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Bravo Fleet Graphics Tools">
-<meta property="og:title" content="Bravo Fleet Graphics Tools">
-<meta property="og:description" content="Browser tools for making Bravo Fleet seals, headers, banners, plaques, patches and mission posters — no Photoshop required.">
-<meta property="og:url" content="https://crimsontacit.github.io/BF-Seal-Builder/">
-<meta name="twitter:card" content="summary">
 <title>Bravo Fleet Graphics Tools</title>
 <style>
   :root{
@@ -166,37 +161,37 @@
 </div>
 
 <div class="cards">
-  <a class="card" href="seal-tool.html">
+  <a class="card" href="/seal">
     <div class="mark-seal"></div>
     <h2>Seal Builder</h2>
     <p>Round seals for vessels, stations, and organizations — curved ring text, task-force emblems, starfields, custom art.</p>
     <div class="go">Open →</div>
   </a>
-  <a class="card" href="header-tool.html">
+  <a class="card" href="/header">
     <div class="mark-hdr"><i></i><i></i><i></i></div>
     <h2>Header Builder</h2>
     <p>Metallic wordmark headers for BFMS command pages — gold and brushed-steel type, divider rules, emblems, transparent PNG output.</p>
     <div class="go">Open →</div>
   </a>
-  <a class="card" href="banner-tool.html">
+  <a class="card" href="/banner">
     <div class="mark-bnr"><i></i><b></b></div>
     <h2>Banner Builder</h2>
     <p>Ship and station banners — the fixed gold frame with your art, name, registry and class, and a task-force delta in place of the BF one.</p>
     <div class="go">Open →</div>
   </a>
-  <a class="card" href="plaque-tool.html">
+  <a class="card" href="/plaque">
     <div class="mark-plq"><i></i></div>
     <h2>Plaque Builder</h2>
     <p>Dedication plaques from the original 2399 artwork — twelve backings, seven trims, editable rosters, raised or engraved lettering.</p>
     <div class="go">Open →</div>
   </a>
-  <a class="card" href="patch-tool.html">
+  <a class="card" href="/patch">
     <div class="mark-pat"><i></i><i></i><i></i><i></i></div>
     <h2>Patch Builder</h2>
     <p>Triangular patches — the wide-bordered command patch with type along its edges, or a rounded development-project patch with the title inside.</p>
     <div class="go">Open →</div>
   </a>
-  <a class="card" href="mission-tool.html">
+  <a class="card" href="/mission">
     <div class="mark-mis"><i></i><i></i></div>
     <h2>Mission Poster Builder</h2>
     <p>Mission posters and cover art — your image or a built-in starfield under thirteen fonts, raised, foil or embossed lettering, outlines and glows, frames, and the seal palette.</p>
