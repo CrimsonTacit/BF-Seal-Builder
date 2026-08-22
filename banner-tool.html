@@ -83,6 +83,8 @@
       <div class="acc-body">
         <div class="filebox" id="filebox">Drop an image here or click to choose</div>
         <input type="file" id="fileInput" accept="image/*" style="display:none">
+        <div class="row"><label>Art window</label><select data-k="frameH" id="frameSel"></select></div>
+        <div class="hint">Grows the frame downward so wide art crops less, dropping the ship name with it. The banner size and the delta don't change; the deepest setting finishes the name level with the bottom of the delta.</div>
         <div class="row"><label>Zoom</label><input type="range" min="0.3" max="4" step="0.01" data-k="imgZoom"><span class="val" data-val="imgZoom"></span></div>
         <div class="row"><label>Horizontal</label><input type="range" min="-600" max="600" step="2" data-k="imgX"><span class="val" data-val="imgX"></span></div>
         <div class="row"><label>Vertical</label><input type="range" min="-400" max="400" step="2" data-k="imgY"><span class="val" data-val="imgY"></span></div>
@@ -185,6 +187,7 @@ const DEFAULTS = {
   registry: "NCC-77138",
   cls: "ODYSSEY-CLASS",
   logo: "bf",
+  frameH: "std",
   imgZoom: 1, imgX: 0, imgY: 0,
 };
 let S = Object.assign({}, DEFAULTS);
@@ -208,6 +211,35 @@ const SMALL_FS = 30, SMALL_TRACK = 5;
 const SMALL_BASE = 27;                                 // top line rests just above the frame
 const NAME_FS = 70, NAME_BASE = 380;
 const TEXT_RIGHT = FRAME.x + FRAME.w;                  // name + registry flush to the frame
+
+/* How deep the art window runs (S.frameH). The stock window is 1199x247,
+   close to 4.9:1, which is an awkward crop for the 16:9 art people actually
+   have. The deeper modes grow the frame *downward* into the empty strip
+   beneath it — the canvas, the delta and the frame's top rail (and so the
+   class/registry line hanging off it) never move — and the ship name rides
+   down with the bottom rail, keeping its 20px gap under the frame.
+     std   the original, calibrated against the PSD.
+     tall  300px of art. The bottom rail now crosses the notch between the
+           delta's legs, which is what plateClip below is for.
+     deep  as far down as the design goes: the name's baseline lands on
+           DELTA_FOOT, so the type finishes flush with the bottom of the
+           delta's left leg. Past that the name would hang below the delta,
+           which is the one thing this layout can't do. */
+const ART_W    = FRAME.w - 14 - (BORDER - 2);          // 1199 — art window width, fixed
+const ART_PAD  = 12 + BORDER;                          // frame height - art window height
+const ART_STD  = FRAME.h - ART_PAD;                    // 247
+const DELTA_FOOT = 500;   // y of the delta's left-leg tip, measured off the logo art
+                          // (all seven share the silhouette; the right leg stops at 459)
+const FRAMES = {
+  std:  { name:"Standard", art:ART_STD },
+  tall: { name:"Taller",   art:300 },
+  deep: { name:"Deepest",  art:ART_STD + (DELTA_FOOT - NAME_BASE) },   // 367
+};
+const geom = () => {
+  const g = (FRAMES[S.frameH] || FRAMES.std).art - ART_STD;
+  return { F:{ x:FRAME.x, y:FRAME.y, w:FRAME.w, h:FRAME.h + g, rx:FRAME.rx },
+           nameBase:NAME_BASE + g, cropped:g > 0 };
+};
 
 const esc = Metal.esc;
 const GOLD = Metal.MATERIALS.gold;
@@ -241,6 +273,26 @@ function deltaRightAt(y, box){
   return box.x + box.w * (r0 + (r1-r0)*t);
 }
 
+/* The plate — the framed art and its gold rails — cropped along the delta's own
+   right-hand curve, so none of it shows through the notch between the delta's
+   legs. Deeper frames only: the standard frame stops at y=306, above where
+   the notch opens at ~315, so it has nothing to crop — and a clip group also
+   re-composites everything it wraps, which moved ~2500 pixels of the standard
+   render by up to 32 counts (the delta's own soft edges lost the gold that had
+   been sitting behind them). Skipping it there keeps that output bit-identical
+   to the calibrated original. The cut follows DELTA_EDGE, the same silhouette
+   the type hangs off, pulled PLATE_CUT px inside it so the seam lands under
+   opaque delta art rather than beside it — the delta is drawn last, over it.
+   (Measured: the chords of the 20-point table stay within ~0.5px of the curve
+   they approximate, so the overlap is what covers the seam, not the sampling.) */
+const PLATE_CUT = 5;
+function plateClip(box){
+  const px = r => (box.x + box.w*r - PLATE_CUT).toFixed(1);
+  const pts = DELTA_EDGE.map(([f,r]) => px(r) + " " + (box.y + box.h*f).toFixed(1));
+  return `M ${px(DELTA_EDGE[0][1])} -100 L ${pts.join(" L ")} `
+       + `L ${px(DELTA_EDGE[DELTA_EDGE.length-1][1])} ${H+100} L ${W+100} ${H+100} L ${W+100} -100 Z`;
+}
+
 /* seeded starfield fallback for the frame interior */
 function starfieldRect(x, y, w, h){
   const rnd = StateKit.mulberry32(1701);
@@ -265,6 +317,7 @@ function buildSVG(res){
   const L = LOGOS[S.logo] || LOGOS.bf;
   const logoHref = res.logoHref || L.url;
   const box = deltaBox(L);
+  const { F, nameBase, cropped } = geom();
 
   const name = (S.name||"").toUpperCase();
   const reg  = (S.registry||"").toUpperCase();
@@ -274,7 +327,7 @@ function buildSVG(res){
   const clsX = deltaRightAt(SMALL_BASE, box) + CLEAR;
 
   /* name auto-shrink to the run between the delta and the frame edge */
-  const nameMaxW = TEXT_RIGHT - CLEAR - deltaRightAt(NAME_BASE, box);
+  const nameMaxW = TEXT_RIGHT - CLEAR - deltaRightAt(nameBase, box);
   let nameFs = NAME_FS;
   const nw = measure(name, NAME_FS, 2);
   if(nw > nameMaxW) nameFs = Math.max(30, NAME_FS * nameMaxW / nw);
@@ -286,7 +339,6 @@ function buildSVG(res){
   if(topW > topAvail){ const k = Math.max(.6, topAvail / topW); smallFs = SMALL_FS*k; smallTrack = SMALL_TRACK*k; }
 
   /* frame rects */
-  const F = FRAME;
   const inEdge = { x:F.x+7, y:F.y+7, w:F.w-14, h:F.h-14, rx:F.rx-6 };            // main border centerline inset
   /* Art area runs to the border's inner edge (its centerline inset half its
      width), then 1px further so it tucks under the gold instead of leaving a
@@ -314,7 +366,7 @@ function buildSVG(res){
 <style>${fontCSS} text{font-family:"Sealstile";}</style>
 ${Metal.gradientDef("gradFrame", FRAME_GOLD, F.y, F.y+F.h)}
 ${goldGrad("gradTab", SMALL_BASE - smallFs*CAP, SMALL_BASE)}
-${goldGrad("gradName", NAME_BASE-nameFs*.78, NAME_BASE+nameFs*.1)}
+${goldGrad("gradName", nameBase-nameFs*.78, nameBase+nameFs*.1)}
 <linearGradient id="starBg" x1="0" y1="${inner.y}" x2="0" y2="${inner.y+inner.h}" gradientUnits="userSpaceOnUse">
   <stop offset="0" stop-color="#101b38"/><stop offset=".6" stop-color="#0a1226"/><stop offset="1" stop-color="#060a16"/>
 </linearGradient>
@@ -324,15 +376,18 @@ ${Metal.bevelFilter("fxName",{bevel:3,shine:.85,se:22,shadow:.45,shadowDy:4,shad
 <filter id="fxLogo" x="-15%" y="-10%" width="130%" height="125%">
   <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#000" flood-opacity=".55"/>
 </filter>
+${cropped ? `<clipPath id="plateClip"><path d="${plateClip(box)}"/></clipPath>` : ""}
 <clipPath id="frameClip"><rect x="${inner.x}" y="${inner.y}" width="${inner.w}" height="${inner.h}" rx="${inner.rx}"/></clipPath>
 </defs>
 
+<g${cropped ? ` clip-path="url(#plateClip)"` : ""}>
 <g clip-path="url(#frameClip)">${imgSVG}</g>
 
 <g filter="url(#fxFrame)">
   <rect x="${F.x}" y="${F.y}" width="${F.w}" height="${F.h}" rx="${F.rx}" fill="none" stroke="url(#gradFrame)" stroke-width="3.5"/>
   <rect x="${inEdge.x}" y="${inEdge.y}" width="${inEdge.w}" height="${inEdge.h}" rx="${inEdge.rx}" fill="none" stroke="url(#gradFrame)" stroke-width="${BORDER}"/>
   <rect x="${inEdge.x}" y="${inEdge.y}" width="${inEdge.w}" height="${inEdge.h}" rx="${inEdge.rx}" fill="none" stroke="#241a06" stroke-width="1.6" opacity=".8"/>
+</g>
 </g>
 
 <g filter="url(#fxSmall)">
@@ -343,7 +398,7 @@ ${Metal.bevelFilter("fxName",{bevel:3,shine:.85,se:22,shadow:.45,shadowDy:4,shad
 <g filter="url(#fxLogo)"><image href="${logoHref}" x="${box.x}" y="${box.y.toFixed(1)}" width="${box.w.toFixed(1)}" height="${box.h.toFixed(1)}"/></g>
 
 <g filter="url(#fxName)">
-  <text x="${TEXT_RIGHT+2}" y="${NAME_BASE}" text-anchor="end" font-size="${nameFs.toFixed(1)}" letter-spacing="2" fill="url(#gradName)" stroke="${GOLD.edge}" stroke-width="${(nameFs*.02).toFixed(1)}" paint-order="stroke" stroke-linejoin="round">${esc(name)}</text>
+  <text x="${TEXT_RIGHT+2}" y="${nameBase}" text-anchor="end" font-size="${nameFs.toFixed(1)}" letter-spacing="2" fill="url(#gradName)" stroke="${GOLD.edge}" stroke-width="${(nameFs*.02).toFixed(1)}" paint-order="stroke" stroke-linejoin="round">${esc(name)}</text>
 </g>
 </svg>`;
 }
@@ -428,6 +483,8 @@ function syncUI(){
 
 $("logoSel").innerHTML = Object.entries(LOGOS)
   .map(([k,L])=>`<option value="${k}">${L.label}</option>`).join("");
+$("frameSel").innerHTML = Object.entries(FRAMES)
+  .map(([k,F])=>`<option value="${k}">${F.name} — ${(ART_W/F.art).toFixed(1)}:1</option>`).join("");
 
 Stage.init();
 
@@ -443,6 +500,8 @@ const persist = StateKit.persister(LS_KEY, () => S, 150);
   try{
     const saved = localStorage.getItem(LS_KEY);
     if(saved) S = Object.assign({}, DEFAULTS, JSON.parse(saved));
+    if("tall" in S){ S.frameH = S.tall ? "tall" : "std"; delete S.tall; }  // the checkbox this replaced
+    if(!(S.frameH in FRAMES)) S.frameH = "std";
   }catch(e){}
   $("copyYear").textContent = new Date().getFullYear();
   bindInputs(); syncUI(); render();
