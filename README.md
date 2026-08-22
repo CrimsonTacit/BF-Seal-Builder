@@ -35,9 +35,13 @@ top of your actual BFMS cover photo before exporting.
 
 The ship and station banners: the gold delta and framed panel, with your
 ship art inside the frame and the name, registry, and class set in the
-fleet's lettering. The design itself is fixed — the one choice is which
-delta flies on it, Bravo Fleet's or any task force's. Exports a transparent
-PNG at 1400 px or double size.
+fleet's lettering. The design is fixed apart from two choices — which delta
+flies on it, Bravo Fleet's or any task force's, and how deep the art window
+runs. Exports a transparent PNG at 1400 px or double size.
+
+Tip: the stock window is roughly 4.9:1, which crops 16:9 ship renders hard.
+"Taller" and "Deepest" grow the frame downward into the empty strip below it,
+so the banner size, the delta, and the top rail all stay put.
 
 ### Plaque Builder (`/plaque`)
 
@@ -50,6 +54,50 @@ or **engraved** into it. Exports PNG up to 4700 px.
 
 Tip: in a roster column, start a line with `##` to run a second heading
 partway down it (that's how "Admiralty Board" sits under "Chiefs of Staff").
+
+### Patch Builder (`/patch`)
+
+Triangular patches, covering both families from one tool: the wide-bordered
+**Triangle** patch worn by commands and facilities, and the rounded-corner
+**Project** patch used for development projects. Switching between them
+changes the furniture — border thickness, corner rounding, and whether the
+type runs along the edges or stacks inside — but keeps every line you've
+typed and every colour you've picked, so it's a change of dress, not a new
+document.
+
+Up to four nested border rings, each its own colour and width; text along
+the two upper edges and across the bottom, or centred lines inside the
+field, or any mix (the slots are independent). Drop in your own field
+artwork with zoom and position, or leave the seeded starfield, and overlay
+a fleet or task-force emblem. Presets recolour the rings, field, and type
+in one click. Exports PNG at 1728 px native, half, or double, plus SVG.
+
+### Mission Poster Builder (`/mission`)
+
+Mission posters and cover art — the one tool with an open-ended design
+rather than a fixed one. Four shapes (3:4 poster, 2:3 one-sheet or 6×9
+novel, 4:5, 1:1 square) and six named text slots: campaign line,
+above-title, title, subtitle, story credit, and billing block. Each slot
+can be switched off, and each carries its own font, size, fill, and
+effects.
+
+Type fills as flat colour, a metal ramp for the raised-foil novel look, or
+a two-colour fade, over an outside stroke, glow, drop shadow, and relief —
+flat, raised, embossed, or inlaid. Eight frame options (including none),
+thirteen fonts, and image treatments for the artwork underneath —
+saturation, brightness and contrast, duotone, vignette, top and bottom
+scrims, and film grain.
+
+Presets are **styles** (fills, relief, effects, frame) and schemes are
+**colours**, on separate axes — click them in either order, last click
+wins. The schemes are the Seal Builder's palette, each readable three ways:
+as the reference poster, with primary and secondary swapped, or inverted
+onto a pale field. Exports PNG up to 5400 px (18×24 in at 300 dpi), plus
+SVG.
+
+Tip: the scrims are what make white type readable over a bright photo. If
+a title is disappearing into the artwork, reach for those before you reach
+for a heavier stroke.
 
 ## Fonts & licenses
 
@@ -64,10 +112,17 @@ be shared freely:
   Fonts, used by the Header Builder.
 - **EB Garamond** — from Google Fonts, used for the plaque's ship name and
   dedication quote (standing in for the original's Adobe Garamond).
+- **Cinzel Decorative**, **Playfair Display**, **Cormorant Garamond**,
+  **Bebas Neue**, **Oswald**, **Anton** — from Google Fonts, offered by the
+  Mission Poster Builder alongside the faces above, for the Trajan-style
+  epic title, the novel-jacket roman, and the condensed one-sheet look.
 
 Bravo Fleet emblems and names are © [Bravo Fleet](https://bravofleet.com);
-these tools are for use within the fleet. Original seal design by
-**CrimsonTacit**; original Columbia header by **JustSlide**.
+these tools are for use within the fleet. Seal, patch, plaque, and poster
+design by **CrimsonTacit**; original Columbia header by **JustSlide**;
+Bravo Fleet logo by **Kevin Steeper**; ship banner by **Emily Wolf** and
+**Kevin Steeper**. Full credits are on the
+[wiki](https://wiki.bravofleet.com/index.php/Credits#Graphics).
 
 ## For developers
 
