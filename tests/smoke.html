@@ -31,7 +31,8 @@
   Loads every page, then for each tool renders a PNG export and inspects the export SVG.
   This is the check that catches a broken asset path — the failure mode the tools are most
   exposed to, since they fetch fonts and artwork by URL and inline them at export time.
-  Serve the repo over HTTP and open this page; it needs no build step and no dependencies.
+  Start the site with <code>python3 tools/serve_site.py 8517</code> and open this page; it
+  needs no build step and no dependencies.
 </p>
 <button id="run">Run tests</button>
 <table>
@@ -42,7 +43,20 @@
 
 <script>
 "use strict";
-const TOOLS = ["index","seal-tool","header-tool","banner-tool","plaque-tool","patch-tool","mission-tool"];
+/* Pages as the server actually routes them: extensionless, with the landing
+   page at the webroot itself. `route` is what gets fetched, `name` is only a
+   label -- keeping them apart is what lets "" be a legal route. */
+const TOOLS = [
+  {name:"index",   route:""},
+  {name:"seal",    route:"seal"},
+  {name:"header",  route:"header"},
+  {name:"banner",  route:"banner"},
+  {name:"plaque",  route:"plaque"},
+  {name:"patch",   route:"patch"},
+  {name:"mission", route:"mission"},
+];
+/* tests/ sits outside the site/ webroot, so "../" is the webroot from here. */
+const url = (route, cb) => "../" + route + "?cb=" + cb;
 const $ = id => document.getElementById(id);
 
 /* Errors are split by whether they can be attributed to the page at all.
@@ -58,7 +72,7 @@ const $ = id => document.getElementById(id);
    scripts have already run, so it catches async errors rather than
    parse/boot-time ones. Boot failures are caught by outcome instead — see the
    "page's own JS ran" check below, and the export checks for the tools. */
-function load(page){
+function load(route){
   return new Promise(resolve => {
     const errs = [], foreign = [];
     const fr = document.createElement("iframe");
@@ -70,7 +84,7 @@ function load(page){
       });
       setTimeout(() => resolve({fr, errs, foreign}), 1500);
     };
-    fr.src = "../" + page + ".html?cb=" + Date.now();
+    fr.src = url(route, Date.now());
     document.body.appendChild(fr);
   });
 }
@@ -103,8 +117,8 @@ const PROBE = `(async () => {
    and this suite reported all green. A deploy that drops or renames an asset
    looks exactly like that to anyone who has used the tools before, which is
    precisely the failure this test exists to catch. */
-async function assetsResolve(page){
-  const src = await (await fetch("../" + page + ".html?cb=" + Date.now(), {cache:"reload"})).text();
+async function assetsResolve(route){
+  const src = await (await fetch(url(route, Date.now()), {cache:"reload"})).text();
   /* Any quoted relative path into assets/, fonts/ or shared/ — markup src/href,
      registry entries (url:"..."), and bare constants alike (seal-tool holds its
      font as `const FONT_URL = "fonts/sealstile.woff2?v=8128806d"`, which a src|href-only
@@ -126,15 +140,15 @@ async function assetsResolve(page){
   return { count: paths.size, bad };
 }
 
-async function runOne(page){
+async function runOne({route}){
   const checks = [];
-  const {fr, errs, foreign} = await load(page);
+  const {fr, errs, foreign} = await load(route);
   checks.push({name:"loads with no JS errors", ok: errs.length===0, why: errs.join("; ")});
   if (foreign.length) checks.push({name:"note — error from a cross-origin script", ok:true, note:true,
     why: `${foreign.join("; ")} — not attributable to this page (no file or line given). ` +
          `Almost always a browser extension; re-check in a private window with extensions off.`});
 
-  const assets = await assetsResolve(page);
+  const assets = await assetsResolve(route);
   checks.push({name:`all ${assets.count} referenced assets resolve`, ok: assets.bad.length===0,
                why: assets.bad.join("; ")});
 
@@ -157,7 +171,15 @@ async function runOne(page){
     const yr = doc.getElementById("copyYear");
     checks.push({name:"page's own JS ran", ok: !!(yr && /^\d{4}$/.test(yr.textContent)),
                  why: yr ? `copyright year = "${yr.textContent}"` : "#copyYear missing"});
-    checks.push({name:"links to all six tools", ok: doc.querySelectorAll('a[href$="-tool.html"]').length === 6});
+    /* Name the routes rather than counting a filename pattern: the old
+       `a[href$="-tool.html"]` check matched nothing once the pages became
+       /seal and friends, and a selector that matches nothing still counts to
+       zero rather than failing loudly. */
+    const want = TOOLS.filter(t => t.route).map(t => "/" + t.route);
+    const have = want.filter(h => doc.querySelector(`a[href="${h}"]`));
+    checks.push({name:`links to all six tools`, ok: have.length === want.length,
+                 why: have.length === want.length ? "" :
+                      "missing " + want.filter(h => !have.includes(h)).join(", ")});
   }
   fr.remove();
   return checks;
@@ -169,17 +191,17 @@ $("run").addEventListener("click", async () => {
   const map = {};
   for (const t of TOOLS){
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${t}</td><td class="pend">running…</td><td class="why"></td>`;
-    $("rows").appendChild(tr); map[t] = tr;
+    tr.innerHTML = `<td>${t.name}</td><td class="pend">running…</td><td class="why"></td>`;
+    $("rows").appendChild(tr); map[t.name] = tr;
   }
   let pass = 0, fail = 0;
   const results = {};
   for (const t of TOOLS){
     const checks = await runOne(t);
-    results[t] = checks;
+    results[t.name] = checks;
     const bad = checks.filter(c => !c.ok);
     bad.length ? fail++ : pass++;
-    const tr = map[t];
+    const tr = map[t.name];
     tr.children[1].className = bad.length ? "fail" : "pass";
     tr.children[1].textContent = bad.length ? "FAIL" : "pass";
     tr.children[2].innerHTML = checks.map(c =>
