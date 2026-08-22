@@ -23,7 +23,8 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-FONTS = ROOT / "fonts"
+SITE = ROOT / "site"          # the webroot; the tools request these by URL
+FONTS = SITE / "fonts"
 CACHE = FONTS / "webfonts"
 
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "

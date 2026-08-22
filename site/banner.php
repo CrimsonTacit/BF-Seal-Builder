@@ -6,12 +6,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Build ship and station banners with your own image and task-force delta, and export them as transparent PNGs.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%225%22%20fill%3D%22%230d1420%22%2F%3E%3Crect%20x%3D%224%22%20y%3D%229%22%20width%3D%2224%22%20height%3D%2214%22%20fill%3D%22none%22%20stroke%3D%22%23d3a92c%22%20stroke-width%3D%222.5%22%2F%3E%3Cpath%20d%3D%22M6%2022%20L12%209%20L18%2022%20Z%22%20fill%3D%22%232864a8%22%2F%3E%3C%2Fsvg%3E">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Bravo Fleet Graphics Tools">
-<meta property="og:title" content="Banner Builder — Bravo Fleet Graphics Tools">
-<meta property="og:description" content="Build ship and station banners with your own image and task-force delta, and export them as transparent PNGs.">
-<meta property="og:url" content="https://crimsontacit.github.io/BF-Seal-Builder/banner-tool.html">
-<meta name="twitter:card" content="summary">
 <title>Banner Builder</title>
 <link rel="stylesheet" href="shared/chrome.css?v=d62425d5">
 <style>

@@ -1,2 +1,5 @@
 .DS_Store
 examples/
+
+# the deployed host's own WordPress path — copy site/auth-config.php.example
+site/auth-config.php

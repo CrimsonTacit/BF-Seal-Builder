@@ -1,7 +1,15 @@
 # Reconciling the BFE PHP fork with `main`
 
-**Status:** proposed, not started. **Written:** 2026-08-21.
-**Audience:** the engineer (human or agent) who performs the merge.
+**Status:** carried out 2026-08-21, on branch `bfe-reconciliation`. **Written:** 2026-08-21.
+**Audience:** the engineer (human or agent) who performs the merge — kept as the
+record of why the tree looks the way it does. See §9 for what the plan missed.
+
+The three decisions in §3 held. All six exports came out **bit-identical** to
+the pre-move build, including header and mission (§7 trap 11 expected drift
+there; it does not appear under headless software rasterization, and the
+old and new builds were captured in one browser launch so the control was
+matched). The smoke suite reports the same per-page asset counts as before the
+move — 0/11/16/14/9/13/20 — so it is checking the same surface.
 
 ---
 
@@ -339,3 +347,39 @@ Every one of these is a real coupling verified in the current trees.
 - [ ] Seal tool ships ~67 KB, not ~195 KB. Header JS is not 227 KB.
 - [ ] `CLAUDE.md` describes the PHP deployment.
 - [ ] One line of development, not two.
+
+---
+
+## 9. What the plan missed
+
+Four couplings that only surfaced during the work. Recorded here because the
+next structural change will hit the same class of thing.
+
+1. **`auth.php`'s login card pulled `/css/{themes,base,auth}.css`** — files that
+   exist only in bfe's per-tool stylesheet split, which §3.2 rejects. Porting
+   auth.php verbatim would have shipped an unstyled login page. It now links
+   `shared/chrome.css`, which already defined every token the card used, and
+   carries its own dozen rules inline.
+
+2. **Three more scripts write into `assets/` and `fonts/`** than the three §5
+   Phase 3 lists: `extract_plaque_assets.py`, `fetch_plate_textures.py` and
+   `fetch_shared_fonts.py`. None runs in CI, so they would have quietly rebuilt
+   a stray root-level `assets/plaque/` the next time anyone touched the PSD.
+   All now resolve through a `SITE` constant.
+
+3. **`php -S` answers an unrecognised path with the nearest `index.php`.** A
+   stale or typo'd URL came back 200 with the landing page rather than 404 —
+   neither Apache nor `http.server` does that, and a suite built to catch
+   missing assets should not be run against a server that invents them.
+   `dev-router.php` now 404s anything that is not a route, a test file, or a
+   real file in the webroot. (Real missing assets did 404 correctly either way;
+   this was a latent trap, not an active one.)
+
+4. **The `og:` and `twitter:` meta tags pointed at the GitHub Pages URL.**
+   Behind a login no crawler can fetch these pages, so the tags were dropped
+   rather than repointed. `<meta name="description">` stays — the smoke test
+   checks for it.
+
+Also worth knowing: `site/auth-config.php` is gitignored (bfe did this too),
+and `README.md` still has no Patch or Mission Poster sections. That gap predates
+this merge and was left alone under §4.
